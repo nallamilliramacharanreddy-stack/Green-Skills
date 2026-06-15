@@ -30,7 +30,9 @@ const Quiz = () => {
   const fetchUserAttempts = async () => {
     try {
       const res = await axios.get(`${API_URL}/quizzes/results`);
-      const currentUserId = (user?.id || user?._id)?.toString();
+      const savedUserStr = localStorage.getItem('user');
+      const savedUser = savedUserStr ? JSON.parse(savedUserStr) : null;
+      const currentUserId = (user?.id || user?._id || savedUser?.id || savedUser?._id)?.toString();
       const userResults = res.data.filter(r => {
         const resultUserId = (r.user?._id || r.user)?.toString();
         return resultUserId === currentUserId;

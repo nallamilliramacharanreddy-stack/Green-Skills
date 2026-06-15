@@ -110,8 +110,13 @@ const submitQuiz = async (req, res) => {
 const getAllResults = async (req, res) => {
   try {
     const results = await Result.find().populate('user course');
+    console.log(`[getAllResults] Fetched ${results.length} results.`);
+    if (results.length > 0) {
+      console.log(`[getAllResults] First result user:`, results[0].user?._id || results[0].user);
+    }
     res.json(results);
   } catch (error) {
+    console.error('[getAllResults] Error:', error);
     res.status(500).json({ message: 'Error fetching results' });
   }
 };
