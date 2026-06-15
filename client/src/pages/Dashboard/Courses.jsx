@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
-import ReactPlayer from 'react-player';
+import ReactPlayer from 'react-player/youtube';
 import {
   Search, Filter, BookOpen, Clock,
   Award, Star, Play, PlayCircle,
