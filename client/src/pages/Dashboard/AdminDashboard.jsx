@@ -758,19 +758,33 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
                                   setFormData(p => ({ ...p, lessons: tempLessons }));
 
                                   const formDataObj = new FormData();
-                                  formDataObj.append('video', file);
+                                  formDataObj.append('file', file);
+                                  
+                                  // Cloudinary Unsigned Upload
+                                  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+                                  const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+                                  
+                                  if (!cloudName || !uploadPreset) {
+                                    toast.error('Cloudinary credentials missing in .env');
+                                    const newLessons = [...formData.lessons];
+                                    newLessons[idx].status = '';
+                                    setFormData(p => ({ ...p, lessons: newLessons }));
+                                    return;
+                                  }
+
+                                  formDataObj.append('upload_preset', uploadPreset);
 
                                   try {
-                                    const response = await axios.post(`${API_URL}/videos/upload`, formDataObj, {
+                                    const response = await axios.post(`https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, formDataObj, {
                                       headers: { 'Content-Type': 'multipart/form-data' }
                                     });
                                     
                                     const newLessons = [...formData.lessons];
-                                    newLessons[idx].directVideoUrl = response.data.directVideoUrl;
+                                    newLessons[idx].directVideoUrl = response.data.secure_url; // Use Cloudinary secure URL
                                     newLessons[idx].youtubeLink = ''; // Clear youtube link since we have direct file
                                     newLessons[idx].status = 'completed';
                                     setFormData(p => ({ ...p, lessons: newLessons }));
-                                    toast.success('Video uploaded successfully!');
+                                    toast.success('Video uploaded to Cloud successfully!');
                                   } catch (error) {
                                     console.error('Upload failed:', error);
                                     toast.error('Video upload failed');
