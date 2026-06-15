@@ -108,7 +108,14 @@ router.post('/process-legacy', async (req, res) => {
 
 // Real-time instant streaming proxy for YouTube links (Supports Seeking & Timeline!)
 router.get('/stream-live/:videoId', async (req, res) => {
-  const videoId = req.params.videoId;
+  let videoId = req.params.videoId;
+  
+  // HOTFIX: The original video 'L2G7qS4yYnE' for Lesson 1 was deleted from YouTube.
+  // Redirecting it to a working educational video ID 'xKxrkht7CpY'
+  if (videoId === 'L2G7qS4yYnE') {
+    videoId = 'xKxrkht7CpY';
+  }
+
   const { exec } = require('child_process');
   const ytDlpPath = path.resolve(__dirname, '../node_modules/youtube-dl-exec/bin/yt-dlp');
   const https = require('https');
@@ -116,7 +123,9 @@ router.get('/stream-live/:videoId', async (req, res) => {
   // 1. Instantly extract the raw underlying streaming URL (bypasses 60s download)
   exec(`"${ytDlpPath}" -g "https://www.youtube.com/watch?v=${videoId}" --format "best[ext=mp4]" --no-check-certificates --force-ipv4`, (error, stdout, stderr) => {
     if (error || !stdout) {
-      return res.status(500).send('Failed to extract live stream URL');
+      console.error('yt-dlp error:', error);
+      console.error('yt-dlp stderr:', stderr);
+      return res.status(500).send('Failed to extract live stream URL: ' + (stderr || error?.message));
     }
 
     const streamUrl = stdout.trim();
