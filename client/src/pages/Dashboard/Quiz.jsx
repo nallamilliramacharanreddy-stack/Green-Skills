@@ -29,14 +29,15 @@ const Quiz = () => {
 
   const fetchUserAttempts = async () => {
     try {
-      const res = await axios.get(`${API_URL}/quizzes/results`);
       const savedUserStr = localStorage.getItem('user');
       const savedUser = savedUserStr ? JSON.parse(savedUserStr) : null;
       const currentUserId = (user?.id || user?._id || savedUser?.id || savedUser?._id)?.toString();
-      const userResults = res.data.filter(r => {
-        const resultUserId = (r.user?._id || r.user)?.toString();
-        return resultUserId === currentUserId;
+      
+      const res = await axios.get(`${API_URL}/quizzes/results`, {
+        params: { userId: currentUserId }
       });
+      
+      const userResults = res.data;
       userResults.sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
       setAttempts(userResults);
     } catch (err) {
