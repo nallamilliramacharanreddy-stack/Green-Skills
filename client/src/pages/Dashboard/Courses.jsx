@@ -13,6 +13,7 @@ import {
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import { API_URL } from '../../utils/api';
+import ReactPlayer from 'react-player';
 
 const getYoutubeEmbedUrl = (url) => {
   if (!url) return '';
@@ -432,28 +433,28 @@ const Courses = () => {
                         const lesson = selectedCourse.lessons[activeLessonIndex];
                         let internalUrl = lesson.internalVideoUrl || lesson.directVideoUrl;
 
-                        // 1. If we don't have an offline MP4 yet, but we have a YouTube link, 
-                        // instantly proxy it real-time to the native HTML5 player!
+                        // IF we ONLY have a YouTube link and no offline MP4,
+                        // bypass the backend stream proxy because YouTube blocks Cloud IPs (429 Error).
+                        // Instead, render the video client-side directly using ReactPlayer!
                         if (!internalUrl && lesson.youtubeLink) {
-                          let videoId = '';
-                          const watchMatch = lesson.youtubeLink.match(/[?&]v=([^&#]+)/);
-                          const shortMatch = lesson.youtubeLink.match(/youtu\.be\/([^?&#]+)/);
-                          const embedMatch = lesson.youtubeLink.match(/youtube\.com\/embed\/([^?&#]+)/);
-
-                          if (watchMatch) videoId = watchMatch[1];
-                          else if (shortMatch) videoId = shortMatch[1];
-                          else if (embedMatch) videoId = embedMatch[1];
-                          else {
-                            const parts = lesson.youtubeLink.split('/');
-                            videoId = parts[parts.length - 1].split('?')[0];
-                          }
-
-                          if (videoId) {
-                            internalUrl = `${API_URL}/videos/stream-live/${videoId}`;
-                          }
+                          return (
+                            <div className="w-full h-full pointer-events-auto relative bg-black flex items-center justify-center overflow-hidden group">
+                              <ReactPlayer 
+                                url={lesson.youtubeLink} 
+                                controls 
+                                width="100%" 
+                                height="100%" 
+                                playing={true}
+                                onEnded={() => {
+                                  setLessonWatched(true);
+                                  handleCompleteLesson(selectedCourse._id, activeLessonIndex);
+                                }}
+                              />
+                            </div>
+                          );
                         }
 
-                        // 2. Render the native HTML5 Player for EVERYTHING
+                        // 2. Render the native HTML5 Player for ACTUAL internal video files
                         if (internalUrl) {
                           const hasTranslations = lesson.audioTracks && lesson.audioTracks.length > 0;
 
