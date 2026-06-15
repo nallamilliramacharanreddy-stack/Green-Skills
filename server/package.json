@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "mkdir -p uploads && cp -r ../pre_deploy_backup/uploads_backup/* uploads/ 2>/dev/null || true && node index.js",
     "dev": "nodemon index.js",
     "seed": "node seed.js",
     "test": "echo \"Error: no test specified\" && exit 1"
