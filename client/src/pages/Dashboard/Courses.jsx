@@ -449,6 +449,12 @@ const Courses = () => {
                             videoId = parts[parts.length - 1].split('?')[0];
                           }
 
+                          // HOTFIX: The original video 'L2G7qS4yYnE' for Lesson 1 was deleted from YouTube.
+                          // Redirecting it to a working educational video ID 'xKxrkht7CpY'
+                          if (videoId === 'L2G7qS4yYnE') {
+                            videoId = 'xKxrkht7CpY';
+                          }
+
                           return (
                             <div className="w-full h-full pointer-events-auto relative bg-black flex items-center justify-center overflow-hidden group">
                               <iframe
