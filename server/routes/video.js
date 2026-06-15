@@ -29,8 +29,7 @@ const upload = multer({
 // Endpoint for direct MP4 uploads from Admin Dashboard
 router.post('/upload', upload.single('video'), (req, res) => {
   if (!req.file) return res.status(400).json({ message: 'No video file provided' });
-  const baseUrl = `${req.protocol}://${req.get('host')}`;
-  const internalUrl = `${baseUrl}/api/videos/stream/${req.file.filename}`;
+  const internalUrl = `http://localhost:5001/api/videos/stream/${req.file.filename}`;
   res.json({ directVideoUrl: internalUrl, file_size: req.file.size });
 });
 
@@ -122,7 +121,7 @@ router.get('/stream-live/:videoId', async (req, res) => {
   const https = require('https');
 
   // 1. Instantly extract the raw underlying streaming URL (bypasses 60s download)
-  exec(`"${ytDlpPath}" -g "https://www.youtube.com/watch?v=${videoId}" --format "best[ext=mp4]" --no-check-certificates --force-ipv4 --extractor-args "youtube:player_client=android"`, (error, stdout, stderr) => {
+  exec(`"${ytDlpPath}" -g "https://www.youtube.com/watch?v=${videoId}" --format "best[ext=mp4]" --no-check-certificates --force-ipv4`, (error, stdout, stderr) => {
     if (error || !stdout) {
       console.error('yt-dlp error:', error);
       console.error('yt-dlp stderr:', stderr);

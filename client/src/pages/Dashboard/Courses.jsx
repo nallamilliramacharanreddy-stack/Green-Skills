@@ -433,7 +433,28 @@ const Courses = () => {
                         const lesson = selectedCourse.lessons[activeLessonIndex];
                         let internalUrl = lesson.internalVideoUrl || lesson.directVideoUrl;
 
-                        // 1. Render the native HTML5 Player for ACTUAL internal video files
+                        // Render using ReactPlayer to seamlessly integrate YouTube videos without the harsh native iframe UI
+                        if (!internalUrl && lesson.youtubeLink) {
+                          return (
+                            <div className="w-full h-full pointer-events-auto relative bg-black flex items-center justify-center overflow-hidden group">
+                              <ReactPlayer
+                                className="react-player"
+                                url={lesson.youtubeLink}
+                                width="100%"
+                                height="100%"
+                                controls={true}
+                                playing={true}
+                                config={{
+                                  youtube: {
+                                    playerVars: { showinfo: 0, modestbranding: 1, rel: 0 }
+                                  }
+                                }}
+                              />
+                            </div>
+                          );
+                        }
+
+                        // 2. Render the native HTML5 Player for ACTUAL internal video files
                         if (internalUrl) {
                           const hasTranslations = lesson.audioTracks && lesson.audioTracks.length > 0;
 
@@ -447,22 +468,29 @@ const Courses = () => {
                                 preload="metadata"
                                 controlsList="nodownload"
                                 autoPlay
-                                muted
+                                muted // AutoPlay requires muted initially on many browsers
                                 crossOrigin="anonymous"
                                 src={internalUrl}
                                 onPlay={(e) => {
+                                  // Sync alternative audio track if selected
                                   const audioEl = document.getElementById(`audio-${lesson._id}`);
                                   if (audioEl) {
                                     audioEl.currentTime = e.target.currentTime;
                                     audioEl.play().catch(() => { });
-                                    e.target.muted = true;
+                                    e.target.muted = true; // Mute main video
                                   } else {
+                                    // If English is selected, unmute main video if user unmuted
                                     e.target.muted = false;
                                   }
                                 }}
                                 onPause={(e) => {
                                   const audioEl = document.getElementById(`audio-${lesson._id}`);
                                   if (audioEl) audioEl.pause();
+                                }}
+                                onTimeUpdate={(e) => {
+                                  if (e.target.duration > 0) {
+                                    // Custom progress tracking here if needed
+                                  }
                                 }}
                                 onEnded={() => {
                                   setLessonWatched(true);
@@ -519,29 +547,6 @@ const Courses = () => {
                                   </div>
                                 </div>
                               )}
-                            </div>
-                          );
-                        }
-
-                        // 2. Render YouTube iframe if no internal URL is found
-                        if (lesson.youtubeLink) {
-                          return (
-                            <div className="w-full h-full pointer-events-auto relative bg-black flex items-center justify-center overflow-hidden group">
-                              <ReactPlayer
-                                className="react-player pointer-events-none"
-                                url={lesson.youtubeLink}
-                                width="100%"
-                                height="100%"
-                                controls={false}
-                                playing={true}
-                                config={{
-                                  youtube: {
-                                    playerVars: { showinfo: 0, modestbranding: 1, rel: 0, controls: 0, disablekb: 1 }
-                                  }
-                                }}
-                              />
-                              {/* Custom Overlay to completely block YouTube UI interaction */}
-                              <div className="absolute inset-0 z-10 bg-transparent"></div>
                             </div>
                           );
                         }

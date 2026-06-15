@@ -27,8 +27,7 @@ const processVideo = async (courseId, lessonId, youtubeLink) => {
     if (!videoId) throw new Error('Invalid YouTube URL');
 
     const filePath = path.join(videosDir, `${videoId}.mp4`);
-    const baseUrl = process.env.API_URL || 'https://green-skills-api.onrender.com';
-    const internalUrl = `${baseUrl}/api/videos/stream/${videoId}`;
+    const internalUrl = `http://localhost:5001/api/videos/stream/${videoId}`;
 
     // 2. Mark as processing in DB
     await Course.findOneAndUpdate(
@@ -50,8 +49,7 @@ const processVideo = async (courseId, lessonId, youtubeLink) => {
         '--format', 'best[ext=mp4]',
         '--output', filePath,
         '--no-check-certificates',
-        '--force-ipv4',
-        '--extractor-args', 'youtube:player_client=android'
+        '--force-ipv4'
       ]);
 
       await new Promise((resolve, reject) => {

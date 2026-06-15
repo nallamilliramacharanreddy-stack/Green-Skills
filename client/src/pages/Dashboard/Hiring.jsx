@@ -61,7 +61,7 @@ const Hiring = () => {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
           <div>
             <h1 className="text-5xl lg:text-7xl font-black text-slate-900 tracking-tighter uppercase leading-none mb-2">
-              Market<br/><span className="text-primary">Vectors.</span>
+              Job<br/><span className="text-primary">Portal.</span>
             </h1>
             <p className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em]">Verified Green Career Hub</p>
           </div>
