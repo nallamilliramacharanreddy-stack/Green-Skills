@@ -30,8 +30,11 @@ const Quiz = () => {
   const fetchUserAttempts = async () => {
     try {
       const res = await axios.get(`${API_URL}/quizzes/results`);
-      const currentUserId = user?.id || user?._id;
-      const userResults = res.data.filter(r => r.user?._id === currentUserId || r.user === currentUserId);
+      const currentUserId = (user?.id || user?._id)?.toString();
+      const userResults = res.data.filter(r => {
+        const resultUserId = (r.user?._id || r.user)?.toString();
+        return resultUserId === currentUserId;
+      });
       userResults.sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
       setAttempts(userResults);
     } catch (err) {
