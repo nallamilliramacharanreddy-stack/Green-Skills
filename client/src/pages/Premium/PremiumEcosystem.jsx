@@ -1075,34 +1075,56 @@ const AIResumeBuilder = () => {
               {activeTab === 'resume' && (
                 <div className="resume-print-container border border-slate-200 bg-white text-[#2F3B52] shadow-lg max-w-[800px] mx-auto overflow-hidden font-opensans">
                   {/* Top Header: Dark Navy Header #2F3B52 */}
-                  <div className="bg-[#2F3B52] text-white p-8 text-center space-y-2 relative font-montserrat">
-                    <h1 className="text-4xl font-black uppercase tracking-tight leading-none">{resumeData.name}</h1>
-                    <p className="text-sm font-bold text-slate-300 uppercase tracking-widest font-poppins">{resumeData.title}</p>
-                    <div className="flex flex-wrap justify-center gap-4 text-xs font-medium text-slate-300 pt-2 uppercase tracking-wide font-opensans">
-                      <span>📞 {resumeData.phone}</span>
-                      <span>✉ {resumeData.email}</span>
-                      <span>📍 {resumeData.location}</span>
-                    </div>
+                  <div className="bg-[#2F3B52] text-white py-16 px-8 text-center space-y-2 relative font-montserrat">
+                    <h1 className="text-5xl font-black uppercase tracking-[0.15em] leading-none">{resumeData.name}</h1>
+                    <p className="text-xs font-bold text-slate-300 uppercase tracking-[0.3em] font-poppins">{resumeData.title}</p>
                   </div>
 
                   {/* Two Column Body */}
                   <div className="flex flex-col md:flex-row min-h-[750px]">
                     
-                    {/* Left Gray Sidebar: #EAEAEA */}
-                    <div className="w-full md:w-[32%] bg-[#EAEAEA] p-6 space-y-8 border-r border-slate-250 shrink-0 font-opensans">
+                    {/* Left Gray Sidebar: #E5E7EB */}
+                    <div className="w-full md:w-[32%] bg-[#E5E7EB] p-6 space-y-8 border-r border-slate-300 shrink-0 font-opensans">
                       {/* CONTACT */}
                       <div className="space-y-3">
-                        <h4 className="text-[11px] font-black text-[#2F3B52] uppercase tracking-widest border-b-2 border-[#2F3B52]/40 pb-1 font-poppins">CONTACT</h4>
-                        <div className="text-[10px] text-slate-700 space-y-2 font-bold leading-relaxed break-all">
-                          {resumeData.linkedin && <p>🌐 {resumeData.linkedin}</p>}
-                          {resumeData.github && <p>💻 {resumeData.github}</p>}
-                          {resumeData.portfolio && <p>🌍 {resumeData.portfolio}</p>}
+                        <h4 className="text-[11px] font-black text-[#2F3B52] uppercase tracking-[0.2em] border-b border-[#2F3B52] pb-1 font-poppins">CONTACT</h4>
+                        <div className="text-[10px] text-[#2F3B52] space-y-2.5 font-bold leading-relaxed break-all">
+                          {resumeData.phone && (
+                            <div className="flex items-center gap-2.5">
+                              <Phone size={12} className="text-[#2F3B52] shrink-0" />
+                              <span>{resumeData.phone}</span>
+                            </div>
+                          )}
+                          {resumeData.email && (
+                            <div className="flex items-center gap-2.5">
+                              <Mail size={12} className="text-[#2F3B52] shrink-0" />
+                              <span>{resumeData.email}</span>
+                            </div>
+                          )}
+                          {resumeData.location && (
+                            <div className="flex items-center gap-2.5">
+                              <MapPin size={12} className="text-[#2F3B52] shrink-0" />
+                              <span>{resumeData.location}</span>
+                            </div>
+                          )}
+                          {resumeData.linkedin && (
+                            <div className="flex items-center gap-2.5">
+                              <Globe2 size={12} className="text-[#2F3B52] shrink-0" />
+                              <span>{resumeData.linkedin}</span>
+                            </div>
+                          )}
+                          {resumeData.github && (
+                            <div className="flex items-center gap-2.5">
+                              <Globe2 size={12} className="text-[#2F3B52] shrink-0" />
+                              <span>{resumeData.github}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
 
                       {/* SKILLS */}
                       <div className="space-y-4">
-                        <h4 className="text-[11px] font-black text-[#2F3B52] uppercase tracking-widest border-b-2 border-[#2F3B52]/40 pb-1 font-poppins">SKILLS</h4>
+                        <h4 className="text-[11px] font-black text-[#2F3B52] uppercase tracking-[0.2em] border-b border-[#2F3B52] pb-1 font-poppins">SKILLS</h4>
                         <div className="space-y-3">
                           {resumeData.skills?.map((skill, i) => (
                             <div key={i} className="space-y-1">
@@ -1110,7 +1132,7 @@ const AIResumeBuilder = () => {
                                 <span>{skill.name}</span>
                                 <span>{skill.level}%</span>
                               </div>
-                              <div className="h-2 bg-white rounded border border-[#2F3B52]/20 overflow-hidden">
+                              <div className="h-1.5 bg-white rounded-full border border-[#2F3B52]/10 overflow-hidden">
                                 <div className="h-full bg-[#2F3B52]" style={{ width: `${skill.level}%` }}></div>
                               </div>
                             </div>
@@ -1120,8 +1142,8 @@ const AIResumeBuilder = () => {
 
                       {/* LANGUAGES */}
                       <div className="space-y-3">
-                        <h4 className="text-[11px] font-black text-[#2F3B52] uppercase tracking-widest border-b-2 border-[#2F3B52]/40 pb-1 font-poppins">LANGUAGES</h4>
-                        <div className="text-[10px] text-[#2F3B52] font-bold space-y-1 uppercase tracking-wider">
+                        <h4 className="text-[11px] font-black text-[#2F3B52] uppercase tracking-[0.2em] border-b border-[#2F3B52] pb-1 font-poppins">LANGUAGES</h4>
+                        <div className="text-[10px] text-[#2F3B52] font-bold space-y-1.5 uppercase tracking-wider">
                           {resumeData.languages?.map((lang, i) => (
                             <p key={i}>{lang.name} — <span className="text-slate-600 font-medium">{lang.level}</span></p>
                           ))}
@@ -1130,8 +1152,8 @@ const AIResumeBuilder = () => {
 
                       {/* CERTIFICATIONS */}
                       <div className="space-y-3">
-                        <h4 className="text-[11px] font-black text-[#2F3B52] uppercase tracking-widest border-b-2 border-[#2F3B52]/40 pb-1 font-poppins">CERTIFICATIONS</h4>
-                        <ul className="text-[10px] text-slate-700 font-bold space-y-1.5 list-disc pl-3 leading-relaxed">
+                        <h4 className="text-[11px] font-black text-[#2F3B52] uppercase tracking-[0.2em] border-b border-[#2F3B52] pb-1 font-poppins">CERTIFICATIONS</h4>
+                        <ul className="text-[10px] text-[#2F3B52] font-bold space-y-1.5 list-disc pl-3 leading-relaxed">
                           {resumeData.certifications?.map((cert, i) => (
                             <li key={i}>{cert}</li>
                           ))}
@@ -1141,34 +1163,34 @@ const AIResumeBuilder = () => {
                       {/* REFERENCES */}
                       {resumeData.references && resumeData.references[0] && (
                         <div className="space-y-3">
-                          <h4 className="text-[11px] font-black text-[#2F3B52] uppercase tracking-widest border-b-2 border-[#2F3B52]/40 pb-1 font-poppins">REFERENCES</h4>
-                          <div className="text-[10px] text-slate-700 leading-relaxed font-bold">
-                            <p className="text-[#2F3B52]">{resumeData.references[0].name}</p>
-                            <p className="text-slate-500 font-medium">{resumeData.references[0].designation}</p>
-                            <p className="text-slate-500 font-medium">{resumeData.references[0].company}</p>
-                            <p className="mt-1">Phone: {resumeData.references[0].phone}</p>
-                            <p>Email: {resumeData.references[0].email}</p>
+                          <h4 className="text-[11px] font-black text-[#2F3B52] uppercase tracking-[0.2em] border-b border-[#2F3B52] pb-1 font-poppins">REFERENCE</h4>
+                          <div className="text-[10px] text-slate-700 leading-relaxed font-bold space-y-1">
+                            <p className="text-[#2F3B52] uppercase font-bold">{resumeData.references[0].name}</p>
+                            <p className="text-slate-500 font-medium">{resumeData.references[0].designation} — {resumeData.references[0].company}</p>
+                            <p className="mt-1"><span className="text-[#2F3B52] font-medium">Phone:</span> {resumeData.references[0].phone}</p>
+                            <p><span className="text-[#2F3B52] font-medium">Email :</span> {resumeData.references[0].email}</p>
                           </div>
                         </div>
                       )}
                     </div>
 
                     {/* Right Main Timeline Content: White Background */}
-                    <div className="flex-1 p-6 relative bg-white text-[#2F3B52] font-opensans">
+                    <div className="flex-1 p-8 relative bg-white text-[#2F3B52] font-opensans">
                       {/* Continuous Timeline vertical line */}
-                      <div className="absolute left-6 top-10 bottom-10 w-[2px] bg-[#2F3B52]/20 no-print"></div>
+                      <div className="absolute left-[30px] top-10 bottom-10 w-[2px] bg-[#2F3B52]/20 no-print"></div>
 
                       {/* PROFILE */}
-                      <div className="relative pl-10 mb-8">
+                      <div className="relative pl-16 mb-8">
                         {/* Circular Icon node centered on timeline */}
-                        <div className="absolute left-[8px] top-0.5 w-8 h-8 rounded-full bg-[#2F3B52] text-white flex items-center justify-center border-4 border-white shadow-sm no-print">
+                        <div className="absolute left-[14px] top-[-4px] w-8 h-8 rounded-full bg-[#2F3B52] text-white flex items-center justify-center border-4 border-white shadow-sm no-print">
                           <Users size={14} />
                         </div>
                         
-                        <div className="border-b border-[#2F3B52]/20 pb-2 mb-3">
-                          <h4 className="text-sm font-poppins font-black uppercase tracking-wider text-[#2F3B52]">
+                        <div className="flex items-center gap-4 mb-4">
+                          <h4 className="text-sm font-poppins font-black uppercase tracking-[0.15em] text-[#2F3B52] shrink-0">
                             PROFILE
                           </h4>
+                          <div className="flex-1 h-[1.5px] bg-[#2F3B52]/80"></div>
                         </div>
                         
                         <p className="text-xs text-slate-650 font-medium leading-relaxed">
@@ -1177,23 +1199,24 @@ const AIResumeBuilder = () => {
                       </div>
 
                       {/* WORK EXPERIENCE */}
-                      <div className="relative pl-10 mb-8">
+                      <div className="relative pl-16 mb-8">
                         {/* Circular Icon node centered on timeline */}
-                        <div className="absolute left-[8px] top-0.5 w-8 h-8 rounded-full bg-[#2F3B52] text-white flex items-center justify-center border-4 border-white shadow-sm no-print">
+                        <div className="absolute left-[14px] top-[-4px] w-8 h-8 rounded-full bg-[#2F3B52] text-white flex items-center justify-center border-4 border-white shadow-sm no-print">
                           <Briefcase size={14} />
                         </div>
                         
-                        <div className="border-b border-[#2F3B52]/20 pb-2 mb-4">
-                          <h4 className="text-sm font-poppins font-black uppercase tracking-wider text-[#2F3B52]">
+                        <div className="flex items-center gap-4 mb-4">
+                          <h4 className="text-sm font-poppins font-black uppercase tracking-[0.15em] text-[#2F3B52] shrink-0">
                             WORK EXPERIENCE
                           </h4>
+                          <div className="flex-1 h-[1.5px] bg-[#2F3B52]/80"></div>
                         </div>
                         
                         <div className="space-y-6">
                           {resumeData.experience?.map((exp, i) => (
                             <div key={i} className="relative pl-6">
                               {/* Smaller timeline node */}
-                              <div className="absolute -left-[22px] top-1.5 w-3 h-3 rounded-full bg-[#2F3B52] border-2 border-white shadow-sm no-print"></div>
+                              <div className="absolute left-[-40px] top-1.5 w-3 h-3 rounded-full bg-white border-2 border-[#2F3B52] shadow-sm no-print"></div>
                               
                               <div className="flex justify-between items-start text-xs mb-1">
                                 <div>
@@ -1213,23 +1236,24 @@ const AIResumeBuilder = () => {
                       </div>
 
                       {/* PROJECTS */}
-                      <div className="relative pl-10 mb-8">
+                      <div className="relative pl-16 mb-8">
                         {/* Circular Icon node centered on timeline */}
-                        <div className="absolute left-[8px] top-0.5 w-8 h-8 rounded-full bg-[#2F3B52] text-white flex items-center justify-center border-4 border-white shadow-sm no-print">
-                          <Briefcase size={14} />
+                        <div className="absolute left-[14px] top-[-4px] w-8 h-8 rounded-full bg-[#2F3B52] text-white flex items-center justify-center border-4 border-white shadow-sm no-print">
+                          <BrainCircuit size={14} />
                         </div>
                         
-                        <div className="border-b border-[#2F3B52]/20 pb-2 mb-4">
-                          <h4 className="text-sm font-poppins font-black uppercase tracking-wider text-[#2F3B52]">
+                        <div className="flex items-center gap-4 mb-4">
+                          <h4 className="text-sm font-poppins font-black uppercase tracking-[0.15em] text-[#2F3B52] shrink-0">
                             PROJECTS
                           </h4>
+                          <div className="flex-1 h-[1.5px] bg-[#2F3B52]/80"></div>
                         </div>
                         
                         <div className="space-y-6">
                           {resumeData.projects?.map((proj, i) => (
                             <div key={i} className="relative pl-6">
                               {/* Smaller timeline node */}
-                              <div className="absolute -left-[22px] top-1.5 w-3 h-3 rounded-full bg-[#2F3B52] border-2 border-white shadow-sm no-print"></div>
+                              <div className="absolute left-[-40px] top-1.5 w-3 h-3 rounded-full bg-white border-2 border-[#2F3B52] shadow-sm no-print"></div>
                               
                               <div className="space-y-1">
                                 <h5 className="font-poppins font-bold text-[#2F3B52] text-xs uppercase leading-tight">{proj.name}</h5>
@@ -1251,23 +1275,24 @@ const AIResumeBuilder = () => {
                       </div>
 
                       {/* EDUCATION */}
-                      <div className="relative pl-10">
+                      <div className="relative pl-16">
                         {/* Circular Icon node centered on timeline */}
-                        <div className="absolute left-[8px] top-0.5 w-8 h-8 rounded-full bg-[#2F3B52] text-white flex items-center justify-center border-4 border-white shadow-sm no-print">
+                        <div className="absolute left-[14px] top-[-4px] w-8 h-8 rounded-full bg-[#2F3B52] text-white flex items-center justify-center border-4 border-white shadow-sm no-print">
                           <Award size={14} />
                         </div>
                         
-                        <div className="border-b border-[#2F3B52]/20 pb-2 mb-4">
-                          <h4 className="text-sm font-poppins font-black uppercase tracking-wider text-[#2F3B52]">
+                        <div className="flex items-center gap-4 mb-4">
+                          <h4 className="text-sm font-poppins font-black uppercase tracking-[0.15em] text-[#2F3B52] shrink-0">
                             EDUCATION
                           </h4>
+                          <div className="flex-1 h-[1.5px] bg-[#2F3B52]/80"></div>
                         </div>
                         
                         <div className="space-y-6">
                           {resumeData.education?.map((edu, i) => (
                             <div key={i} className="relative pl-6">
                               {/* Smaller timeline node */}
-                              <div className="absolute -left-[22px] top-1.5 w-3 h-3 rounded-full bg-[#2F3B52] border-2 border-white shadow-sm no-print"></div>
+                              <div className="absolute left-[-40px] top-1.5 w-3 h-3 rounded-full bg-white border-2 border-[#2F3B52] shadow-sm no-print"></div>
                               
                               <div className="flex justify-between items-start text-[11px] font-bold text-slate-700">
                                 <div>
