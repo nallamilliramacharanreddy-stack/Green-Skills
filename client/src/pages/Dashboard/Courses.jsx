@@ -12,7 +12,9 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
-import { API_URL } from '../../utils/api';
+import { API_URL, API_BASE_URL } from '../../utils/api';
+import ReactPlayer from 'react-player/youtube';
+
 
 const getYoutubeEmbedUrl = (url) => {
   if (!url) return '';
@@ -51,6 +53,11 @@ const Courses = () => {
 
   const playerRef = React.useRef(null);
   const [maxPlayed, setMaxPlayed] = useState(0);
+  const [videoSourceIndex, setVideoSourceIndex] = useState(0); // 0: Primary API stream, 1: Local backend fallback, 2: YouTube fallback
+
+  useEffect(() => {
+    setVideoSourceIndex(0);
+  }, [selectedCourse, activeLessonIndex]);
 
   // Notes state
   const [notes, setNotes] = useState(() => {
@@ -432,25 +439,61 @@ const Courses = () => {
                         const lesson = selectedCourse.lessons[activeLessonIndex];
                         let internalUrl = lesson.internalVideoUrl || lesson.directVideoUrl;
 
-                        // If no internal URL exists but we have a YouTube link, build a proxy stream URL
-                        // This routes through our server to serve the video natively via HTML5 <video>
-                        if (!internalUrl && lesson.youtubeLink) {
-                          let ytVideoId = '';
+                        let ytVideoId = '';
+                        if (lesson.youtubeLink) {
                           const watchMatch = lesson.youtubeLink.match(/[?&]v=([^&#]+)/);
                           const shortMatch = lesson.youtubeLink.match(/youtu\.be\/([^?&#]+)/);
                           const embedMatch = lesson.youtubeLink.match(/youtube\.com\/embed\/([^?&#]+)/);
                           if (watchMatch) ytVideoId = watchMatch[1];
                           else if (shortMatch) ytVideoId = shortMatch[1];
                           else if (embedMatch) ytVideoId = embedMatch[1];
-
-                          if (ytVideoId) {
-                            // Use the server's live-stream proxy to pipe YouTube as a native MP4
-                            internalUrl = `${API_URL}/videos/stream-live/${ytVideoId}`;
-                          }
                         }
 
-                        // 2. Render the native HTML5 Player for ACTUAL internal video files
-                        if (internalUrl) {
+                        // Determine the play mode and URL dynamically based on the source index
+                        let playMode = 'native';
+                        let sourceUrl = '';
+
+                        if (videoSourceIndex === 0) {
+                          if (internalUrl) {
+                            sourceUrl = internalUrl;
+                          } else if (ytVideoId) {
+                            sourceUrl = `${API_URL}/videos/stream/${ytVideoId}`;
+                          } else {
+                            playMode = 'youtube';
+                          }
+                        } else if (videoSourceIndex === 1) {
+                          if (ytVideoId) {
+                            sourceUrl = `http://localhost:5001/api/videos/stream/${ytVideoId}`;
+                          } else {
+                            playMode = 'youtube';
+                          }
+                        } else {
+                          playMode = 'youtube';
+                        }
+
+                        // Render YouTube wrapper fallback if native player fails or is unavailable
+                        if (playMode === 'youtube' && lesson.youtubeLink) {
+                          return (
+                            <div className="w-full h-full pointer-events-auto relative bg-black flex items-center justify-center overflow-hidden group">
+                              <ReactPlayer
+                                className="react-player"
+                                url={lesson.youtubeLink}
+                                width="100%"
+                                height="100%"
+                                controls={true}
+                                playing={true}
+                                config={{
+                                  youtube: {
+                                    playerVars: { showinfo: 0, modestbranding: 1, rel: 0 }
+                                  }
+                                }}
+                              />
+                            </div>
+                          );
+                        }
+
+                        // Render the native HTML5 Video Player
+                        if (playMode === 'native' && sourceUrl) {
                           const hasTranslations = lesson.audioTracks && lesson.audioTracks.length > 0;
 
                           return (
@@ -465,7 +508,16 @@ const Courses = () => {
                                 autoPlay
                                 muted // AutoPlay requires muted initially on many browsers
                                 crossOrigin="anonymous"
-                                src={internalUrl}
+                                src={sourceUrl}
+                                onError={() => {
+                                  console.log(`Failed to load native stream URL: ${sourceUrl} (index: ${videoSourceIndex})`);
+                                  // Fallback progression
+                                  if (videoSourceIndex === 0 && !API_URL.includes('localhost') && !API_URL.includes('127.0.0.1')) {
+                                    setVideoSourceIndex(1); // Try local backend proxy
+                                  } else {
+                                    setVideoSourceIndex(2); // Fallback to YouTube player
+                                  }
+                                }}
                                 onPlay={(e) => {
                                   // Sync alternative audio track if selected
                                   const audioEl = document.getElementById(`audio-${lesson._id}`);
