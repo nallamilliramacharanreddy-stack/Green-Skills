@@ -772,9 +772,9 @@ const Quiz = () => {
         status: (finalScore / activeQuiz.quiz.length) >= 0.5 ? 'Pass' : 'Fail',
         violationTimeline,
         answers: answersList,
-        videoRecordingUrl: videoBase64,
+        videoRecordingUrl: videoBase64.length < 10000000 ? videoBase64 : '', // Prevent 16MB Mongo limit crash
         autoSubmitReason: forced ? (forcedReason || 'Auto-submitted due to violations') : '',
-        screenshots,
+        screenshots: screenshots.slice(0, 10), // Limit screenshots to prevent 16MB crash
         screenActivityLog,
         audioActivityLog,
         objectDetectionLog,
