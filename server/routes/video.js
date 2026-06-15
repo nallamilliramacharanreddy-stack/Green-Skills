@@ -122,7 +122,7 @@ router.get('/stream-live/:videoId', async (req, res) => {
   const https = require('https');
 
   // 1. Instantly extract the raw underlying streaming URL (bypasses 60s download)
-  exec(`"${ytDlpPath}" -g "https://www.youtube.com/watch?v=${videoId}" --format "best[ext=mp4]" --no-check-certificates --force-ipv4`, (error, stdout, stderr) => {
+  exec(`"${ytDlpPath}" -g "https://www.youtube.com/watch?v=${videoId}" --format "best[ext=mp4]" --no-check-certificates --force-ipv4 --extractor-args "youtube:player_client=android"`, (error, stdout, stderr) => {
     if (error || !stdout) {
       console.error('yt-dlp error:', error);
       console.error('yt-dlp stderr:', stderr);
