@@ -1,0 +1,26 @@
+{
+  "name": "green-skills-platform",
+  "version": "1.0.0",
+  "description": "Empowering Rural Communities through Digital Green Skill Development and Job Matching",
+  "main": "check_db.js",
+  "scripts": {
+    "install:server": "npm install --prefix server",
+    "install:client": "npm install --prefix client",
+    "postinstall": "npm run install:server && npm run install:client",
+    "install-all": "npm install",
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "start:server": "npm start --prefix server",
+    "seed:server": "npm run seed --prefix server",
+    "check-db": "node check_db.js",
+    "seed-admin": "node seed_admin.js",
+    "purge-jobs": "node purge_jobs.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "concurrently": "^8.2.2",
+    "dotenv": "^17.4.2",
+    "mongoose": "^9.6.2"
+  }
+}

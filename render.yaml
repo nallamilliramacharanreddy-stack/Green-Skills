@@ -1,0 +1,26 @@
+# Render Web Service configuration for the backend
+# Reference: https://render.com/docs/yaml-spec
+
+services:
+  - type: web
+    name: green-skills-api
+    env: node
+    region: singapore  # Change to your preferred region
+    plan: free          # Use 'starter' or 'standard' for production
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node index.js
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5001
+      - key: MONGODB_URI
+        sync: false   # Set manually in Render dashboard (MongoDB Atlas URI)
+      - key: JWT_SECRET
+        sync: false   # Set manually in Render dashboard
+      - key: GEMINI_API_KEY
+        sync: false   # Set manually in Render dashboard
+      - key: CLIENT_URL
+        sync: false   # Set to your Vercel frontend URL
