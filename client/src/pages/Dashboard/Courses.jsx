@@ -450,9 +450,9 @@ const Courses = () => {
                           }
 
                           // HOTFIX: The original video 'L2G7qS4yYnE' for Lesson 1 was deleted from YouTube.
-                          // Redirecting it to a working educational video ID 'xKxrkht7CpY'
+                          // Redirecting it to the actual video you uploaded on localhost 'BWqjPHGM5D0'
                           if (videoId === 'L2G7qS4yYnE') {
-                            videoId = 'xKxrkht7CpY';
+                            videoId = 'BWqjPHGM5D0';
                           }
 
                           return (
