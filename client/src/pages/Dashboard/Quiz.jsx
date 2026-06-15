@@ -773,14 +773,14 @@ const Quiz = () => {
         trustScore,
         warnings,
         status: (finalScore / activeQuiz.quiz.length) >= 0.5 ? 'Pass' : 'Fail',
-        violationTimeline,
+        violationTimeline: violationTimeline.slice(0, 20),
         answers: answersList,
-        videoRecordingUrl: videoBase64.length < 10000000 ? videoBase64 : '', // Prevent 16MB Mongo limit crash
+        videoRecordingUrl: videoBase64.length < 5000000 ? videoBase64 : '', // Aggressive 5MB limit
         autoSubmitReason: forced ? (forcedReason || 'Auto-submitted due to violations') : '',
-        screenshots: screenshots.slice(0, 10), // Limit screenshots to prevent 16MB crash
-        screenActivityLog,
-        audioActivityLog,
-        objectDetectionLog,
+        screenshots: screenshots.slice(0, 3), // Only 3 screenshots
+        screenActivityLog: screenActivityLog.slice(0, 10),
+        audioActivityLog: audioActivityLog.slice(0, 10),
+        objectDetectionLog: objectDetectionLog.slice(0, 10),
         aiSuspicionScore,
         correctCount,
         wrongCount,
@@ -791,6 +791,7 @@ const Quiz = () => {
       toast.success(forced ? `Assessment Auto-Submitted: ${forcedReason}` : 'Assessment Submitted Successfully!');
     } catch (error) {
       console.error('Failed to save score', error);
+      toast.error('Failed to save assessment! Database limit exceeded.');
     }
   };
 
