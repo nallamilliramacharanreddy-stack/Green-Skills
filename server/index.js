@@ -62,7 +62,10 @@ const PORT = process.env.PORT || 5001;
 
 // --- SECURITY & PERFORMANCE MIDDLEWARE ---
 // 1. Set security HTTP headers
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginEmbedderPolicy: false
+}));
 
 // 2. Limit requests from same API (DDoS Protection)
 const limiter = rateLimit({
