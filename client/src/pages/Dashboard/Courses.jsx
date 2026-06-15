@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
+import ReactPlayer from 'react-player';
 import {
   Search, Filter, BookOpen, Clock,
   Award, Star, Play, PlayCircle,
@@ -432,33 +433,23 @@ const Courses = () => {
                         const lesson = selectedCourse.lessons[activeLessonIndex];
                         let internalUrl = lesson.internalVideoUrl || lesson.directVideoUrl;
 
-                        // IF we ONLY have a YouTube link and no offline MP4,
-                        // bypass the backend stream proxy because YouTube blocks Cloud IPs (429 Error).
-                        // Render a native iframe to avoid dependency crashes.
+                        // Render using ReactPlayer to seamlessly integrate YouTube videos without the harsh native iframe UI
                         if (!internalUrl && lesson.youtubeLink) {
-                          let videoId = '';
-                          const watchMatch = lesson.youtubeLink.match(/[?&]v=([^&#]+)/);
-                          const shortMatch = lesson.youtubeLink.match(/youtu\.be\/([^?&#]+)/);
-                          const embedMatch = lesson.youtubeLink.match(/youtube\.com\/embed\/([^?&#]+)/);
-
-                          if (watchMatch) videoId = watchMatch[1];
-                          else if (shortMatch) videoId = shortMatch[1];
-                          else if (embedMatch) videoId = embedMatch[1];
-                          else {
-                            const parts = lesson.youtubeLink.split('/');
-                            videoId = parts[parts.length - 1].split('?')[0];
-                          }
-
                           return (
                             <div className="w-full h-full pointer-events-auto relative bg-black flex items-center justify-center overflow-hidden group">
-                              <iframe
-                                className="w-full h-full aspect-video"
-                                src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`}
-                                title="YouTube video player"
-                                frameBorder="0"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowFullScreen
-                              ></iframe>
+                              <ReactPlayer
+                                className="react-player"
+                                url={lesson.youtubeLink}
+                                width="100%"
+                                height="100%"
+                                controls={true}
+                                playing={true}
+                                config={{
+                                  youtube: {
+                                    playerVars: { showinfo: 0, modestbranding: 1, rel: 0 }
+                                  }
+                                }}
+                              />
                             </div>
                           );
                         }
