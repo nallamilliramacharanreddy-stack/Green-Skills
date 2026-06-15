@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
-import ReactPlayer from 'react-player/youtube';
 import {
   Search, Filter, BookOpen, Clock,
   Award, Star, Play, PlayCircle,
@@ -433,25 +432,21 @@ const Courses = () => {
                         const lesson = selectedCourse.lessons[activeLessonIndex];
                         let internalUrl = lesson.internalVideoUrl || lesson.directVideoUrl;
 
-                        // Render using ReactPlayer to seamlessly integrate YouTube videos without the harsh native iframe UI
+                        // If no internal URL exists but we have a YouTube link, build a proxy stream URL
+                        // This routes through our server to serve the video natively via HTML5 <video>
                         if (!internalUrl && lesson.youtubeLink) {
-                          return (
-                            <div className="w-full h-full pointer-events-auto relative bg-black flex items-center justify-center overflow-hidden group">
-                              <ReactPlayer
-                                className="react-player"
-                                url={lesson.youtubeLink}
-                                width="100%"
-                                height="100%"
-                                controls={true}
-                                playing={true}
-                                config={{
-                                  youtube: {
-                                    playerVars: { showinfo: 0, modestbranding: 1, rel: 0 }
-                                  }
-                                }}
-                              />
-                            </div>
-                          );
+                          let ytVideoId = '';
+                          const watchMatch = lesson.youtubeLink.match(/[?&]v=([^&#]+)/);
+                          const shortMatch = lesson.youtubeLink.match(/youtu\.be\/([^?&#]+)/);
+                          const embedMatch = lesson.youtubeLink.match(/youtube\.com\/embed\/([^?&#]+)/);
+                          if (watchMatch) ytVideoId = watchMatch[1];
+                          else if (shortMatch) ytVideoId = shortMatch[1];
+                          else if (embedMatch) ytVideoId = embedMatch[1];
+
+                          if (ytVideoId) {
+                            // Use the server's live-stream proxy to pipe YouTube as a native MP4
+                            internalUrl = `${API_URL}/videos/stream-live/${ytVideoId}`;
+                          }
                         }
 
                         // 2. Render the native HTML5 Player for ACTUAL internal video files
@@ -580,14 +575,14 @@ const Courses = () => {
                         <button
                           onClick={() => {
                             const lesson = selectedCourse.lessons[activeLessonIndex];
-                            navigate('/dashboard/quiz', { 
-                              state: { 
+                            navigate('/dashboard/quiz', {
+                              state: {
                                 activeQuiz: {
                                   _id: selectedCourse._id,
                                   title: `Assessment: ${lesson.title}`,
                                   quiz: lesson.quiz
                                 }
-                              } 
+                              }
                             });
                           }}
                           className="px-8 py-3 bg-slate-900 text-white rounded-xl font-black uppercase text-[10px] tracking-widest hover:scale-105 transition-all shadow-lg flex items-center gap-2"
@@ -595,7 +590,7 @@ const Courses = () => {
                           <Award size={14} className="text-yellow-400" /> Take Assessment
                         </button>
                       )}
-                      
+
                       <button
                         onClick={() => handleCompleteLesson(selectedCourse._id, activeLessonIndex)}
                         className="px-8 py-3 bg-primary text-white rounded-xl font-black uppercase text-[10px] tracking-widest hover:scale-105 transition-all shadow-lg shadow-primary/20"
