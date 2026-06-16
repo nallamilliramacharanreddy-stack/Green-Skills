@@ -532,10 +532,25 @@ ${transcriptText}
           questions = parsedQuestions.map(q => {
             const opts = Array.isArray(q.options) && q.options.length === 4 ? q.options : ['Option A', 'Option B', 'Option C', 'Option D'];
             let correctAns = q.correctAnswer;
-            if (typeof correctAns === 'number' && correctAns >= 0 && correctAns < 4) {
-              correctAns = opts[correctAns];
-            } else if (typeof correctAns === 'string') {
-              correctAns = correctAns.trim();
+            if (correctAns !== undefined && correctAns !== null && correctAns !== '') {
+              if (typeof correctAns === 'number') {
+                if (correctAns >= 0 && correctAns < opts.length) {
+                  correctAns = opts[correctAns];
+                }
+              } else if (typeof correctAns === 'string') {
+                const trimmed = correctAns.trim();
+                const optIdx = opts.map(o => String(o).trim().toLowerCase()).indexOf(trimmed.toLowerCase());
+                if (optIdx >= 0) {
+                  correctAns = opts[optIdx];
+                } else {
+                  const idxNum = Number(trimmed);
+                  if (!isNaN(idxNum) && idxNum >= 0 && idxNum < opts.length) {
+                    correctAns = opts[idxNum];
+                  } else {
+                    correctAns = trimmed;
+                  }
+                }
+              }
             }
             return {
               questionText: q.questionText || q.question || 'Concept Question',
@@ -598,23 +613,61 @@ const publishQuiz = async (req, res) => {
           const lessonIndex = course.lessons.findIndex(l => l._id.toString() === quiz.lessonId.toString());
           if (lessonIndex > -1) {
             // Append formatted questions to the lesson's quiz array
-            const formattedQuestions = quiz.questions.map(q => ({
-              question: q.questionText,
-              options: q.options,
-              correctAnswer: q.options[q.correctAnswer],
-              explanation: q.explanation
-            }));
+            const formattedQuestions = quiz.questions.map(q => {
+              let correctAns = q.correctAnswer;
+              if (typeof correctAns === 'number') {
+                correctAns = q.options[correctAns];
+              } else if (typeof correctAns === 'string') {
+                const trimmed = correctAns.trim();
+                const optIdx = q.options.map(o => String(o).trim().toLowerCase()).indexOf(trimmed.toLowerCase());
+                if (optIdx >= 0) {
+                  correctAns = q.options[optIdx];
+                } else {
+                  const idxNum = Number(trimmed);
+                  if (!isNaN(idxNum) && idxNum >= 0 && idxNum < q.options.length) {
+                    correctAns = q.options[idxNum];
+                  } else {
+                    correctAns = trimmed;
+                  }
+                }
+              }
+              return {
+                question: q.questionText,
+                options: q.options,
+                correctAnswer: correctAns,
+                explanation: q.explanation
+              };
+            });
             course.lessons[lessonIndex].quiz = formattedQuestions;
             await course.save();
           }
         } else {
            // Append to course level quiz
-           const formattedQuestions = quiz.questions.map(q => ({
-            question: q.questionText,
-            options: q.options,
-            correctAnswer: q.options[q.correctAnswer],
-            explanation: q.explanation
-          }));
+           const formattedQuestions = quiz.questions.map(q => {
+            let correctAns = q.correctAnswer;
+            if (typeof correctAns === 'number') {
+              correctAns = q.options[correctAns];
+            } else if (typeof correctAns === 'string') {
+              const trimmed = correctAns.trim();
+              const optIdx = q.options.map(o => String(o).trim().toLowerCase()).indexOf(trimmed.toLowerCase());
+              if (optIdx >= 0) {
+                correctAns = q.options[optIdx];
+              } else {
+                const idxNum = Number(trimmed);
+                if (!isNaN(idxNum) && idxNum >= 0 && idxNum < q.options.length) {
+                  correctAns = q.options[idxNum];
+                } else {
+                  correctAns = trimmed;
+                }
+              }
+            }
+            return {
+              question: q.questionText,
+              options: q.options,
+              correctAnswer: correctAns,
+              explanation: q.explanation
+            };
+          });
           course.quiz = formattedQuestions;
           await course.save();
         }

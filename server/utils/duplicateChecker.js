@@ -63,11 +63,16 @@ const checkForDuplicates = async (newQuestions, currentDocId, docType) => {
   const Quiz = mongoose.model('Quiz');
   const Course = mongoose.model('Course');
   
-  // 1. Load all questions from DB (excluding current doc)
+  // 1. Load all questions from DB (excluding current doc and associated docs)
   const allDbQuestions = [];
   
   // Fetch quizzes
-  const quizzes = await Quiz.find({ _id: { $ne: currentDocId } });
+  const quizQuery = { _id: { $ne: currentDocId } };
+  if (docType === 'Course') {
+    // If we are checking duplicates for a Course, ignore quizzes that belong to this course
+    quizQuery.courseId = { $ne: currentDocId };
+  }
+  const quizzes = await Quiz.find(quizQuery);
   for (const q of quizzes) {
     if (q.questions) {
       allDbQuestions.push(...q.questions.map(item => item.questionText || item.question));
@@ -75,7 +80,19 @@ const checkForDuplicates = async (newQuestions, currentDocId, docType) => {
   }
   
   // Fetch courses
-  const courses = await Course.find({ _id: { $ne: currentDocId } });
+  let courseQuery = { _id: { $ne: currentDocId } };
+  if (docType === 'Quiz' && currentDocId) {
+    // If we are checking duplicates for a Quiz, ignore the course it belongs to
+    try {
+      const currentQuiz = await Quiz.findById(currentDocId);
+      if (currentQuiz && currentQuiz.courseId) {
+        courseQuery = { _id: { $nin: [currentDocId, currentQuiz.courseId] } };
+      }
+    } catch (err) {
+      console.error('Error finding current quiz for duplicate checking:', err);
+    }
+  }
+  const courses = await Course.find(courseQuery);
   for (const c of courses) {
     if (c.quiz) {
       allDbQuestions.push(...c.quiz.map(item => item.question || item.questionText));

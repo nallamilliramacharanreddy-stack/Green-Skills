@@ -527,10 +527,25 @@ const generateAIAssessment = async (req, res) => {
             return parsed.map(q => {
               const opts = Array.isArray(q.options) && q.options.length === 4 ? q.options : ['Option A', 'Option B', 'Option C', 'Option D'];
               let correctAns = q.correctAnswer;
-              if (typeof correctAns === 'number' && correctAns >= 0 && correctAns < 4) {
-                correctAns = opts[correctAns];
-              } else if (typeof correctAns === 'string') {
-                correctAns = correctAns.trim();
+              if (correctAns !== undefined && correctAns !== null && correctAns !== '') {
+                if (typeof correctAns === 'number') {
+                  if (correctAns >= 0 && correctAns < opts.length) {
+                    correctAns = opts[correctAns];
+                  }
+                } else if (typeof correctAns === 'string') {
+                  const trimmed = correctAns.trim();
+                  const optIdx = opts.map(o => String(o).trim().toLowerCase()).indexOf(trimmed.toLowerCase());
+                  if (optIdx >= 0) {
+                    correctAns = opts[optIdx];
+                  } else {
+                    const idxNum = Number(trimmed);
+                    if (!isNaN(idxNum) && idxNum >= 0 && idxNum < opts.length) {
+                      correctAns = opts[idxNum];
+                    } else {
+                      correctAns = trimmed;
+                    }
+                  }
+                }
               }
               return {
                 question: q.question || q.questionText || 'Concept Question',
@@ -683,10 +698,25 @@ No markdown wrappers, just raw JSON.`;
             if (newQ && (newQ.question || newQ.questionText)) {
               const opts = Array.isArray(newQ.options) && newQ.options.length === 4 ? newQ.options : ['Option A', 'Option B', 'Option C', 'Option D'];
               let correctAns = newQ.correctAnswer;
-              if (typeof correctAns === 'number' && correctAns >= 0 && correctAns < 4) {
-                correctAns = opts[correctAns];
-              } else if (typeof correctAns === 'string') {
-                correctAns = correctAns.trim();
+              if (correctAns !== undefined && correctAns !== null && correctAns !== '') {
+                if (typeof correctAns === 'number') {
+                  if (correctAns >= 0 && correctAns < opts.length) {
+                    correctAns = opts[correctAns];
+                  }
+                } else if (typeof correctAns === 'string') {
+                  const trimmed = correctAns.trim();
+                  const optIdx = opts.map(o => String(o).trim().toLowerCase()).indexOf(trimmed.toLowerCase());
+                  if (optIdx >= 0) {
+                    correctAns = opts[optIdx];
+                  } else {
+                    const idxNum = Number(trimmed);
+                    if (!isNaN(idxNum) && idxNum >= 0 && idxNum < opts.length) {
+                      correctAns = opts[idxNum];
+                    } else {
+                      correctAns = trimmed;
+                    }
+                  }
+                }
               }
               const standardized = {
                 question: newQ.question || newQ.questionText || 'Concept Question',
