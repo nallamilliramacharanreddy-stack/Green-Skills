@@ -71,6 +71,9 @@ const Quiz = () => {
   const [trustScore, setTrustScore] = useState(100);
   const [submissionTypeState, setSubmissionTypeState] = useState('Normal Submission');
   const isProctoringReady = useRef(false);
+  const consecutiveNoFaceCount = useRef(0);
+  const consecutiveMultipleFacesCount = useRef(0);
+  const consecutiveLookingAwayCount = useRef(0);
 
   // Advanced Enterprise-Grade Proctoring States
   const [violationTimeline, setViolationTimeline] = useState([]);
@@ -522,17 +525,9 @@ const Quiz = () => {
 
     // Track severity counts
     if (v.severity === 'high') {
-      setHighSeverityCount(c => {
-        const next = c + 1;
-        if (next >= 5) setTimeout(() => forceSubmit("5 High Severity Violations"), 300);
-        return next;
-      });
+      setHighSeverityCount(c => c + 1);
     } else if (v.severity === 'critical') {
-      setCriticalSeverityCount(c => {
-        const next = c + 1;
-        if (next >= 3) setTimeout(() => forceSubmit("3 Critical Violations"), 300);
-        return next;
-      });
+      setCriticalSeverityCount(c => c + 1);
     }
 
     if (violationId === 61) { // Mobile Phone Detected
@@ -565,15 +560,17 @@ const Quiz = () => {
       }, 100);
     }
 
-    setWarnings(w => {
-      const next = w + 1;
-      if (next >= 3) {
-        setTimeout(() => {
-          forceSubmit("Auto Submission Due To Violations");
-        }, 100);
-      }
-      return next;
-    });
+    if (v.severity === 'high' || v.severity === 'critical') {
+      setWarnings(w => {
+        const next = w + 1;
+        if (next >= 3) {
+          setTimeout(() => {
+            forceSubmit("Auto Submission Due To Violations");
+          }, 100);
+        }
+        return next;
+      });
+    }
 
     const logEntry = { timestamp, event: v.name, severity: v.severity };
     if (['Browser', 'System', 'Keyboard', 'Mouse', 'Developer', 'Screen Recording'].includes(v.category)) {
@@ -600,7 +597,6 @@ const Quiz = () => {
     });
 
     // Auto submit rules
-    if (violationId === 29) setTimeout(() => forceSubmit("Multiple Faces Detected"), 300);
     if (violationId === 85) setTimeout(() => forceSubmit("Developer Tools Opened"), 300);
     if (violationId === 24) setTimeout(() => forceSubmit("Screen Sharing Detected"), 300);
     if (violationId === 20) setTimeout(() => forceSubmit("Remote Desktop Detected"), 300);
@@ -838,20 +834,45 @@ const Quiz = () => {
         ).withFaceLandmarks();
 
         if (detections.length === 0) {
-          triggerViolation(27, "Face Not Visible: No face detected in webcam frame.");
+          consecutiveNoFaceCount.current += 1;
+          consecutiveMultipleFacesCount.current = 0;
+          consecutiveLookingAwayCount.current = 0;
+
+          if (consecutiveNoFaceCount.current >= 5) { // 25 seconds of continuous absence
+            triggerViolation(27, "Face Not Visible: No face detected in webcam frame for 25s.");
+            consecutiveNoFaceCount.current = 0;
+          }
         } else if (detections.length > 1) {
-          triggerViolation(29, "Multiple Faces Detected: More than one face present in camera view.");
+          consecutiveMultipleFacesCount.current += 1;
+          consecutiveNoFaceCount.current = 0;
+          consecutiveLookingAwayCount.current = 0;
+
+          if (consecutiveMultipleFacesCount.current >= 3) { // 15 seconds of continuous presence
+            triggerViolation(29, "Multiple Faces Detected: More than one face present in camera view for 15s.");
+            consecutiveMultipleFacesCount.current = 0;
+          }
         } else {
+          consecutiveNoFaceCount.current = 0;
+          consecutiveMultipleFacesCount.current = 0;
+
           const landmarks = detections[0].landmarks.positions;
           const jaw = landmarks.slice(0, 17);
           const noseTip = landmarks[30];
 
           const noseRatio = (noseTip.x - jaw[0].x) / (jaw[16].x - noseTip.x);
           
-          if (noseRatio < 0.6) {
-            triggerViolation(38, "Looking Left/Away: Gaze shifted left.");
-          } else if (noseRatio > 1.6) {
-            triggerViolation(39, "Looking Right/Away: Gaze shifted right.");
+          if (noseRatio < 0.6 || noseRatio > 1.6) {
+            consecutiveLookingAwayCount.current += 1;
+            if (consecutiveLookingAwayCount.current >= 6) { // 30 seconds of continuous gaze shift
+              const direction = noseRatio < 0.6 ? "left" : "right";
+              triggerViolation(
+                noseRatio < 0.6 ? 38 : 39,
+                `Looking Away: Continuous gaze shift to the ${direction} for 30s.`
+              );
+              consecutiveLookingAwayCount.current = 0;
+            }
+          } else {
+            consecutiveLookingAwayCount.current = 0;
           }
         }
       } catch (err) {
