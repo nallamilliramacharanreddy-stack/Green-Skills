@@ -1414,17 +1414,22 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
       const decoder = new TextDecoder('utf-8');
 
       let finalQuestions = [];
+      let buffer = '';
 
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
         
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        
+        // Save the last element (which might be an incomplete line) back to buffer
+        buffer = lines.pop();
         
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const dataStr = line.substring(6);
+          const trimmed = line.trim();
+          if (trimmed.startsWith('data: ')) {
+            const dataStr = trimmed.substring(6);
             try {
               const data = JSON.parse(dataStr);
               if (data.error) {
@@ -1440,7 +1445,7 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
                 finalQuestions = data.result;
               }
             } catch (e) {
-              console.error('Error parsing SSE data', e);
+              console.error('Error parsing SSE data', e, 'Data string was:', dataStr);
             }
           }
         }
