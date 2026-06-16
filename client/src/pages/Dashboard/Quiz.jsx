@@ -101,6 +101,9 @@ const Quiz = () => {
       preVerifyStreamRef.current = stream;
       if (preVerifyVideoRef.current) {
         preVerifyVideoRef.current.srcObject = stream;
+        preVerifyVideoRef.current.onloadedmetadata = () => {
+          preVerifyVideoRef.current.play().catch(e => console.error("Webcam play failed:", e));
+        };
       }
       setPreVerifyStep('active');
       preVerifyLoopRef.current = requestAnimationFrame(runPreVerifyTracking);
@@ -733,7 +736,12 @@ const Quiz = () => {
     navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       .then((stream) => {
         mediaStreamRef.current = stream;
-        if (videoRef.current) videoRef.current.srcObject = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.onloadedmetadata = () => {
+            videoRef.current.play().catch(e => console.error("Proctoring video play failed:", e));
+          };
+        }
         setStreamActive(true);
 
         // Start video recording

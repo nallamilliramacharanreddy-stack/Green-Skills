@@ -126,6 +126,9 @@ const Signup = () => {
       setWebcamStream(stream);
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current.play().catch(e => console.error("Webcam play failed in Signup:", e));
+        };
       }
       setStepState('position');
     } catch (err) {

@@ -54,6 +54,9 @@ const Login = () => {
       setFaceStream(stream);
       if (faceVideoRef.current) {
         faceVideoRef.current.srcObject = stream;
+        faceVideoRef.current.onloadedmetadata = () => {
+          faceVideoRef.current.play().catch(e => console.error("Webcam play failed in Login:", e));
+        };
       }
       faceVerificationStepRef.current = 'active';
       setFaceVerificationStep('active');
