@@ -101,6 +101,10 @@ const userSchema = new mongoose.Schema({
   adminOtp: { type: String },
   adminOtpExpires: { type: Date },
 
+  // -- EMPLOYER OTP --
+  employerOtp: { type: String },
+  employerOtpExpires: { type: Date },
+
   // -- RESET PASSWORD OTP --
   resetPasswordOtp: { type: String },
   resetPasswordOtpExpires: { type: Date },

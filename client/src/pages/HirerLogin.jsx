@@ -21,6 +21,9 @@ const HirerLogin = () => {
   const [forgotPasswordStage, setForgotPasswordStage] = useState(0); // 0: None, 1: Email, 2: OTP, 3: New Password
   const [resetOtp, setResetOtp] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [isOtpMode, setIsOtpMode] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [countdown, setCountdown] = useState(180);
 
   const handleForgotPasswordSubmit = async (e) => {
     e.preventDefault();
@@ -89,10 +92,50 @@ const HirerLogin = () => {
     { id: 'admin', title: 'Admin', icon: ShieldCheck, color: '#EF4444' }, // Red
   ];
 
+  React.useEffect(() => {
+    let timer;
+    if (isOtpMode && countdown > 0) {
+      timer = setInterval(() => {
+        setCountdown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [isOtpMode, countdown]);
+
+  const handleResendOtp = async () => {
+    setOtp('');
+    setCountdown(180);
+    const res = await login(email, password, 'employer');
+    if (res.success && res.requiresOtp) {
+      toast.success('A new OTP has been sent to your email.');
+    } else {
+      toast.error(res.message || 'Failed to resend OTP.');
+    }
+  };
+
+  const { verifyOtp } = useAuth();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isOtpMode) {
+      const res = await verifyOtp(email, otp);
+      if (res.success) {
+        toast.success('Hiring Nexus Connected');
+        navigate('/employer');
+      } else {
+        toast.error(res.message || 'OTP Verification Failed');
+      }
+      return;
+    }
+
     const res = await login(email, password, 'employer');
     if (res.success) {
+      if (res.requiresOtp) {
+        setIsOtpMode(true);
+        setCountdown(180);
+        toast.success(res.message || 'OTP sent to your email');
+        return;
+      }
       toast.success('Hiring Nexus Connected');
       navigate('/employer');
     } else {
@@ -205,7 +248,42 @@ const HirerLogin = () => {
                   </div>
 
                   <form onSubmit={forgotPasswordStage > 0 ? handleForgotPasswordSubmit : handleSubmit} className="space-y-8">
-                    {forgotPasswordStage > 0 ? (
+                    {isOtpMode ? (
+                      <div className="space-y-2 group/input animate-fade-in">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">Security OTP</label>
+                        <div className="relative">
+                          <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within/input:text-primary transition-colors" size={18} />
+                          <input 
+                            type="text" 
+                            autoComplete="off"
+                            className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 outline-none focus:bg-white focus:border-primary/50 transition-all font-mono text-xl tracking-[0.5em] text-center placeholder:text-slate-400 placeholder:tracking-normal" 
+                            value={otp}
+                            onChange={(e) => setOtp(e.target.value)}
+                            placeholder="Enter 6-digit OTP"
+                            required 
+                          />
+                        </div>
+                        <div className="flex flex-col items-center gap-2 mt-4">
+                          <p className="text-[10px] text-slate-500 text-center">Please check your email for the security code.</p>
+                          {countdown > 0 ? (
+                            <p className="text-[11px] font-black text-slate-900 tracking-widest">
+                              EXPIRES IN: <span className="text-primary">{Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, '0')}</span>
+                            </p>
+                          ) : (
+                            <div className="flex flex-col items-center gap-2">
+                              <p className="text-[11px] font-black text-red-500 tracking-widest animate-pulse">TIME EXPIRED</p>
+                              <button 
+                                type="button" 
+                                onClick={handleResendOtp}
+                                className="text-[10px] font-black text-primary hover:text-emerald-600 underline tracking-widest transition-colors"
+                              >
+                                RESEND OTP
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : forgotPasswordStage > 0 ? (
                       <>
                         {forgotPasswordStage === 1 && (
                           <div className="space-y-2 group/input">
@@ -337,7 +415,7 @@ const HirerLogin = () => {
                     )}
 
                     <button type="submit" className="w-full py-5 bg-slate-900 text-white rounded-full font-black text-lg hover:bg-primary transition-all flex items-center justify-center gap-4 uppercase tracking-tighter shadow-2xl shadow-slate-900/20 group">
-                      {forgotPasswordStage === 1 ? 'SEND OTP' : forgotPasswordStage === 2 ? 'VERIFY OTP' : forgotPasswordStage === 3 ? 'CONFIRM NEW PASSWORD' : 'ACCESS PORTAL'} <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                      {isOtpMode ? 'VERIFY OTP' : forgotPasswordStage === 1 ? 'SEND OTP' : forgotPasswordStage === 2 ? 'VERIFY OTP' : forgotPasswordStage === 3 ? 'CONFIRM NEW PASSWORD' : 'ACCESS PORTAL'} <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
                     </button>
                   </form>
 

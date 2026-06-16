@@ -351,7 +351,42 @@ const login = async (req, res) => {
     }
 
     if (user.role === 'employer') {
-      // Hirers can login but will see a "Pending" screen in the frontend if not approved
+      const isMatch = await user.comparePassword(password);
+      if (!isMatch) {
+        return res.status(400).json({ message: 'Invalid credentials' });
+      }
+
+      // Generate secure OTP for Employer Login
+      let otp = user.employerOtp;
+      const now = Date.now();
+      const threeMinutesInMs = 3 * 60 * 1000;
+      const isOtpRecent = user.employerOtpExpires && (new Date(user.employerOtpExpires).getTime() - now > (15 * 60 * 1000 - threeMinutesInMs));
+      
+      if (!otp || !isOtpRecent) {
+        otp = Math.floor(100000 + Math.random() * 900000).toString();
+        user.employerOtp = otp;
+        user.employerOtpExpires = new Date(now + 15 * 60 * 1000); // 15 minutes
+        await user.save();
+      }
+
+      const mailOptions = {
+        from: '"Green Skill Rural Security" <nallamilliramacharanreddy@gmail.com>',
+        to: user.email,
+        subject: 'Green Skill Rural Recruiter - Security OTP',
+        html: generatePremiumEmail(otp)
+      };
+
+      console.log(`[SECURITY] Employer Login OTP generated for ${user.email}: ${otp}`);
+      // Send email asynchronously
+      sendEmail({
+        to: user.email,
+        subject: 'Green Skill Rural Recruiter - Security OTP',
+        html: mailOptions.html
+      }).catch((err) => {
+        console.error('Error sending Employer OTP email (handled asynchronously):', err);
+      });
+
+      return res.json({ requiresOtp: true, email: user.email, message: 'Security OTP sent to your email.' });
     }
 
     const isMatch = await user.comparePassword(password);
@@ -699,19 +734,26 @@ const verifyAdminOtp = async (req, res) => {
     const { email, otp } = req.body;
     const user = await User.findOne({ email: email.toLowerCase() });
 
-    if (!user || user.role !== 'admin') {
+    if (!user || (user.role !== 'admin' && user.role !== 'employer')) {
       return res.status(400).json({ message: 'Invalid request' });
     }
 
     const cleanOtp = otp ? otp.trim() : '';
+    const activeOtp = user.role === 'admin' ? user.adminOtp : user.employerOtp;
+    const activeOtpExpires = user.role === 'admin' ? user.adminOtpExpires : user.employerOtpExpires;
 
-    if (!user.adminOtp || user.adminOtp !== cleanOtp || user.adminOtpExpires < Date.now()) {
+    if (!activeOtp || activeOtp !== cleanOtp || activeOtpExpires < Date.now()) {
       return res.status(400).json({ message: 'Invalid or expired OTP' });
     }
 
     // Clear OTP
-    user.adminOtp = undefined;
-    user.adminOtpExpires = undefined;
+    if (user.role === 'admin') {
+      user.adminOtp = undefined;
+      user.adminOtpExpires = undefined;
+    } else {
+      user.employerOtp = undefined;
+      user.employerOtpExpires = undefined;
+    }
     await user.save();
 
     const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
@@ -722,7 +764,7 @@ const verifyAdminOtp = async (req, res) => {
     res.json({
       token,
       user: userResponse,
-      message: 'Admin Authentication Successful'
+      message: 'Authentication Successful'
     });
   } catch (error) {
     console.error(error);
