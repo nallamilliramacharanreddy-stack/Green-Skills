@@ -7,7 +7,7 @@ import {
   Mail, Lock, ArrowRight, 
   Building, Cpu, Briefcase,
   Users, ShieldCheck,
-  Eye, EyeOff
+  Eye, EyeOff, Key
 } from 'lucide-react';
 import axios from 'axios';
 import { API_URL } from '../utils/api';
@@ -18,17 +18,47 @@ const HirerLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [forgotPasswordStage, setForgotPasswordStage] = useState(0); // 0: None, 1: Email, 2: OTP, 3: New Password
+  const [resetOtp, setResetOtp] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   const handleForgotPasswordSubmit = async (e) => {
     e.preventDefault();
-    try {
-      const res = await axios.post(`${API_URL}/auth/forgot-password`, { email, newPassword: password });
-      toast.success(res.data.message);
-      setIsForgotPassword(false);
-      setPassword('');
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to reset identity key');
+    if (forgotPasswordStage === 1) {
+      try {
+        const res = await axios.post(`${API_URL}/auth/forgot-password-request`, { email });
+        if (res.data.otp) {
+          toast.success(`[DEV MODE] Reset OTP: ${res.data.otp}`, { duration: 15000 });
+        } else {
+          toast.success(res.data.message);
+        }
+        setForgotPasswordStage(2);
+      } catch (error) {
+        toast.error(error.response?.data?.message || 'Failed to send OTP');
+      }
+    } else if (forgotPasswordStage === 2) {
+      try {
+        const res = await axios.post(`${API_URL}/auth/verify-reset-otp`, { email, otp: resetOtp });
+        toast.success(res.data.message);
+        setForgotPasswordStage(3);
+      } catch (error) {
+        toast.error(error.response?.data?.message || 'Invalid or expired OTP');
+      }
+    } else if (forgotPasswordStage === 3) {
+      if (password !== confirmPassword) {
+        toast.error('Passwords do not match');
+        return;
+      }
+      try {
+        const res = await axios.post(`${API_URL}/auth/reset-password`, { email, otp: resetOtp, newPassword: password });
+        toast.success(res.data.message);
+        setForgotPasswordStage(0);
+        setPassword('');
+        setConfirmPassword('');
+        setResetOtp('');
+      } catch (error) {
+        toast.error(error.response?.data?.message || 'Failed to reset password');
+      }
     }
   };
 
@@ -171,63 +201,147 @@ const HirerLogin = () => {
                 <div className="relative z-10">
                   <div className="flex items-center justify-between mb-12">
                     <div>
-                      <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic">{isForgotPassword ? 'RESET PASSWORD' : 'HIRER LOGIN'}</h2>
+                      <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic">{forgotPasswordStage > 0 ? 'RESET PASSWORD' : 'HIRER LOGIN'}</h2>
                     </div>
                     <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 group-hover:border-primary/50 transition-colors shadow-inner">
                       <Cpu className="text-primary animate-pulse" />
                     </div>
                   </div>
 
-                  <form onSubmit={isForgotPassword ? handleForgotPasswordSubmit : handleSubmit} className="space-y-8">
-                    <div className="space-y-2 group/input">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">{isForgotPassword ? 'Registered Email' : 'Company Email'}</label>
-                      <div className="relative">
-                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within/input:text-primary transition-colors" size={18} />
-                        <input 
-                          type="email" 
-                          placeholder="RECRUITER@COMPANY.CORE" 
-                          className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 outline-none focus:bg-white focus:border-primary/50 transition-all font-mono text-sm placeholder:text-slate-400 lowercase" 
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value.toLowerCase())}
-                          required 
-                        />
-                      </div>
-                    </div>
+                  <form onSubmit={forgotPasswordStage > 0 ? handleForgotPasswordSubmit : handleSubmit} className="space-y-8">
+                    {forgotPasswordStage > 0 ? (
+                      <>
+                        {forgotPasswordStage === 1 && (
+                          <div className="space-y-2 group/input">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">Registered Email</label>
+                            <div className="relative">
+                              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within/input:text-primary transition-colors" size={18} />
+                              <input 
+                                type="email" 
+                                placeholder="RECRUITER@COMPANY.CORE" 
+                                className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 outline-none focus:bg-white focus:border-primary/50 transition-all font-mono text-sm placeholder:text-slate-400 lowercase" 
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value.toLowerCase())}
+                                required 
+                              />
+                            </div>
+                          </div>
+                        )}
+                        {forgotPasswordStage === 2 && (
+                          <div className="space-y-2 group/input animate-fade-in">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">Reset OTP</label>
+                            <div className="relative">
+                              <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within/input:text-primary transition-colors" size={18} />
+                              <input 
+                                type="text" 
+                                className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 outline-none focus:bg-white focus:border-primary/50 transition-all font-mono text-xl tracking-[0.5em] text-center placeholder:text-slate-400 placeholder:tracking-normal" 
+                                value={resetOtp}
+                                onChange={(e) => setResetOtp(e.target.value)}
+                                placeholder="Enter 6-digit OTP"
+                                required 
+                              />
+                            </div>
+                            <p className="text-[10px] text-slate-500 text-center mt-4">Check your email for the reset code.</p>
+                          </div>
+                        )}
+                        {forgotPasswordStage === 3 && (
+                          <>
+                            <div className="space-y-2 group/input animate-fade-in">
+                              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">New Password</label>
+                              <div className="relative">
+                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/input:text-primary transition-colors" size={18} />
+                                <input 
+                                  type={showPassword ? "text" : "password"} 
+                                  className="w-full pl-12 pr-12 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 outline-none focus:bg-white focus:border-primary/50 transition-all font-mono text-sm placeholder:text-slate-400" 
+                                  value={password}
+                                  onChange={(e) => setPassword(e.target.value)}
+                                  placeholder="Enter New Password"
+                                  required 
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowPassword(!showPassword)}
+                                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors"
+                                >
+                                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                              </div>
+                            </div>
+                            <div className="space-y-2 group/input animate-fade-in mt-4">
+                              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">Confirm Password</label>
+                              <div className="relative">
+                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/input:text-primary transition-colors" size={18} />
+                                <input 
+                                  type={showPassword ? "text" : "password"} 
+                                  className="w-full pl-12 pr-12 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 outline-none focus:bg-white focus:border-primary/50 transition-all font-mono text-sm placeholder:text-slate-400" 
+                                  value={confirmPassword}
+                                  onChange={(e) => setConfirmPassword(e.target.value)}
+                                  placeholder="Confirm New Password"
+                                  required 
+                                />
+                              </div>
+                            </div>
+                          </>
+                        )}
+                        <div className="flex justify-between items-center text-[10px] font-black text-gray-600 uppercase tracking-widest px-1 mt-6">
+                          <button type="button" onClick={() => { setForgotPasswordStage(0); setPassword(''); setConfirmPassword(''); setResetOtp(''); }} className="hover:text-red-500 transition-colors">
+                            Cancel Reset
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="space-y-2 group/input">
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">Company Email</label>
+                          <div className="relative">
+                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within/input:text-primary transition-colors" size={18} />
+                            <input 
+                              type="email" 
+                              placeholder="RECRUITER@COMPANY.CORE" 
+                              className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 outline-none focus:bg-white focus:border-primary/50 transition-all font-mono text-sm placeholder:text-slate-400 lowercase" 
+                              value={email}
+                              onChange={(e) => setEmail(e.target.value.toLowerCase())}
+                              required 
+                            />
+                          </div>
+                        </div>
 
-                    <div className="space-y-2 group/input">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">{isForgotPassword ? 'New Password' : 'Password'}</label>
-                      <div className="relative">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/input:text-primary transition-colors" size={18} />
-                        <input 
-                          type={showPassword ? "text" : "password"} 
-                          placeholder={isForgotPassword ? "Enter New Password" : "••••••••••••"} 
-                          className="w-full pl-12 pr-12 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 outline-none focus:bg-white focus:border-primary/50 transition-all font-mono text-sm placeholder:text-slate-400" 
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          required 
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors"
-                        >
-                          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                        </button>
-                      </div>
-                    </div>
+                        <div className="space-y-2 group/input">
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">Password</label>
+                          <div className="relative">
+                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/input:text-primary transition-colors" size={18} />
+                            <input 
+                              type={showPassword ? "text" : "password"} 
+                              placeholder="••••••••••••" 
+                              className="w-full pl-12 pr-12 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 outline-none focus:bg-white focus:border-primary/50 transition-all font-mono text-sm placeholder:text-slate-400" 
+                              value={password}
+                              onChange={(e) => setPassword(e.target.value)}
+                              required 
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors"
+                            >
+                              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
+                          </div>
+                        </div>
 
-                    <div className="flex items-center justify-between text-[10px] font-black text-gray-600 uppercase tracking-widest px-1 pb-4">
-                      <label className="flex items-center gap-2 cursor-pointer hover:text-white transition-colors">
-                        <input type="checkbox" className="w-3 h-3 rounded bg-white/5 border-white/10 text-primary focus:ring-0" />
-                        Stay Connected
-                      </label>
-                      <button type="button" onClick={() => setIsForgotPassword(!isForgotPassword)} className="hover:text-primary transition-colors">
-                        {isForgotPassword ? 'Back to Login' : 'Forgot Password?'}
-                      </button>
-                    </div>
+                        <div className="flex items-center justify-between text-[10px] font-black text-gray-600 uppercase tracking-widest px-1 pb-4">
+                          <label className="flex items-center gap-2 cursor-pointer hover:text-white transition-colors">
+                            <input type="checkbox" className="w-3 h-3 rounded bg-white/5 border-white/10 text-primary focus:ring-0" />
+                            Stay Connected
+                          </label>
+                          <button type="button" onClick={() => setForgotPasswordStage(1)} className="hover:text-primary transition-colors">
+                            Forgot Password?
+                          </button>
+                        </div>
+                      </>
+                    )}
 
                     <button type="submit" className="w-full py-5 bg-slate-900 text-white rounded-full font-black text-lg hover:bg-primary transition-all flex items-center justify-center gap-4 uppercase tracking-tighter shadow-2xl shadow-slate-900/20 group">
-                      {isForgotPassword ? 'CONFIRM NEW PASSWORD' : 'ACCESS PORTAL'} <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                      {forgotPasswordStage === 1 ? 'SEND OTP' : forgotPasswordStage === 2 ? 'VERIFY OTP' : forgotPasswordStage === 3 ? 'CONFIRM NEW PASSWORD' : 'ACCESS PORTAL'} <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
                     </button>
                   </form>
 

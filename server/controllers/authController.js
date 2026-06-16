@@ -63,12 +63,15 @@ dns.setDefaultResultOrder('ipv4first');
 
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
+  port: 465,
+  secure: true,
   family: 4, // Force IPv4 to bypass Render's lack of IPv6 support
   auth: {
     user: 'nallamilliramacharanreddy@gmail.com',
     pass: 'lmvy oszf cixi rvpj'
+  },
+  tls: {
+    rejectUnauthorized: false
   }
 });
 
@@ -237,11 +240,18 @@ const login = async (req, res) => {
         return res.status(400).json({ message: 'Invalid credentials' });
       }
 
-      // Generate OTP and send email
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      user.adminOtp = otp;
-      user.adminOtpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
-      await user.save();
+      // Reuse existing valid OTP if generated recently (within last 3 minutes) to prevent invalidation on multiple clicks
+      let otp = user.adminOtp;
+      const now = Date.now();
+      const threeMinutesInMs = 3 * 60 * 1000;
+      const isOtpRecent = user.adminOtpExpires && (new Date(user.adminOtpExpires).getTime() - now > (15 * 60 * 1000 - threeMinutesInMs));
+      
+      if (!otp || !isOtpRecent) {
+        otp = Math.floor(100000 + Math.random() * 900000).toString();
+        user.adminOtp = otp;
+        user.adminOtpExpires = new Date(now + 15 * 60 * 1000); // 15 minutes
+        await user.save();
+      }
 
       const mailOptions = {
         from: '"Nexus Security" <nallamilliramacharanreddy@gmail.com>',
@@ -251,13 +261,11 @@ const login = async (req, res) => {
       };
 
       console.log(`[SECURITY] Admin Login OTP generated for ${user.email}: ${otp}`);
-      try {
-        await transporter.sendMail(mailOptions);
-        return res.json({ requiresOtp: true, email: user.email, message: 'Security OTP sent to your email.', otp });
-      } catch (err) {
-        console.error('Error sending OTP email (gracefully handled):', err);
-        return res.json({ requiresOtp: true, email: user.email, message: 'Security OTP generated (retrieve from console logs).', otp });
-      }
+      // Send email asynchronously so that login is fast and doesn't block the client response
+      transporter.sendMail(mailOptions).catch((err) => {
+        console.error('Error sending OTP email (handled asynchronously):', err);
+      });
+      return res.json({ requiresOtp: true, email: user.email, message: 'Security OTP sent to your email.', otp });
     }
 
     if (user.role === 'employer') {
@@ -514,10 +522,18 @@ const forgotPasswordRequest = async (req, res) => {
       return res.status(404).json({ message: 'Identity not found in the database.' });
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    user.resetPasswordOtp = otp;
-    user.resetPasswordOtpExpires = Date.now() + 3 * 60 * 1000; // 3 minutes
-    await user.save();
+    // Reuse existing valid reset OTP if generated recently (within last 3 minutes) to prevent race conditions on rapid clicks
+    let otp = user.resetPasswordOtp;
+    const now = Date.now();
+    const threeMinutesInMs = 3 * 60 * 1000;
+    const isOtpRecent = user.resetPasswordOtpExpires && (new Date(user.resetPasswordOtpExpires).getTime() - now > (15 * 60 * 1000 - threeMinutesInMs));
+    
+    if (!otp || !isOtpRecent) {
+      otp = Math.floor(100000 + Math.random() * 900000).toString();
+      user.resetPasswordOtp = otp;
+      user.resetPasswordOtpExpires = new Date(now + 15 * 60 * 1000); // 15 minutes
+      await user.save();
+    }
 
     const mailOptions = {
       from: '"Green Skill Rural Security" <nallamilliramacharanreddy@gmail.com>',
@@ -535,11 +551,10 @@ const forgotPasswordRequest = async (req, res) => {
     };
 
     console.log(`[SECURITY] Forgot Password OTP generated for ${user.email}: ${otp}`);
-    try {
-      await transporter.sendMail(mailOptions);
-    } catch (err) {
-      console.error('Error sending Forgot Password OTP email (gracefully handled):', err);
-    }
+    // Send email asynchronously so that forgot password request doesn't block the client response
+    transporter.sendMail(mailOptions).catch((err) => {
+      console.error('Error sending Forgot Password OTP email (handled asynchronously):', err);
+    });
     res.json({ message: 'OTP sent to your registered email address.', otp });
   } catch (error) {
     console.error(error);
@@ -552,7 +567,9 @@ const verifyForgotPasswordOtp = async (req, res) => {
     const { email, otp } = req.body;
     const user = await User.findOne({ email: email.toLowerCase() });
 
-    if (!user || user.resetPasswordOtp !== otp || user.resetPasswordOtpExpires < Date.now()) {
+    const cleanOtp = otp ? otp.trim() : '';
+
+    if (!user || user.resetPasswordOtp !== cleanOtp || user.resetPasswordOtpExpires < Date.now()) {
       return res.status(400).json({ message: 'Invalid or expired OTP' });
     }
 
@@ -568,7 +585,9 @@ const resetPasswordWithOtp = async (req, res) => {
     const { email, otp, newPassword } = req.body;
     const user = await User.findOne({ email: email.toLowerCase() });
 
-    if (!user || user.resetPasswordOtp !== otp || user.resetPasswordOtpExpires < Date.now()) {
+    const cleanOtp = otp ? otp.trim() : '';
+
+    if (!user || user.resetPasswordOtp !== cleanOtp || user.resetPasswordOtpExpires < Date.now()) {
       return res.status(400).json({ message: 'Invalid or expired OTP' });
     }
 
@@ -592,7 +611,7 @@ const resetPasswordWithOtp = async (req, res) => {
 const verifyAdminOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: email.toLowerCase() });
 
     if (!user || user.role !== 'admin') {
       return res.status(400).json({ message: 'Invalid request' });
