@@ -37,9 +37,38 @@ const courseSchema = new mongoose.Schema({
       url: { type: String }
     }],
     quiz: [{
-      question: String,
+      question: { type: String, required: true },
       options: [String],
-      correctAnswer: String,
+      questionType: { type: String, enum: ['single', 'multiple', 'boolean', 'text'], default: 'single' },
+      correctAnswer: {
+        type: mongoose.Schema.Types.Mixed,
+        required: true,
+        validate: {
+          validator: function(v) {
+            if (v === undefined || v === null || v === '') return false;
+            const type = this.questionType || 'single';
+            if (type === 'single' || type === 'boolean') {
+              return this.options && this.options.includes(v);
+            }
+            if (type === 'multiple') {
+              if (Array.isArray(v)) {
+                return v.length > 0 && v.every(opt => this.options.includes(opt));
+              }
+              if (typeof v === 'string') {
+                return this.options.includes(v);
+              }
+              return false;
+            }
+            if (type === 'text') {
+              if (typeof v === 'string') return v.trim().length > 0;
+              if (Array.isArray(v)) return v.length > 0 && v.every(str => typeof str === 'string' && str.trim().length > 0);
+              return false;
+            }
+            return true;
+          },
+          message: 'A valid correctAnswer is required'
+        }
+      },
       explanation: String
     }]
   }],
@@ -49,14 +78,63 @@ const courseSchema = new mongoose.Schema({
     type: { type: String, default: 'Assignment' }
   }],
   quiz: [{
-    question: String,
+    question: { type: String, required: true },
     options: [String],
-    correctAnswer: String,
+    questionType: { type: String, enum: ['single', 'multiple', 'boolean', 'text'], default: 'single' },
+    correctAnswer: {
+      type: mongoose.Schema.Types.Mixed,
+      required: true,
+      validate: {
+        validator: function(v) {
+          if (v === undefined || v === null || v === '') return false;
+          const type = this.questionType || 'single';
+          if (type === 'single' || type === 'boolean') {
+            return this.options && this.options.includes(v);
+          }
+          if (type === 'multiple') {
+            if (Array.isArray(v)) {
+              return v.length > 0 && v.every(opt => this.options.includes(opt));
+            }
+            if (typeof v === 'string') {
+              return this.options.includes(v);
+            }
+            return false;
+          }
+          if (type === 'text') {
+            if (typeof v === 'string') return v.trim().length > 0;
+            if (Array.isArray(v)) return v.length > 0 && v.every(str => typeof str === 'string' && str.trim().length > 0);
+            return false;
+          }
+          return true;
+        },
+        message: 'A valid correctAnswer is required'
+      }
+    },
     explanation: String,
     difficulty: String
   }],
   enrolledStudents: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   createdAt: { type: Date, default: Date.now }
+});
+
+courseSchema.pre('save', async function() {
+  if (this.isModified('quiz') || this.isModified('lessons')) {
+    const { checkForDuplicates } = require('../utils/duplicateChecker');
+    const allQuestions = [];
+    if (this.quiz) {
+      allQuestions.push(...this.quiz);
+    }
+    if (this.lessons) {
+      this.lessons.forEach(l => {
+        if (l.quiz) {
+          allQuestions.push(...l.quiz);
+        }
+      });
+    }
+    if (allQuestions.length > 0) {
+      await checkForDuplicates(allQuestions, this._id, 'Course');
+    }
+  }
 });
 
 module.exports = mongoose.model('Course', courseSchema);

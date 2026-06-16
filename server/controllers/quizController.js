@@ -1,11 +1,108 @@
 const Quiz = require('../models/Quiz');
 const Result = require('../models/Result');
 const User = require('../models/User');
+const Course = require('../models/Course');
+const Attempt = require('../models/Attempt');
+const jwt = require('jsonwebtoken');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_key_123';
+
+const getUserFromRequest = (req) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      return jwt.verify(token, JWT_SECRET);
+    }
+    if (req.cookies && req.cookies.token) {
+      return jwt.verify(req.cookies.token, JWT_SECRET);
+    }
+  } catch (err) {
+    // Ignore invalid/expired tokens
+  }
+  return null;
+};
+
+const parseAnswersToOptions = (value, options) => {
+  if (value === undefined || value === null || value === '') {
+    return [];
+  }
+  
+  const normalizedOptions = (options || []).map(opt => String(opt).trim().toLowerCase());
+  
+  let rawItems = [];
+  if (Array.isArray(value)) {
+    rawItems = value;
+  } else if (typeof value === 'string') {
+    const trimmedVal = value.trim();
+    if (trimmedVal.startsWith('[') && trimmedVal.endsWith(']')) {
+      try {
+        rawItems = JSON.parse(trimmedVal);
+        if (!Array.isArray(rawItems)) {
+          rawItems = [rawItems];
+        }
+      } catch (e) {
+        rawItems = trimmedVal.split(',').map(s => s.trim());
+      }
+    } else {
+      rawItems = trimmedVal.split(',').map(s => s.trim());
+    }
+  } else {
+    rawItems = [value];
+  }
+  
+  const result = [];
+  for (const item of rawItems) {
+    if (item === undefined || item === null || String(item).trim() === '') {
+      continue;
+    }
+    const strItem = String(item).trim();
+    
+    // Check if it matches an option exactly (case-insensitive)
+    const lowerItem = strItem.toLowerCase();
+    const optIdx = normalizedOptions.indexOf(lowerItem);
+    if (optIdx >= 0) {
+      result.push(lowerItem);
+      continue;
+    }
+    
+    // Check if it is a valid index
+    const idx = Number(strItem);
+    if (!isNaN(idx) && idx >= 0 && idx < normalizedOptions.length) {
+      result.push(normalizedOptions[idx]);
+      continue;
+    }
+    
+    // Otherwise, just treat it as a string answer
+    result.push(lowerItem);
+  }
+  
+  return result;
+};
+
+const stripQuizAnswers = (quiz, isAdminOrEmployer) => {
+  if (isAdminOrEmployer) return quiz;
+  
+  const doc = quiz.toObject ? quiz.toObject() : JSON.parse(JSON.stringify(quiz));
+  
+  if (doc.questions && Array.isArray(doc.questions)) {
+    doc.questions = doc.questions.map(q => {
+      const { correctAnswer, explanation, ...rest } = q;
+      return rest;
+    });
+  }
+  
+  return doc;
+};
 
 const getAllQuizzes = async (req, res) => {
   try {
     const quizzes = await Quiz.find();
-    res.json(quizzes);
+    const user = getUserFromRequest(req);
+    const isAdminOrEmployer = user && ['admin', 'employer', 'admin_course', 'admin_hiring', 'admin_exam', 'super-admin'].includes(user.role);
+    
+    const sanitizedQuizzes = quizzes.map(q => stripQuizAnswers(q, isAdminOrEmployer));
+    res.json(sanitizedQuizzes);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching quizzes' });
   }
@@ -26,7 +123,7 @@ const createQuiz = async (req, res) => {
     await quiz.save();
     res.status(201).json(quiz);
   } catch (error) {
-    res.status(500).json({ message: 'Error creating quiz' });
+    res.status(400).json({ message: error.message || 'Error creating quiz' });
   }
 };
 
@@ -44,38 +141,208 @@ const submitQuiz = async (req, res) => {
     const { 
       userId, 
       courseId, 
-      score, 
-      totalQuestions, 
+      lessonIndex, // if lesson-level quiz
+      quizId,      // if dedicated quiz
+      attemptId,   // if attempt-based quiz
       duration, 
       trustScore, 
       warnings, 
-      status, 
-      violationTimeline, 
-      answers, 
+      violationTimeline = [], 
+      answers = [], 
       videoRecordingUrl,
       autoSubmitReason,
-      screenshots,
-      screenActivityLog,
-      audioActivityLog,
-      objectDetectionLog,
+      screenshots = [],
+      screenActivityLog = [],
+      audioActivityLog = [],
+      objectDetectionLog = [],
       aiSuspicionScore,
-      correctCount,
-      wrongCount,
-      notAttemptedCount,
       submissionType
     } = req.body;
 
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+
+    // 1. Retrieve the questions from Attempt or DB
+    let dbQuestions = [];
+    let courseDoc = null;
+    let quizDoc = null;
+    let attemptDoc = null;
+
+    if (attemptId) {
+      attemptDoc = await Attempt.findById(attemptId);
+      if (!attemptDoc) {
+        return res.status(404).json({ message: 'Attempt not found' });
+      }
+      dbQuestions = attemptDoc.questions || [];
+      if (attemptDoc.quiz) {
+        quizDoc = await Quiz.findById(attemptDoc.quiz);
+      } else if (attemptDoc.course) {
+        courseDoc = await Course.findById(attemptDoc.course);
+      }
+    } else if (quizId) {
+      quizDoc = await Quiz.findById(quizId);
+      if (!quizDoc) {
+        return res.status(404).json({ message: 'Quiz not found' });
+      }
+      dbQuestions = quizDoc.questions || [];
+    } else if (courseId) {
+      courseDoc = await Course.findById(courseId);
+      if (!courseDoc) {
+        return res.status(404).json({ message: 'Course not found' });
+      }
+      if (lessonIndex !== undefined && lessonIndex !== null && lessonIndex !== '') {
+        const lIndex = parseInt(lessonIndex);
+        if (courseDoc.lessons && courseDoc.lessons[lIndex]) {
+          dbQuestions = courseDoc.lessons[lIndex].quiz || [];
+        } else {
+          return res.status(400).json({ message: 'Invalid lesson index for course' });
+        }
+      } else {
+        dbQuestions = courseDoc.quiz || [];
+      }
+    } else {
+      return res.status(400).json({ message: 'Either attemptId, courseId, or quizId must be provided' });
+    }
+
+    if (!dbQuestions || dbQuestions.length === 0) {
+      return res.status(400).json({ message: 'No questions found for this quiz/assessment' });
+    }
+
+    // 2. Database validation check: every question must have a valid correctAnswer field
+    for (let i = 0; i < dbQuestions.length; i++) {
+      const q = dbQuestions[i];
+      if (q.correctAnswer === undefined || q.correctAnswer === null || q.correctAnswer === '') {
+        return res.status(400).json({ message: `Predefined correct answer missing in the database for question ${i + 1}. Evaluation aborted.` });
+      }
+    }
+
+    // 3. Evaluation logic
+    let correctCount = 0;
+    let wrongCount = 0;
+    let notAttemptedCount = 0;
+    const gradedAnswers = [];
+
+    for (let i = 0; i < dbQuestions.length; i++) {
+      const q = dbQuestions[i];
+      const type = q.questionType || 'single';
+      
+      // Find candidate's answer
+      const userAns = answers.find(a => a.questionIndex === i);
+      const candidateAnswer = userAns ? userAns.candidateAnswer : undefined;
+      
+      const qText = q.question || q.questionText || '';
+      const qExplanation = q.explanation || '';
+      const qOptions = q.options || [];
+
+      // Robust parsing
+      const parsedCorrect = parseAnswersToOptions(q.correctAnswer, qOptions);
+      const parsedUser = parseAnswersToOptions(candidateAnswer, qOptions);
+
+      // Display cased correct options
+      let correctOptionText = '';
+      if (qOptions && qOptions.length > 0) {
+        const correctOptionsCased = parsedCorrect.map(lowerOpt => {
+          const idx = qOptions.map(o => String(o).trim().toLowerCase()).indexOf(lowerOpt);
+          return idx >= 0 ? qOptions[idx] : lowerOpt;
+        });
+        correctOptionText = correctOptionsCased.join(', ');
+      } else {
+        correctOptionText = parsedCorrect.join(', ');
+      }
+
+      // Display cased user options
+      let userOptionText = '';
+      if (qOptions && qOptions.length > 0) {
+        const userOptionsCased = parsedUser.map(lowerOpt => {
+          const idx = qOptions.map(o => String(o).trim().toLowerCase()).indexOf(lowerOpt);
+          return idx >= 0 ? qOptions[idx] : lowerOpt;
+        });
+        userOptionText = userOptionsCased.join(', ');
+      } else {
+        userOptionText = parsedUser.join(', ');
+      }
+
+      const isAttempted = parsedUser.length > 0;
+
+      if (!isAttempted) {
+        notAttemptedCount++;
+        gradedAnswers.push({
+          questionIndex: i,
+          questionText: qText,
+          options: qOptions,
+          candidateAnswer: '',
+          correctAnswer: correctOptionText,
+          explanation: qExplanation,
+          isCorrect: false,
+          timeTaken: userAns ? userAns.timeTaken : 10,
+          violationCountDuringQuestion: userAns ? userAns.violationCountDuringQuestion : 0
+        });
+
+        console.log(`Question ID: ${q._id || q.dbQuestionId || i}
+User Answer: (UNANSWERED)
+Correct Answer: ${JSON.stringify(correctOptionText)}
+Match Result: FAIL (INCORRECT)
+`);
+        continue;
+      }
+
+      let isCorrect = false;
+
+      if (type === 'single' || type === 'boolean') {
+        isCorrect = (parsedCorrect.length > 0 && parsedUser[0] === parsedCorrect[0]);
+      } else if (type === 'multiple') {
+        if (parsedCorrect.length === parsedUser.length) {
+          const sortedCorrect = [...parsedCorrect].sort();
+          const sortedUser = [...parsedUser].sort();
+          isCorrect = sortedCorrect.every((val, index) => val === sortedUser[index]);
+        }
+      } else if (type === 'text') {
+        isCorrect = parsedCorrect.includes(parsedUser[0]);
+      }
+
+      if (isCorrect) {
+        correctCount++;
+      } else {
+        wrongCount++;
+      }
+
+      console.log(`Question ID: ${q._id || q.dbQuestionId || i}
+User Answer: ${JSON.stringify(userOptionText)}
+Correct Answer: ${JSON.stringify(correctOptionText)}
+Match Result: ${isCorrect ? 'SUCCESS (CORRECT)' : 'FAIL (INCORRECT)'}
+`);
+
+      gradedAnswers.push({
+        questionIndex: i,
+        questionText: qText,
+        options: qOptions,
+        candidateAnswer: userOptionText,
+        correctAnswer: correctOptionText,
+        explanation: qExplanation,
+        isCorrect: isCorrect,
+        timeTaken: userAns ? userAns.timeTaken : 10,
+        violationCountDuringQuestion: userAns ? userAns.violationCountDuringQuestion : 0
+      });
+    }
+
+    const totalQuestions = dbQuestions.length;
+    const finalScore = correctCount;
+
+    // 4. Save results to Database
+    const finalStatus = (finalScore / totalQuestions) >= 0.5 ? 'Pass' : 'Fail';
+
     const result = new Result({
       user: userId,
-      course: courseId,
-      score,
+      course: courseId || (attemptDoc ? attemptDoc.course : null),
+      score: finalScore,
       totalQuestions,
       duration,
       trustScore,
       warnings,
-      status,
+      status: finalStatus,
       violationTimeline,
-      answers,
+      answers: gradedAnswers,
       videoRecordingUrl,
       autoSubmitReason,
       screenshots,
@@ -94,16 +361,28 @@ const submitQuiz = async (req, res) => {
     await User.findByIdAndUpdate(userId, {
       $push: {
         quizScores: {
-          courseId,
-          score,
+          courseId: courseId || (attemptDoc ? attemptDoc.course : null),
+          score: finalScore,
           totalQuestions
         }
       }
     });
 
+    // Mark attempt as completed
+    if (attemptDoc) {
+      attemptDoc.isCompleted = true;
+      attemptDoc.userAnswers = answers.reduce((acc, a) => {
+        acc[a.questionIndex] = a.candidateAnswer;
+        return acc;
+      }, {});
+      attemptDoc.markModified('userAnswers');
+      await attemptDoc.save();
+    }
+
     res.status(201).json(result);
   } catch (error) {
-    res.status(500).json({ message: 'Error submitting quiz' });
+    console.error('Submit Quiz Error:', error);
+    res.status(500).json({ message: 'Error submitting quiz: ' + error.message });
   }
 };
 
@@ -336,8 +615,193 @@ const publishQuiz = async (req, res) => {
     res.json({ message: 'Quiz published successfully', quiz });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Error publishing quiz' });
+    res.status(400).json({ message: error.message || 'Error publishing quiz' });
   }
 };
 
-module.exports = { getAllQuizzes, submitQuiz, createQuiz, getQuizzesByEmployer, generateFromYoutube, publishQuiz, getAllResults };
+const startQuizAttempt = async (req, res) => {
+  try {
+    const { userId, courseId, quizId, lessonIndex } = req.body;
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+
+    const query = {
+      user: userId,
+      isCompleted: false
+    };
+    if (courseId) query.course = courseId;
+    if (quizId) query.quiz = quizId;
+    if (lessonIndex !== undefined && lessonIndex !== null && lessonIndex !== '') {
+      query.lessonIndex = parseInt(lessonIndex);
+    }
+
+    // Check for existing uncompleted attempt
+    let attempt = await Attempt.findOne(query);
+
+    const quizDurationMinutes = 30; // default duration is 30 mins
+    const limitMs = quizDurationMinutes * 60 * 1000;
+
+    if (attempt) {
+      const elapsed = Date.now() - new Date(attempt.startedAt).getTime();
+      if (elapsed > limitMs) {
+        attempt.isCompleted = true;
+        await attempt.save();
+        attempt = null; // force creation of a new one
+      }
+    }
+
+    if (attempt) {
+      // Return existing attempt with stripped correct answers
+      const attemptObj = attempt.toObject();
+      attemptObj.questions = attemptObj.questions.map(q => {
+        const { correctAnswer, explanation, ...rest } = q;
+        return rest;
+      });
+      const timeLeft = Math.max(0, Math.floor((limitMs - (Date.now() - new Date(attempt.startedAt).getTime())) / 1000));
+      return res.json({
+        attemptId: attempt._id,
+        questions: attemptObj.questions,
+        userAnswers: attempt.userAnswers || {},
+        timeLeft
+      });
+    }
+
+    // Create a new attempt
+    let sourceQuestions = [];
+    if (quizId) {
+      const quizDoc = await Quiz.findById(quizId);
+      if (!quizDoc) return res.status(404).json({ message: 'Quiz not found' });
+      sourceQuestions = quizDoc.questions || [];
+    } else if (courseId) {
+      const courseDoc = await Course.findById(courseId);
+      if (!courseDoc) return res.status(404).json({ message: 'Course not found' });
+      if (lessonIndex !== undefined && lessonIndex !== null && lessonIndex !== '') {
+        const lIdx = parseInt(lessonIndex);
+        if (courseDoc.lessons && courseDoc.lessons[lIdx]) {
+          sourceQuestions = courseDoc.lessons[lIdx].quiz || [];
+        }
+      } else {
+        sourceQuestions = courseDoc.quiz || [];
+      }
+    }
+
+    if (!sourceQuestions || sourceQuestions.length === 0) {
+      return res.status(400).json({ message: 'No questions found for this quiz/assessment' });
+    }
+
+    // Deduplicate and filter highly similar questions from the pool
+    const { getWordRearrangedFingerprint, calculateSimilarity } = require('../utils/duplicateChecker');
+    const uniquePool = [];
+    for (const q of sourceQuestions) {
+      const qText = q.question || q.questionText;
+      if (!qText) continue;
+      const qFp = getWordRearrangedFingerprint(qText);
+      
+      let isDup = false;
+      for (const accepted of uniquePool) {
+        const acceptedText = accepted.question || accepted.questionText;
+        if (getWordRearrangedFingerprint(acceptedText) === qFp || calculateSimilarity(qText, acceptedText) >= 0.85) {
+          isDup = true;
+          break;
+        }
+      }
+      if (!isDup) {
+        uniquePool.push(q);
+      }
+    }
+
+    // Shuffling
+    const shuffled = [...uniquePool].sort(() => 0.5 - Math.random());
+    const targetSize = sourceQuestions.length; // Keep target size as original count
+    const selectedQuestions = shuffled.slice(0, targetSize).map(q => ({
+      questionText: q.questionText || q.question,
+      options: q.options || [],
+      questionType: q.questionType || 'single',
+      correctAnswer: q.correctAnswer,
+      explanation: q.explanation || '',
+      dbQuestionId: q._id ? q._id.toString() : undefined
+    }));
+
+    attempt = new Attempt({
+      user: userId,
+      course: courseId || null,
+      quiz: quizId || null,
+      lessonIndex: (lessonIndex !== undefined && lessonIndex !== null && lessonIndex !== '') ? parseInt(lessonIndex) : undefined,
+      questions: selectedQuestions,
+      userAnswers: {},
+      startedAt: new Date(),
+      isCompleted: false
+    });
+
+    await attempt.save();
+
+    const attemptObj = attempt.toObject();
+    attemptObj.questions = attemptObj.questions.map(q => {
+      const { correctAnswer, explanation, ...rest } = q;
+      return rest;
+    });
+
+    res.status(201).json({
+      attemptId: attempt._id,
+      questions: attemptObj.questions,
+      userAnswers: {},
+      timeLeft: Math.floor(limitMs / 1000),
+      warning: uniquePool.length < sourceQuestions.length ? 'Some duplicate questions were filtered from the pool.' : undefined
+    });
+  } catch (error) {
+    console.error('Start Attempt Error:', error);
+    res.status(500).json({ message: 'Error starting quiz attempt: ' + error.message });
+  }
+};
+
+const saveQuizProgress = async (req, res) => {
+  try {
+    const { attemptId, userAnswers } = req.body;
+    if (!attemptId) {
+      return res.status(400).json({ message: 'Attempt ID is required' });
+    }
+
+    const attempt = await Attempt.findById(attemptId);
+    if (!attempt) {
+      return res.status(404).json({ message: 'Attempt not found' });
+    }
+
+    if (attempt.isCompleted) {
+      return res.status(400).json({ message: 'Cannot update progress of a completed attempt' });
+    }
+
+    attempt.userAnswers = userAnswers || {};
+    attempt.markModified('userAnswers');
+    await attempt.save();
+
+    res.json({ message: 'Progress saved successfully' });
+  } catch (error) {
+    console.error('Save Progress Error:', error);
+    res.status(500).json({ message: 'Error saving progress: ' + error.message });
+  }
+};
+
+const getIntegrityReport = async (req, res) => {
+  try {
+    const { generateIntegrityReport } = require('../utils/duplicateChecker');
+    const report = await generateIntegrityReport();
+    res.json(report);
+  } catch (error) {
+    console.error('Integrity Report Error:', error);
+    res.status(500).json({ message: 'Error generating integrity report: ' + error.message });
+  }
+};
+
+module.exports = {
+  getAllQuizzes,
+  submitQuiz,
+  createQuiz,
+  getQuizzesByEmployer,
+  generateFromYoutube,
+  publishQuiz,
+  getAllResults,
+  startQuizAttempt,
+  saveQuizProgress,
+  getIntegrityReport
+};

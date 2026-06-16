@@ -5,7 +5,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { 
   Home, BookOpen, Award, Briefcase, 
   Settings, LogOut, MessageSquare, Bell,
-  Menu, X, User, Users, Shield, Trophy, Sparkles, Crown
+  Menu, X, User, Users, Shield, Trophy, Sparkles, Crown, ShieldAlert
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -93,6 +93,7 @@ const DashboardLayout = ({ children, role: propRole }) => {
         { icon: BookOpen, label: 'Manage Courses', path: '/admin/courses' },
         { icon: MessageSquare, label: 'Quiz Management', path: '/admin/quizzes' },
         { icon: Shield, label: 'AI Proctoring', path: '/admin/proctoring' },
+        { icon: ShieldAlert, label: 'Integrity Report', path: '/admin/integrity' },
       ]},
       { category: 'DATA & USERS', items: [
         { icon: Award, label: 'Leaderboard', path: '/admin/leaderboard' },

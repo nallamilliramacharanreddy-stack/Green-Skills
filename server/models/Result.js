@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const resultSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  course: { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true },
+  course: { type: mongoose.Schema.Types.ObjectId, ref: 'Course' },
   score: { type: Number, required: true },
   totalQuestions: { type: Number, required: true },
   duration: { type: Number }, // in seconds
@@ -43,8 +43,11 @@ const resultSchema = new mongoose.Schema({
   aiSuspicionScore: { type: Number, default: 0 },
   answers: [{
     questionIndex: Number,
-    candidateAnswer: String,
-    correctAnswer: String,
+    questionText: String,
+    options: [String],
+    candidateAnswer: mongoose.Schema.Types.Mixed,
+    correctAnswer: mongoose.Schema.Types.Mixed,
+    explanation: String,
     isCorrect: Boolean,
     timeTaken: Number,
     violationCountDuringQuestion: Number

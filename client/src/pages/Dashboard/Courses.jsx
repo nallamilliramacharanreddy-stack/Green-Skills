@@ -631,6 +631,7 @@ const Courses = () => {
                               state: {
                                 activeQuiz: {
                                   _id: selectedCourse._id,
+                                  lessonIndex: activeLessonIndex,
                                   title: `Assessment: ${lesson.title}`,
                                   quiz: lesson.quiz
                                 }

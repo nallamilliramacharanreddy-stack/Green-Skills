@@ -25,6 +25,10 @@ export const AuthProvider = ({ children }) => {
         return { success: true, requiresOtp: true, email: response.data.email, message: response.data.message };
       }
 
+      if (response.data.requiresFace) {
+        return { success: true, requiresFace: true, userId: response.data.userId, email: response.data.email, message: response.data.message };
+      }
+
       const { token, user } = response.data;
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
@@ -56,6 +60,19 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const verifyFaceLogin = async (userId, facialEmbedding) => {
+    try {
+      const response = await axios.post(`${API_URL}/auth/verify-face-login`, { userId, facialEmbedding });
+      const { token, user } = response.data;
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      setUser(user);
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || 'Face verification failed' };
+    }
+  };
+
   const signup = async (userData) => {
     try {
       const response = await axios.post(`${API_URL}/auth/signup`, userData);
@@ -81,7 +98,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout, updateUser, verifyOtp }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, logout, updateUser, verifyOtp, verifyFaceLogin }}>
       {children}
     </AuthContext.Provider>
   );

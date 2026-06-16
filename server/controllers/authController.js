@@ -3,6 +3,60 @@ const Course = require('../models/Course');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const dns = require('dns');
+const crypto = require('crypto');
+
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'your_secret_encryption_key_32bytes_!';
+const IV_LENGTH = 16;
+
+const getEncryptionKey = () => {
+  let key = ENCRYPTION_KEY;
+  if (key.length < 32) {
+    key = key.padEnd(32, 'a');
+  } else if (key.length > 32) {
+    key = key.substring(0, 32);
+  }
+  return Buffer.from(key);
+};
+
+const encryptEmbedding = (embeddingArray) => {
+  try {
+    if (!embeddingArray) return '';
+    const text = JSON.stringify(embeddingArray);
+    const iv = crypto.randomBytes(IV_LENGTH);
+    const cipher = crypto.createCipheriv('aes-256-cbc', getEncryptionKey(), iv);
+    let encrypted = cipher.update(text);
+    encrypted = Buffer.concat([encrypted, cipher.final()]);
+    return iv.toString('hex') + ':' + encrypted.toString('hex');
+  } catch (err) {
+    console.error('Encryption error:', err);
+    return '';
+  }
+};
+
+const decryptEmbedding = (encryptedText) => {
+  try {
+    if (!encryptedText) return null;
+    const textParts = encryptedText.split(':');
+    const iv = Buffer.from(textParts.shift(), 'hex');
+    const encryptedTextBuffer = Buffer.from(textParts.join(':'), 'hex');
+    const decipher = crypto.createDecipheriv('aes-256-cbc', getEncryptionKey(), iv);
+    let decrypted = decipher.update(encryptedTextBuffer);
+    decrypted = Buffer.concat([decrypted, decipher.final()]);
+    return JSON.parse(decrypted.toString());
+  } catch (err) {
+    console.error('Decryption error:', err);
+    return null;
+  }
+};
+
+const calculateEuclideanDistance = (arr1, arr2) => {
+  if (!arr1 || !arr2 || arr1.length !== arr2.length) return 999;
+  let sum = 0;
+  for (let i = 0; i < arr1.length; i++) {
+    sum += Math.pow(arr1[i] - arr2[i], 2);
+  }
+  return Math.sqrt(sum);
+};
 
 // Force Node.js to resolve IPv4 addresses first to bypass IPv6 DNS resolution issues on Render
 dns.setDefaultResultOrder('ipv4first');
@@ -57,6 +111,27 @@ const signup = async (req, res) => {
     if (!passwordRegex.test(password)) {
       return res.status(400).json({ message: 'Password must contain uppercase, lowercase, number, and special character.' });
     }
+
+    // Facial Embedding validation for student users
+    if (role === 'student' && (!req.body.facialEmbedding && !profileData.facialEmbedding)) {
+      return res.status(400).json({ message: 'Facial enrollment is required to complete registration.' });
+    }
+
+    let encryptedFace = undefined;
+    const rawEmbedding = req.body.facialEmbedding || profileData.facialEmbedding;
+    if (rawEmbedding) {
+      let parsedEmbed = rawEmbedding;
+      if (typeof parsedEmbed === 'string') {
+        try {
+          parsedEmbed = JSON.parse(parsedEmbed);
+        } catch (e) {
+          parsedEmbed = parsedEmbed.split(',').map(Number);
+        }
+      }
+      if (Array.isArray(parsedEmbed) && parsedEmbed.length > 0) {
+        encryptedFace = encryptEmbedding(parsedEmbed);
+      }
+    }
     
     // Check if user exists
     const existingUser = await User.findOne({ email });
@@ -96,6 +171,7 @@ const signup = async (req, res) => {
       password,
       role,
       ...profileData,
+      facialEmbedding: encryptedFace,
       companyDetails: role === 'employer' ? companyDetails : undefined,
       profilePicture: profilePicPath
     });
@@ -193,10 +269,20 @@ const login = async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
+    if (user.role === 'student' && user.facialEmbedding) {
+      return res.json({
+        requiresFace: true,
+        userId: user._id,
+        email: user.email,
+        message: 'Password verified. Face verification required to proceed.'
+      });
+    }
+
     const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
 
     const userResponse = user.toObject();
     delete userResponse.password;
+    delete userResponse.facialEmbedding;
 
     res.json({
       token,
@@ -570,11 +656,63 @@ const deleteNote = async (req, res) => {
   }
 };
 
-module.exports = { 
-  signup, login, getAllUsers, getAllHirers, getAllAdmins, 
-  approveAdmin, approveHirer, rejectHirer, updateUserStatus, deleteUser, getLeaderboard,
-  requestReactivation, handleSuspensionRequest, updateProfile, forgotPasswordRequest, verifyForgotPasswordOtp, resetPasswordWithOtp, verifyAdminOtp,
-  addNote, deleteNote
+const verifyFaceLogin = async (req, res) => {
+  try {
+    const { userId, facialEmbedding } = req.body;
+    if (!userId || !facialEmbedding) {
+      return res.status(400).json({ message: 'Missing userId or facialEmbedding' });
+    }
+
+    const user = await User.findById(userId)
+      .populate('progress.currentCourses')
+      .populate('progress.completedCourses');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (!user.facialEmbedding) {
+      return res.status(400).json({ message: 'No face profile registered for this user' });
+    }
+
+    let submittedEmbed = facialEmbedding;
+    if (typeof submittedEmbed === 'string') {
+      try {
+        submittedEmbed = JSON.parse(submittedEmbed);
+      } catch (e) {
+        submittedEmbed = submittedEmbed.split(',').map(Number);
+      }
+    }
+
+    if (!Array.isArray(submittedEmbed) || submittedEmbed.length === 0) {
+      return res.status(400).json({ message: 'Invalid facial embedding format' });
+    }
+
+    const registeredEmbed = decryptEmbedding(user.facialEmbedding);
+    if (!registeredEmbed) {
+      return res.status(500).json({ message: 'Failed to decrypt face profile' });
+    }
+
+    const distance = calculateEuclideanDistance(submittedEmbed, registeredEmbed);
+    console.log(`[Face Verification] Distance for user ${user.name}: ${distance}`);
+
+    if (distance <= 0.6) {
+      const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
+      const userResponse = user.toObject();
+      delete userResponse.password;
+      delete userResponse.facialEmbedding;
+
+      res.json({
+        success: true,
+        token,
+        user: userResponse
+      });
+    } else {
+      res.status(400).json({ message: 'Face verification failed. Please use the registered face.' });
+    }
+  } catch (error) {
+    console.error('Face verification error:', error);
+    res.status(500).json({ message: 'Server error during face verification' });
+  }
 };
 
 const editNote = async (req, res) => {
@@ -596,4 +734,10 @@ const editNote = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-module.exports.editNote = editNote;
+
+module.exports = { 
+  signup, login, getAllUsers, getAllHirers, getAllAdmins, 
+  approveAdmin, approveHirer, rejectHirer, updateUserStatus, deleteUser, getLeaderboard,
+  requestReactivation, handleSuspensionRequest, updateProfile, forgotPasswordRequest, verifyForgotPasswordOtp, resetPasswordWithOtp, verifyAdminOtp,
+  addNote, deleteNote, editNote, verifyFaceLogin
+};

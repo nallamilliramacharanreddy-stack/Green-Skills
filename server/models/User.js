@@ -5,6 +5,7 @@ const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
+  facialEmbedding: { type: String },
   role: {
     type: String,
     enum: ['student', 'employer', 'admin', 'admin_course', 'admin_hiring', 'admin_exam', 'guide', 'support'],

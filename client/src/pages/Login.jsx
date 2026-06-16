@@ -13,7 +13,7 @@ import axios from 'axios';
 import { API_URL } from '../utils/api';
 
 const Login = () => {
-  const { login, verifyOtp } = useAuth();
+  const { login, verifyOtp, verifyFaceLogin } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -25,6 +25,124 @@ const Login = () => {
   const [countdown, setCountdown] = useState(180);
   const [resetOtp, setResetOtp] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Face Verification states
+  const [isFaceVerifying, setIsFaceVerifying] = useState(false);
+  const [faceUserId, setFaceUserId] = useState('');
+  const [faceVerificationStep, setFaceVerificationStep] = useState('loading');
+  const [faceStream, setFaceStream] = useState(null);
+  
+  const faceVideoRef = useRef(null);
+  const faceTrackingLoopRef = useRef(null);
+  const faceVerificationStepRef = useRef('loading');
+
+  const startFaceVerification = async () => {
+    faceVerificationStepRef.current = 'loading';
+    setFaceVerificationStep('loading');
+    try {
+      if (!window.faceapi) {
+        throw new Error('Face-API library not loaded yet');
+      }
+      const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
+      await window.faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+      await window.faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+      await window.faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+      
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 640, height: 480, facingMode: 'user' }
+      });
+      setFaceStream(stream);
+      if (faceVideoRef.current) {
+        faceVideoRef.current.srcObject = stream;
+      }
+      faceVerificationStepRef.current = 'active';
+      setFaceVerificationStep('active');
+    } catch (err) {
+      console.error(err);
+      toast.error('Webcam access or model loading failed.');
+      setIsFaceVerifying(false);
+    }
+  };
+
+  const runFaceVerificationTracking = async () => {
+    if (!faceVideoRef.current || faceVideoRef.current.paused || faceVideoRef.current.ended || faceVerificationStepRef.current === 'success') {
+      return;
+    }
+
+    try {
+      const faceapi = window.faceapi;
+      const detection = await faceapi.detectSingleFace(
+        faceVideoRef.current,
+        new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 })
+      )
+      .withFaceLandmarks()
+      .withFaceDescriptor();
+
+      if (detection) {
+        // Stop tracking loop
+        faceVerificationStepRef.current = 'verifying';
+        setFaceVerificationStep('verifying');
+        
+        // Stop stream
+        if (faceStream) {
+          faceStream.getTracks().forEach(track => track.stop());
+        }
+
+        const verificationToast = toast.loading('Matching facial credentials on server...');
+        const res = await verifyFaceLogin(faceUserId, Array.from(detection.descriptor));
+        toast.dismiss(verificationToast);
+
+        if (res.success) {
+          faceVerificationStepRef.current = 'success';
+          setFaceVerificationStep('success');
+          toast.success('Access Granted. Welcome back!');
+          setIsFaceVerifying(false);
+          
+          const savedUser = JSON.parse(localStorage.getItem('user'));
+          if (savedUser.role === 'admin') {
+            navigate('/admin');
+          } else if (savedUser.role === 'employer') {
+            navigate('/employer');
+          } else {
+            navigate('/dashboard');
+          }
+        } else {
+          faceVerificationStepRef.current = 'failed';
+          setFaceVerificationStep('failed');
+          toast.error(res.message || 'Face verification failed.');
+        }
+      }
+    } catch (e) {
+      console.error('Error during face verification tracking:', e);
+    }
+
+    if (faceVerificationStepRef.current === 'active') {
+      faceTrackingLoopRef.current = requestAnimationFrame(runFaceVerificationTracking);
+    }
+  };
+
+  const handleFaceVideoPlay = () => {
+    faceTrackingLoopRef.current = requestAnimationFrame(runFaceVerificationTracking);
+  };
+
+  useEffect(() => {
+    if (isFaceVerifying) {
+      startFaceVerification();
+    } else {
+      if (faceTrackingLoopRef.current) {
+        cancelAnimationFrame(faceTrackingLoopRef.current);
+      }
+      if (faceStream) {
+        faceStream.getTracks().forEach(track => track.stop());
+        setFaceStream(null);
+      }
+    }
+    return () => {
+      if (faceTrackingLoopRef.current) {
+        cancelAnimationFrame(faceTrackingLoopRef.current);
+      }
+    };
+  }, [isFaceVerifying]);
 
   useEffect(() => {
     let timer;
@@ -139,6 +257,13 @@ const Login = () => {
         setIsOtpMode(true);
         setCountdown(180);
         toast.success(res.message || 'OTP sent to your email');
+        return;
+      }
+
+      if (res.requiresFace) {
+        setFaceUserId(res.userId);
+        setIsFaceVerifying(true);
+        toast.success(res.message || 'Face authentication required.');
         return;
       }
 
@@ -559,7 +684,86 @@ const Login = () => {
           background-size: 200% auto;
           animation: text-shimmer 3s linear infinite;
         }
+        @keyframes scanner {
+          0% { top: 0%; }
+          50% { top: 100%; }
+          100% { top: 0%; }
+        }
+        .animate-scanner {
+          animation: scanner 2s ease-in-out infinite;
+        }
       `}} />
+
+      {/* Face Authentication Modal */}
+      {isFaceVerifying && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4">
+          <div className="w-full max-w-xl bg-white border border-slate-200 rounded-[32px] overflow-hidden shadow-2xl p-8 relative flex flex-col items-center">
+            
+            <div className="text-center mb-6">
+              <h3 className="text-2xl font-black text-slate-950 uppercase tracking-tight italic">Biometric Face Login</h3>
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">SECURE PROTOCOL IDENTITY CHECK</p>
+            </div>
+
+            {/* Webcam Viewport */}
+            <div className="w-full max-w-sm aspect-video bg-slate-950 rounded-2xl relative overflow-hidden border border-slate-200 shadow-inner flex items-center justify-center mb-6">
+              <video 
+                ref={faceVideoRef} 
+                autoPlay 
+                playsInline 
+                muted 
+                onPlay={handleFaceVideoPlay}
+                className="w-full h-full object-cover scale-x-[-1]"
+              />
+              
+              {/* Pulse Scanner Line and target boxes */}
+              <div className="absolute inset-0 border-2 border-primary/20 rounded-2xl pointer-events-none">
+                <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-primary"></div>
+                <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-primary"></div>
+                <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-primary"></div>
+                <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-primary"></div>
+                
+                <div className="w-full h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent absolute top-0 animate-scanner"></div>
+              </div>
+            </div>
+
+            {/* Verification Steps / status */}
+            <div className="w-full space-y-3 mb-6 bg-slate-50 p-6 rounded-2xl border border-slate-100 font-mono text-xs text-slate-700 text-center">
+              {faceVerificationStep === 'loading' && (
+                <p className="text-primary animate-pulse font-bold">⏳ Loading Face Verification Engine...</p>
+              )}
+              {faceVerificationStep === 'active' && (
+                <p className="text-primary animate-pulse font-bold">▶ Look directly at the camera to verify identity</p>
+              )}
+              {faceVerificationStep === 'verifying' && (
+                <p className="text-amber-500 animate-pulse font-bold">⏳ Matching facial profile on server...</p>
+              )}
+              {faceVerificationStep === 'success' && (
+                <p className="text-emerald-500 font-bold">✓ Identity Verified! Proceeding...</p>
+              )}
+              {faceVerificationStep === 'failed' && (
+                <div className="space-y-4">
+                  <p className="text-red-500 font-bold">❌ Biometric Match Failed</p>
+                  <button 
+                    type="button" 
+                    onClick={startFaceVerification} 
+                    className="px-6 py-2 bg-primary text-white font-bold rounded-xl text-xs hover:bg-emerald-600 transition-colors uppercase tracking-wider"
+                  >
+                    Retry Scan
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <button 
+              type="button" 
+              onClick={() => setIsFaceVerifying(false)} 
+              className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-sm uppercase tracking-wider hover:bg-red-600 transition-all shadow-md"
+            >
+              Cancel Login
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -33,6 +33,15 @@ router.post('/upload', upload.single('video'), (req, res) => {
   res.json({ directVideoUrl: internalUrl, file_size: req.file.size });
 });
 
+// Endpoint for assessment proctoring video recordings upload
+router.post('/upload-proctoring', upload.single('video'), (req, res) => {
+  if (!req.file) return res.status(400).json({ message: 'No video file provided' });
+  const host = req.get('host');
+  const protocol = req.protocol;
+  const videoUrl = `${protocol}://${host}/uploads/videos/${req.file.filename}`;
+  res.json({ videoRecordingUrl: videoUrl });
+});
+
 // Serve the fully downloaded static video file via robust 206 Partial Content streaming
 router.get('/stream/:videoId', (req, res) => {
   const videoId = req.params.videoId;

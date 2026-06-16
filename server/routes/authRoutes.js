@@ -3,7 +3,7 @@ const {
   signup, login, getAllUsers, getAllHirers, getAllAdmins, 
   approveAdmin, approveHirer, rejectHirer, updateUserStatus, deleteUser, getLeaderboard,
   requestReactivation, handleSuspensionRequest, updateProfile, forgotPasswordRequest, verifyForgotPasswordOtp, resetPasswordWithOtp, verifyAdminOtp,
-  addNote, deleteNote, editNote
+  addNote, deleteNote, editNote, verifyFaceLogin
 } = require('../controllers/authController');
 const router = express.Router();
 
@@ -29,6 +29,7 @@ router.post('/signup', upload.fields([
   { name: 'companyDocument', maxCount: 1 }
 ]), signup);
 router.post('/login', login);
+router.post('/verify-face-login', verifyFaceLogin);
 router.post('/verify-admin-otp', verifyAdminOtp);
 router.post('/forgot-password-request', forgotPasswordRequest);
 router.post('/verify-reset-otp', verifyForgotPasswordOtp);

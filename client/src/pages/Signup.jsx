@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
@@ -23,6 +23,31 @@ const Signup = () => {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const fileInputRef = React.useRef(null);
+
+  // Face enrollment state variables
+  const [isEnrolling, setIsEnrolling] = useState(false);
+  const [enrollmentStep, setEnrollmentStep] = useState('loading');
+  const [blinkCount, setBlinkCount] = useState(0);
+  const [enrollmentSamples, setEnrollmentSamples] = useState([]);
+  const [facialEmbedding, setFacialEmbedding] = useState(null);
+  const [webcamStream, setWebcamStream] = useState(null);
+
+  // Liveness metric live readouts
+  const [currentEAR, setCurrentEAR] = useState(0);
+  const [currentNoseRatio, setCurrentNoseRatio] = useState(1);
+  const [currentSmileRatio, setCurrentSmileRatio] = useState(0);
+
+  // Dynamic random challenges state and refs
+  const [challenges, setChallenges] = useState([]);
+  const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
+  const challengesRef = useRef([]);
+  const challengeIndexRef = useRef(0);
+
+  const videoRef = useRef(null);
+  const stepRef = useRef('loading');
+  const eyeClosedRef = useRef(false);
+  const blinkCountRef = useRef(0);
+  const trackingLoopRef = useRef(null);
 
   // 3D Parallax Effect
   const x = useMotionValue(0);
@@ -59,6 +84,276 @@ const Signup = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // Liveness Challenge Definition Pool
+  const challengePool = [
+    { type: 'blink', label: 'Blink Eyes Twice', instruction: 'Blink your eyes twice' },
+    { type: 'turnLeft', label: 'Turn Head Left', instruction: 'Slowly turn your head to the left' },
+    { type: 'turnRight', label: 'Turn Head Right', instruction: 'Slowly turn your head to the right' },
+    { type: 'smile', label: 'Show a Big Smile', instruction: 'Smile wide for the camera' }
+  ];
+
+  const generateRandomChallenges = () => {
+    const shuffled = [...challengePool].sort(() => 0.5 - Math.random());
+    const selected = shuffled.slice(0, 3);
+    setChallenges(selected);
+    challengesRef.current = selected;
+    setCurrentChallengeIndex(0);
+    challengeIndexRef.current = 0;
+    setBlinkCount(0);
+    blinkCountRef.current = 0;
+  };
+
+  // Face enrollment tracking engine & webcam access
+  const setStepState = (newStep) => {
+    stepRef.current = newStep;
+    setEnrollmentStep(newStep);
+  };
+
+  const startEnrollment = async () => {
+    setStepState('loading');
+    try {
+      if (!window.faceapi) {
+        throw new Error('Face-API library not loaded yet');
+      }
+      const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
+      await window.faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+      await window.faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+      await window.faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+      
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 640, height: 480, facingMode: 'user' }
+      });
+      setWebcamStream(stream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      setStepState('position');
+    } catch (err) {
+      console.error(err);
+      toast.error('Webcam access or model loading failed. Please check permissions.');
+      setIsEnrolling(false);
+    }
+  };
+
+  const completeEnrollmentAndSubmit = async (avgEmbed) => {
+    setFacialEmbedding(avgEmbed);
+    setIsEnrolling(false);
+    
+    if (webcamStream) {
+      webcamStream.getTracks().forEach(track => track.stop());
+      setWebcamStream(null);
+    }
+
+    const data = new FormData();
+    Object.keys(formData).forEach(key => {
+      if (key === 'skillsInterested') {
+        data.append(key, formData[key].split(',').map(s => s.trim()));
+      } else {
+        data.append(key, formData[key]);
+      }
+    });
+    
+    if (profilePicture) {
+      data.append('profilePicture', profilePicture);
+    }
+    data.append('facialEmbedding', JSON.stringify(avgEmbed));
+
+    const loadingToast = toast.loading('Registering account with biometric profile...');
+    const res = await signup(data);
+    toast.dismiss(loadingToast);
+
+    if (res.success) {
+      toast.success('Core Identity Initialized');
+      navigate('/dashboard');
+    } else {
+      toast.error(res.message || 'Registration Failed');
+    }
+  };
+
+  const startCapturingSamples = (firstDescriptor) => {
+    const samples = [firstDescriptor];
+    let count = 1;
+    setEnrollmentSamples([...samples]);
+    
+    const captureInterval = setInterval(async () => {
+      if (!videoRef.current || stepRef.current !== 'capturing') {
+        clearInterval(captureInterval);
+        return;
+      }
+      try {
+        const faceapi = window.faceapi;
+        const detection = await faceapi.detectSingleFace(
+          videoRef.current,
+          new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 })
+        ).withFaceLandmarks().withFaceDescriptor();
+
+        if (detection) {
+          samples.push(detection.descriptor);
+          count++;
+          setEnrollmentSamples([...samples]);
+          if (count >= 10) {
+            clearInterval(captureInterval);
+            const avg = new Float32Array(128);
+            for (let i = 0; i < 128; i++) {
+              let sum = 0;
+              for (let j = 0; j < 10; j++) {
+                sum += samples[j][i];
+              }
+              avg[i] = sum / 10;
+            }
+            setStepState('success');
+            setTimeout(() => {
+              completeEnrollmentAndSubmit(Array.from(avg));
+            }, 1000);
+          }
+        }
+      } catch (err) {
+        console.error('Error capturing sample:', err);
+      }
+    }, 200);
+  };
+
+  const runTracking = async () => {
+    if (!videoRef.current || videoRef.current.paused || videoRef.current.ended || stepRef.current === 'success') {
+      return;
+    }
+
+    try {
+      const faceapi = window.faceapi;
+      const detection = await faceapi.detectSingleFace(
+        videoRef.current,
+        new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 })
+      )
+      .withFaceLandmarks()
+      .withFaceDescriptor();
+
+      if (detection) {
+        const landmarks = detection.landmarks.positions;
+        const jaw = landmarks.slice(0, 17);
+        const leftEye = landmarks.slice(36, 42);
+        const rightEye = landmarks.slice(42, 48);
+        const mouth = landmarks.slice(48, 60);
+        const noseTip = landmarks[30];
+
+        const dist = (p1, p2) => Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
+
+        // EAR calculation
+        const leftEAR = (dist(leftEye[1], leftEye[5]) + dist(leftEye[2], leftEye[4])) / (2 * dist(leftEye[0], leftEye[3]));
+        const rightEAR = (dist(rightEye[1], rightEye[5]) + dist(rightEye[2], rightEye[4])) / (2 * dist(rightEye[0], rightEye[3]));
+        const averageEAR = (leftEAR + rightEAR) / 2;
+
+        // Turn horizontal bias check
+        const noseRatio = (noseTip.x - jaw[0].x) / (jaw[16].x - noseTip.x);
+
+        // Smile mouth ratio check
+        const mouthWidth = dist(mouth[0], mouth[6]);
+        const jawWidth = dist(jaw[0], jaw[16]);
+        const smileRatio = mouthWidth / jawWidth;
+
+        setCurrentEAR(Number(averageEAR.toFixed(3)));
+        setCurrentNoseRatio(Number(noseRatio.toFixed(3)));
+        setCurrentSmileRatio(Number(smileRatio.toFixed(3)));
+
+        const currentStep = stepRef.current;
+        const currentIdx = challengeIndexRef.current;
+        const currentChallenges = challengesRef.current;
+        const currentChallenge = currentChallenges[currentIdx];
+
+        if (currentStep === 'position') {
+          if (noseRatio > 0.7 && noseRatio < 1.4) {
+            if (currentChallenges.length > 0) {
+              const firstChallenge = currentChallenges[0];
+              setStepState(firstChallenge.type);
+              toast.success(`Face positioned. Challenge 1: ${firstChallenge.instruction}`);
+            } else {
+              setStepState('capturing');
+              startCapturingSamples(detection.descriptor);
+            }
+          }
+        } else if (currentChallenge && currentStep === currentChallenge.type) {
+          let passed = false;
+          
+          if (currentStep === 'blink') {
+            if (averageEAR < 0.20 && !eyeClosedRef.current) {
+              eyeClosedRef.current = true;
+            } else if (averageEAR > 0.24 && eyeClosedRef.current) {
+              eyeClosedRef.current = false;
+              blinkCountRef.current += 1;
+              setBlinkCount(blinkCountRef.current);
+              if (blinkCountRef.current >= 2) {
+                passed = true;
+              } else {
+                toast.success('Blink detected! One more time.');
+              }
+            }
+          } else if (currentStep === 'turnLeft') {
+            if (noseRatio < 0.65) {
+              passed = true;
+            }
+          } else if (currentStep === 'turnRight') {
+            if (noseRatio > 1.5) {
+              passed = true;
+            }
+          } else if (currentStep === 'smile') {
+            if (smileRatio > 0.35) {
+              passed = true;
+            }
+          }
+
+          if (passed) {
+            const nextIdx = currentIdx + 1;
+            if (nextIdx < currentChallenges.length) {
+              challengeIndexRef.current = nextIdx;
+              setCurrentChallengeIndex(nextIdx);
+              setStepState(currentChallenges[nextIdx].type);
+              toast.success(`Passed! Challenge ${nextIdx + 1}: ${currentChallenges[nextIdx].instruction}`);
+            } else {
+              setStepState('capturing');
+              toast.success('Liveness confirmed. Capturing biometric samples...');
+              startCapturingSamples(detection.descriptor);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Error in facial tracking loop:', e);
+    }
+
+    if (stepRef.current !== 'success' && stepRef.current !== 'capturing') {
+      trackingLoopRef.current = requestAnimationFrame(runTracking);
+    }
+  };
+
+  const handleVideoPlay = () => {
+    trackingLoopRef.current = requestAnimationFrame(runTracking);
+  };
+
+  useEffect(() => {
+    if (isEnrolling) {
+      stepRef.current = 'loading';
+      setEnrollmentStep('loading');
+      eyeClosedRef.current = false;
+      blinkCountRef.current = 0;
+      setBlinkCount(0);
+      setEnrollmentSamples([]);
+      generateRandomChallenges();
+      startEnrollment();
+    } else {
+      if (trackingLoopRef.current) {
+        cancelAnimationFrame(trackingLoopRef.current);
+      }
+      if (webcamStream) {
+        webcamStream.getTracks().forEach(track => track.stop());
+        setWebcamStream(null);
+      }
+    }
+    return () => {
+      if (trackingLoopRef.current) {
+        cancelAnimationFrame(trackingLoopRef.current);
+      }
+    };
+  }, [isEnrolling]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -74,6 +369,11 @@ const Signup = () => {
       return toast.error('Password must contain uppercase, lowercase, number, and special character.');
     }
 
+    if (formData.role === 'student' && !facialEmbedding) {
+      setIsEnrolling(true);
+      return;
+    }
+
     const data = new FormData();
     Object.keys(formData).forEach(key => {
       if (key === 'skillsInterested') {
@@ -87,7 +387,14 @@ const Signup = () => {
       data.append('profilePicture', profilePicture);
     }
 
+    if (facialEmbedding) {
+      data.append('facialEmbedding', JSON.stringify(facialEmbedding));
+    }
+
+    const loadingToast = toast.loading('Registering account...');
     const res = await signup(data);
+    toast.dismiss(loadingToast);
+
     if (res.success) {
       if (res.needsApproval) {
         toast.success('Registration successful. Awaiting Admin approval.');
@@ -345,7 +652,110 @@ const Signup = () => {
           .animate-border-travel {
             animation: border-travel 3s linear infinite;
           }
+          @keyframes scanner {
+            0% { top: 0%; }
+            50% { top: 100%; }
+            100% { top: 0%; }
+          }
+          .animate-scanner {
+            animation: scanner 2s ease-in-out infinite;
+          }
         `}} />
+
+        {/* Biometric Face Enrollment Modal */}
+        {isEnrolling && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4">
+            <div className="w-full max-w-xl bg-white border border-slate-200 rounded-[32px] overflow-hidden shadow-2xl p-8 relative flex flex-col items-center">
+              
+              <div className="text-center mb-6">
+                <h3 className="text-2xl font-black text-slate-950 uppercase tracking-tight italic">Biometric Face Enrollment</h3>
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">LIVENESS CHECKS REQUIREMENT</p>
+              </div>
+
+              {/* Webcam viewport */}
+              <div className="w-full max-w-sm aspect-video bg-slate-950 rounded-2xl relative overflow-hidden border border-slate-200 shadow-inner flex items-center justify-center mb-6">
+                <video 
+                  ref={videoRef} 
+                  autoPlay 
+                  playsInline 
+                  muted 
+                  onPlay={handleVideoPlay}
+                  className="w-full h-full object-cover scale-x-[-1]"
+                />
+                
+                {/* Neon scanner animation overlay */}
+                <div className="absolute inset-0 border-2 border-primary/20 rounded-2xl pointer-events-none">
+                  <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-primary"></div>
+                  <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-primary"></div>
+                  <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-primary"></div>
+                  <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-primary"></div>
+                  
+                  {/* Scanner line */}
+                  <div className="w-full h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent absolute top-0 animate-scanner"></div>
+                </div>
+              </div>
+
+              {/* Steps Checklist */}
+              <div className="w-full space-y-3 mb-6 bg-slate-50 p-6 rounded-2xl border border-slate-100 font-mono text-xs text-slate-700">
+                <div className="flex items-center gap-2">
+                  <span className={enrollmentStep === 'loading' ? 'text-primary animate-pulse' : (enrollmentStep !== 'position' ? 'text-emerald-500 font-bold' : 'text-slate-400')}>
+                    {enrollmentStep === 'loading' ? '⏳ Loading Face Recognition Engine...' : (enrollmentStep !== 'position' ? '✓ Initial Face Position' : `▶ Position Face in Center (Nose Ratio: ${currentNoseRatio} / Target: 0.7 - 1.4)`)}
+                  </span>
+                </div>
+                
+                {challenges.map((c, idx) => {
+                  const isActive = enrollmentStep === c.type;
+                  const isCompleted = currentChallengeIndex > idx || ['capturing', 'success'].includes(enrollmentStep);
+                  
+                  let readout = '';
+                  if (isActive) {
+                    if (c.type === 'blink') readout = ` (${blinkCount}/2) (EAR: ${currentEAR} / Target: < 0.20)`;
+                    if (c.type === 'turnLeft' || c.type === 'turnRight') readout = ` (Nose Ratio: ${currentNoseRatio})`;
+                    if (c.type === 'smile') readout = ` (Smile Ratio: ${currentSmileRatio} / Target: > 0.35)`;
+                  }
+
+                  return (
+                    <div key={idx} className="flex items-center gap-2">
+                      <span className={isActive ? 'text-primary font-bold animate-pulse' : (isCompleted ? 'text-emerald-500 font-bold' : 'text-slate-400')}>
+                        {isCompleted ? `✓ ${c.label} Checked` : `▶ ${c.label}${readout}`}
+                      </span>
+                    </div>
+                  );
+                })}
+
+                <div className="flex items-center gap-2">
+                  <span className={enrollmentStep === 'capturing' ? 'text-primary font-bold animate-pulse' : (enrollmentStep === 'success' ? 'text-emerald-500 font-bold' : 'text-slate-400')}>
+                    {enrollmentStep === 'success' ? '✓ Biometrics Registered' : `▶ Capturing Biometric Footprint (${enrollmentSamples.length}/10)`}
+                  </span>
+                </div>
+              </div>
+
+              {/* Progress bar */}
+              {enrollmentStep === 'capturing' && (
+                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden mb-6">
+                  <div 
+                    className="bg-primary h-full transition-all duration-300" 
+                    style={{ width: `${enrollmentSamples.length * 10}%` }}
+                  />
+                </div>
+              )}
+
+              {enrollmentStep === 'success' && (
+                <div className="text-center font-bold text-emerald-500 text-sm mb-6 animate-bounce">
+                  ✨ BIOMETRIC ID MATCH SUCCESSFUL! PROCEEDING TO REGISTRATION...
+                </div>
+              )}
+
+              <button 
+                type="button" 
+                onClick={() => setIsEnrolling(false)} 
+                className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-sm uppercase tracking-wider hover:bg-red-600 transition-all shadow-md"
+              >
+                Cancel Enrollment
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Cinematic Particles */}
         <div className="absolute inset-0 pointer-events-none opacity-30 overflow-hidden">

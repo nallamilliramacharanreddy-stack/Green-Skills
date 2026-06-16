@@ -2,6 +2,52 @@ const Course = require('../models/Course');
 const User = require('../models/User');
 const { processVideo } = require('../utils/videoProcessor');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const jwt = require('jsonwebtoken');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_key_123';
+
+const getUserFromRequest = (req) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      return jwt.verify(token, JWT_SECRET);
+    }
+    if (req.cookies && req.cookies.token) {
+      return jwt.verify(req.cookies.token, JWT_SECRET);
+    }
+  } catch (err) {
+    // Ignore invalid/expired tokens
+  }
+  return null;
+};
+
+const stripQuizAnswers = (course, isAdminOrEmployer) => {
+  if (isAdminOrEmployer) return course;
+  
+  const doc = course.toObject ? course.toObject() : JSON.parse(JSON.stringify(course));
+  
+  if (doc.quiz && Array.isArray(doc.quiz)) {
+    doc.quiz = doc.quiz.map(q => {
+      const { correctAnswer, explanation, ...rest } = q;
+      return rest;
+    });
+  }
+  
+  if (doc.lessons && Array.isArray(doc.lessons)) {
+    doc.lessons = doc.lessons.map(lesson => {
+      if (lesson.quiz && Array.isArray(lesson.quiz)) {
+        lesson.quiz = lesson.quiz.map(q => {
+          const { correctAnswer, explanation, ...rest } = q;
+          return rest;
+        });
+      }
+      return lesson;
+    });
+  }
+  
+  return doc;
+};
 
 const triggerVideoProcessing = (course) => {
   if (course && course.lessons && course.lessons.length > 0) {
@@ -17,7 +63,11 @@ const triggerVideoProcessing = (course) => {
 const getAllCourses = async (req, res) => {
   try {
     const courses = await Course.find();
-    res.json(courses);
+    const user = getUserFromRequest(req);
+    const isAdminOrEmployer = user && ['admin', 'employer', 'admin_course', 'admin_hiring', 'admin_exam', 'super-admin'].includes(user.role);
+    
+    const sanitizedCourses = courses.map(c => stripQuizAnswers(c, isAdminOrEmployer));
+    res.json(sanitizedCourses);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching courses' });
   }
@@ -27,7 +77,11 @@ const getCourseById = async (req, res) => {
   try {
     const course = await Course.findById(req.params.id);
     if (!course) return res.status(404).json({ message: 'Course not found' });
-    res.json(course);
+    
+    const user = getUserFromRequest(req);
+    const isAdminOrEmployer = user && ['admin', 'employer', 'admin_course', 'admin_hiring', 'admin_exam', 'super-admin'].includes(user.role);
+    
+    res.json(stripQuizAnswers(course, isAdminOrEmployer));
   } catch (error) {
     res.status(500).json({ message: 'Error fetching course' });
   }
@@ -43,20 +97,24 @@ const createCourse = async (req, res) => {
 
     res.status(201).json(course);
   } catch (error) {
-    res.status(500).json({ message: 'Error creating course' });
+    res.status(400).json({ message: error.message || 'Error creating course' });
   }
 };
 
 const updateCourse = async (req, res) => {
   try {
-    const course = await Course.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const course = await Course.findById(req.params.id);
+    if (!course) return res.status(404).json({ message: 'Course not found' });
+
+    Object.assign(course, req.body);
+    await course.save();
 
     // Trigger background processing for YouTube links
     triggerVideoProcessing(course);
 
     res.json(course);
   } catch (error) {
-    res.status(500).json({ message: 'Error updating course' });
+    res.status(400).json({ message: error.message || 'Error updating course' });
   }
 };
 
@@ -75,48 +133,130 @@ const generateQuizFromYoutube = async (req, res) => {
     const course = await Course.findById(id);
     if (!course) return res.status(404).json({ message: 'Course not found' });
 
-    // Mock AI Quiz Generation
-    const mockQuestions = [];
-    for (let i = 1; i <= 50; i++) {
-      mockQuestions.push({
-        question: `Question ${i}: Related to ${course.title} content?`,
-        options: ['Option A', 'Option B', 'Option C', 'Option D'],
-        correctAnswer: 'Option A'
-      });
+    let youtubeUrl = '';
+    if (course.lessons && course.lessons.length > 0) {
+      const lessonWithYoutube = course.lessons.find(l => l.youtubeLink);
+      if (lessonWithYoutube) {
+        youtubeUrl = lessonWithYoutube.youtubeLink;
+      }
     }
 
-    // Generate 20 Mock Lessons if they don't exist
+    if (!youtubeUrl) {
+      youtubeUrl = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+    }
+
+    // Extract Video ID
+    let videoId = '';
+    const watchMatch = youtubeUrl.match(/[?&]v=([^&#]+)/);
+    const shortMatch = youtubeUrl.match(/youtu\.be\/([^?&#]+)/);
+    const embedMatch = youtubeUrl.match(/youtube\.com\/embed\/([^?&#]+)/);
+    
+    if (watchMatch) videoId = watchMatch[1];
+    else if (shortMatch) videoId = shortMatch[1];
+    else if (embedMatch) videoId = embedMatch[1];
+    else {
+      const parts = youtubeUrl.split('/');
+      videoId = parts[parts.length - 1].split('?')[0]; 
+    }
+
+    let transcriptText = '';
+    try {
+      const { YoutubeTranscript } = require('youtube-transcript');
+      const transcript = await YoutubeTranscript.fetchTranscript(videoId);
+      if (transcript && Array.isArray(transcript)) {
+        transcriptText = transcript.map(t => t.text).join(' ');
+      }
+    } catch (err) {
+      console.warn("Could not fetch transcript via youtube-transcript in course generateQuiz:", err.message);
+    }
+
+    let questions = [];
+    if (transcriptText && process.env.GEMINI_API_KEY) {
+      try {
+        const apiKey = process.env.GEMINI_API_KEY;
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+        const prompt = `Based on the following video transcript, generate a 20-question multiple-choice assessment quiz.
+Each question must have exactly 4 unique options (no blank options, no duplicate options, no nearly-identical options).
+The output MUST be a valid JSON array matching this format EXACTLY:
+[
+  {
+    "question": "Question text here",
+    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "correctAnswer": "Option A",
+    "explanation": "Brief explanation"
+  }
+]
+No markdown, just raw JSON.
+
+Transcript:
+${transcriptText.substring(0, 10000)}
+`;
+
+        const result = await model.generateContent(prompt);
+        let responseText = result.response.text().trim();
+        if (responseText.startsWith("```")) {
+          responseText = responseText.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
+        }
+        
+        const parsed = JSON.parse(responseText);
+        if (Array.isArray(parsed)) {
+          questions = parsed.map(q => ({
+            question: q.question || q.questionText || 'Concept Question',
+            options: Array.isArray(q.options) && q.options.length === 4 ? q.options : ['Option A', 'Option B', 'Option C', 'Option D'],
+            correctAnswer: q.correctAnswer || (Array.isArray(q.options) ? q.options[0] : 'Option A'),
+            explanation: q.explanation || 'Based on the video concepts.',
+            questionType: 'single'
+          }));
+        }
+      } catch (err) {
+        console.error("Gemini course quiz generation failed:", err.message);
+      }
+    }
+
+    if (questions.length === 0) {
+      for (let i = 1; i <= 20; i++) {
+        questions.push({
+          question: `Concept Question ${i}: What is the core topic of ${course.title}?`,
+          options: [`Topic Definition ${i}`, `Alternative Concept ${i}`, `Unrelated Theory ${i}`, `Practical Detail ${i}`],
+          correctAnswer: `Topic Definition ${i}`,
+          explanation: `This option correctly defines the core topic for lesson ${i}.`,
+          questionType: 'single'
+        });
+      }
+    }
+
     if (!course.lessons || course.lessons.length === 0) {
       const mockLessons = [];
       for (let i = 1; i <= 20; i++) {
         mockLessons.push({
           title: `Lesson ${i}: Master Class`,
           videoSource: 'youtube',
-          youtubeLink: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          youtubeLink: youtubeUrl,
           duration: '10:00'
         });
       }
       course.lessons = mockLessons;
     }
 
-    // Generate 5 Mock Tasks if they don't exist
     if (!course.tasks || course.tasks.length === 0) {
       const mockTasks = [];
       for (let i = 1; i <= 5; i++) {
         mockTasks.push({
           title: `Task ${i}: Industrial Assignment`,
-          description: `Practical task related to lesson ${i * 6}`,
+          description: `Practical task related to lesson ${i * 4}`,
           type: 'Practical'
         });
       }
       course.tasks = mockTasks;
     }
 
-    course.quiz = mockQuestions;
+    course.quiz = questions;
     await course.save();
-    res.json({ message: 'Course nodes (20 lessons, 5 tasks, 50 MCQ) generated successfully', course });
+    res.json({ message: 'Course assessment nodes generated successfully', course });
   } catch (error) {
-    res.status(500).json({ message: 'Error generating course content' });
+    res.status(400).json({ message: error.message || 'Error generating course content' });
   }
 };
 
@@ -418,20 +558,122 @@ const generateAIAssessment = async (req, res) => {
 
     sendEvent({ progress: 'Finalizing Assessment...' });
 
-    // Deduplicate Questions based on exact text matching to ensure 50 unique questions
-    const uniqueQuestions = [];
-    const seenTexts = new Set();
+    const allDbQuestions = [];
+    const Quiz = require('../models/Quiz');
+    const { getWordRearrangedFingerprint, calculateSimilarity, validateOptions } = require('../utils/duplicateChecker');
 
-    for (const q of allGeneratedQuestions) {
-      const qText = q && (q.question || q.questionText || q.text || q.title || q.content);
-      if (qText && String(qText).trim() !== '' && !seenTexts.has(String(qText).toLowerCase().trim())) {
-        seenTexts.add(String(qText).toLowerCase().trim());
+    try {
+      const quizzes = await Quiz.find();
+      for (const q of quizzes) {
+        if (q.questions) allDbQuestions.push(...q.questions.map(item => item.questionText || item.question));
+      }
+      const courses = await Course.find();
+      for (const c of courses) {
+        if (c.quiz) allDbQuestions.push(...c.quiz.map(item => item.question || item.questionText));
+        if (c.lessons) {
+          for (const l of c.lessons) {
+            if (l.quiz) allDbQuestions.push(...l.quiz.map(item => item.question || item.questionText));
+          }
+        }
+      }
+    } catch (dbErr) {
+      console.warn("Failed to load DB questions for AI check, skipping database similarity check:", dbErr.message);
+    }
+
+    const dbFps = allDbQuestions.map(text => ({
+      text,
+      fingerprint: getWordRearrangedFingerprint(text)
+    }));
+
+    const uniqueQuestions = [];
+    const retryCountPerIndex = {};
+
+    for (let i = 0; i < allGeneratedQuestions.length; i++) {
+      const q = allGeneratedQuestions[i];
+      if (!q) continue;
+      const qText = q.question || q.questionText || q.text || q.title || q.content;
+      const options = q.options || [];
+
+      if (!qText) continue;
+
+      let isDuplicate = false;
+      let reason = '';
+
+      const optError = validateOptions(options, qText);
+      if (optError) {
+        isDuplicate = true;
+        reason = optError;
+      }
+
+      if (!isDuplicate) {
+        const fp = getWordRearrangedFingerprint(qText);
+        for (const dbQ of dbFps) {
+          if (dbQ.fingerprint === fp || calculateSimilarity(qText, dbQ.text) >= 0.85) {
+            isDuplicate = true;
+            reason = `Similar to existing DB question: "${dbQ.text}"`;
+            break;
+          }
+        }
+        
+        if (!isDuplicate) {
+          for (const accepted of uniqueQuestions) {
+            const acceptedText = accepted.question || accepted.questionText || accepted.text || accepted.title || accepted.content;
+            if (getWordRearrangedFingerprint(acceptedText) === fp || calculateSimilarity(qText, acceptedText) >= 0.85) {
+              isDuplicate = true;
+              reason = `Similar to another generated question in this batch: "${acceptedText}"`;
+              break;
+            }
+          }
+        }
+      }
+
+      if (isDuplicate) {
+        const key = `${i}-${qText}`;
+        const retries = retryCountPerIndex[key] || 0;
+        if (retries < 2) {
+          retryCountPerIndex[key] = retries + 1;
+          console.log(`[AI Gen] Duplicate question detected: "${qText}". Reason: ${reason}. Auto-regenerating unique replacement (Retry ${retries + 1}/2)...`);
+          sendEvent({ progress: `Regenerating similar/duplicate question...` });
+          
+          try {
+            const regenPrompt = `Analyze the topic and generate a completely unique multiple-choice question that is NOT similar or duplicate to the following:
+1. "${qText}"
+2. Any of these: ${allDbQuestions.slice(0, 10).map(x => `"${x}"`).join(', ')} (and general database questions).
+
+Ensure:
+- Meaningful question statement.
+- Exactly 4 unique choices (no blank options, no duplicate options, no nearly-identical options).
+- Unique detailed explanation.
+- Return the result strictly as a single JSON object (not array) with format:
+{
+  "question": "Unique question text",
+  "options": ["Option A", "Option B", "Option C", "Option D"],
+  "correctAnswer": 0,
+  "explanation": "Detailed explanation matching correct answer.",
+  "difficulty": "${difficulty || 'Medium'}"
+}
+No markdown wrappers, just raw JSON.`;
+
+            const result = await model.generateContent(regenPrompt);
+            let responseText = result.response.text().trim();
+            responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+            const newQ = JSON.parse(responseText);
+            if (newQ && (newQ.question || newQ.questionText)) {
+              allGeneratedQuestions[i] = newQ;
+              i--; 
+              continue;
+            }
+          } catch (regenErr) {
+            console.error("Failed to generate unique replacement:", regenErr.message);
+          }
+        } else {
+          console.warn(`[AI Gen] Max retries reached for index ${i}. Skipping question to preserve integrity.`);
+        }
+      } else {
         uniqueQuestions.push(q);
       }
     }
 
-    // Ensure we don't return more than requested, though duplicate removal might reduce it below totalQuestions.
-    // In a perfectly resilient system we would generate more to make up the difference, but we return the valid set here.
     const finalSet = uniqueQuestions.slice(0, totalQuestions);
 
     sendEvent({ progress: 'Assessment Ready', result: finalSet });

@@ -12,15 +12,134 @@ const Quiz = () => {
   const { user } = useAuth();
   const location = useLocation();
   const [courses, setCourses] = useState([]);
-  const [activeQuiz, setActiveQuiz] = useState(location.state?.activeQuiz || null);
-  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [activeQuiz, setActiveQuiz] = useState(() => {
+    if (location.state?.activeQuiz) {
+      localStorage.setItem('active_quiz_meta', JSON.stringify(location.state.activeQuiz));
+      return location.state.activeQuiz;
+    }
+    const saved = localStorage.getItem('active_quiz_meta');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [attemptId, setAttemptId] = useState(null);
+  const [attemptLoading, setAttemptLoading] = useState(false);
+  const [currentQuestion, setCurrentQuestion] = useState(() => {
+    const saved = localStorage.getItem('quiz_current_question');
+    return saved ? parseInt(saved, 10) : 0;
+  });
   const [score, setScore] = useState(0);
   const [showResult, setShowResult] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [submissionResult, setSubmissionResult] = useState(null);
 
   // User quiz attempt states
   const [attempts, setAttempts] = useState([]);
   const [selectedAttempt, setSelectedAttempt] = useState(null);
+
+  // Pre-assessment Face Verification states
+  const [preVerified, setPreVerified] = useState(false);
+  const [preVerifyStep, setPreVerifyStep] = useState('loading');
+  const preVerifyVideoRef = useRef(null);
+  const preVerifyStreamRef = useRef(null);
+  const preVerifyLoopRef = useRef(null);
+
+  const startPreVerify = async () => {
+    setPreVerifyStep('loading');
+    try {
+      if (!window.faceapi) {
+        throw new Error('Face-api not loaded');
+      }
+      const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
+      await window.faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+      await window.faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+      await window.faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 640, height: 480, facingMode: 'user' }
+      });
+      preVerifyStreamRef.current = stream;
+      if (preVerifyVideoRef.current) {
+        preVerifyVideoRef.current.srcObject = stream;
+      }
+      setPreVerifyStep('active');
+      preVerifyLoopRef.current = requestAnimationFrame(runPreVerifyTracking);
+    } catch (err) {
+      console.error(err);
+      toast.error('Webcam or models failed to initialize.');
+      setActiveQuiz(null);
+    }
+  };
+
+  const runPreVerifyTracking = async () => {
+    if (!preVerifyVideoRef.current || preVerifyVideoRef.current.paused || preVerifyVideoRef.current.ended) {
+      preVerifyLoopRef.current = requestAnimationFrame(runPreVerifyTracking);
+      return;
+    }
+
+    try {
+      const faceapi = window.faceapi;
+      const detection = await faceapi.detectSingleFace(
+        preVerifyVideoRef.current,
+        new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 })
+      ).withFaceLandmarks().withFaceDescriptor();
+
+      if (detection) {
+        // Stop tracking loop
+        cancelAnimationFrame(preVerifyLoopRef.current);
+        setPreVerifyStep('verifying');
+        
+        // Stop stream
+        if (preVerifyStreamRef.current) {
+          preVerifyStreamRef.current.getTracks().forEach(track => track.stop());
+          preVerifyStreamRef.current = null;
+        }
+
+        const savedUserStr = localStorage.getItem('user');
+        const savedUser = savedUserStr ? JSON.parse(savedUserStr) : null;
+        const currentUserId = user?.id || user?._id || savedUser?.id || savedUser?._id;
+
+        const verificationToast = toast.loading('Matching facial credentials for exam session...');
+        try {
+          const res = await axios.post(`${API_URL}/auth/verify-face-login`, {
+            userId: currentUserId,
+            facialEmbedding: Array.from(detection.descriptor)
+          });
+          toast.dismiss(verificationToast);
+
+          if (res.data.success) {
+            setPreVerified(true);
+            toast.success('Exam identity verified! Session started.');
+          } else {
+            setPreVerifyStep('failed');
+            toast.error('Face verification failed. Profile mismatch.');
+          }
+        } catch (err) {
+          toast.dismiss(verificationToast);
+          setPreVerifyStep('failed');
+          toast.error(err.response?.data?.message || 'Face verification failed. Profile mismatch.');
+        }
+        return;
+      }
+    } catch (e) {
+      console.error('Error in pre-verify tracking:', e);
+    }
+
+    preVerifyLoopRef.current = requestAnimationFrame(runPreVerifyTracking);
+  };
+
+  useEffect(() => {
+    if (activeQuiz && !preVerified) {
+      startPreVerify();
+    }
+    return () => {
+      if (preVerifyLoopRef.current) {
+        cancelAnimationFrame(preVerifyLoopRef.current);
+      }
+      if (preVerifyStreamRef.current) {
+        preVerifyStreamRef.current.getTracks().forEach(track => track.stop());
+        preVerifyStreamRef.current = null;
+      }
+    };
+  }, [activeQuiz, preVerified]);
 
   useEffect(() => {
     fetchCoursesWithQuizzes();
@@ -58,25 +177,89 @@ const Quiz = () => {
     }
   };
 
-  const handleAnswer = (answer) => {
-    const correctOption = getCorrectOptionText(activeQuiz.quiz[currentQuestion]);
-    const isCorrect = answer === correctOption;
-    if (isCorrect) {
-      setScore(score + 1);
-      toast.success('Correct!', { duration: 500, position: 'bottom-center' });
-    } else {
-      toast.error('Wrong Answer', { duration: 500, position: 'bottom-center' });
-    }
-
-    setTimeout(() => {
-      if (currentQuestion + 1 < activeQuiz.quiz.length) {
-        setCurrentQuestion(currentQuestion + 1);
-      } else {
-        setShowResult(true);
-        submitScore();
+  const startAttempt = async (quizToStart) => {
+    try {
+      setAttemptLoading(true);
+      const savedUserStr = localStorage.getItem('user');
+      const savedUser = savedUserStr ? JSON.parse(savedUserStr) : null;
+      const currentUserId = user?.id || user?._id || savedUser?.id || savedUser?._id;
+      
+      if (!currentUserId) {
+        toast.error("User session not found. Please log in.");
+        setActiveQuiz(null);
+        return;
       }
-    }, 600);
+
+      const payload = {
+        userId: currentUserId,
+        courseId: quizToStart.lessonIndex !== undefined ? quizToStart._id : undefined,
+        quizId: quizToStart.lessonIndex === undefined ? quizToStart._id : undefined,
+        lessonIndex: quizToStart.lessonIndex
+      };
+
+      const response = await axios.post(`${API_URL}/quizzes/start-attempt`, payload);
+      const { attemptId: newAttemptId, questions, userAnswers: savedUserAnswers, timeLeft: newTimeLeft } = response.data;
+      
+      setAttemptId(newAttemptId);
+      setTimeLeft(newTimeLeft);
+
+      // Load/merge saved answers from database and local storage
+      const localAnswersStr = localStorage.getItem('quiz_user_answers');
+      const localAnswers = localAnswersStr ? JSON.parse(localAnswersStr) : {};
+      const mergedAnswers = { ...savedUserAnswers, ...localAnswers };
+      setUserAnswers(mergedAnswers);
+      localStorage.setItem('quiz_user_answers', JSON.stringify(mergedAnswers));
+      
+      setActiveQuiz(prev => ({
+        ...prev,
+        quiz: questions
+      }));
+      
+      const initialStatus = {};
+      questions.forEach((_, i) => {
+        initialStatus[i] = (mergedAnswers[i] !== undefined && String(mergedAnswers[i]).trim() !== '') ? 'answered' : 'not_visited';
+      });
+      initialStatus[currentQuestion] = 'visited';
+      setQuestionStatus(initialStatus);
+    } catch (err) {
+      console.error("Failed to start or resume assessment attempt:", err);
+      toast.error(err.response?.data?.message || "Failed to start assessment attempt.");
+      setActiveQuiz(null);
+    } finally {
+      setAttemptLoading(false);
+    }
   };
+
+  useEffect(() => {
+    if (activeQuiz && preVerified && !attemptId && !attemptLoading) {
+      startAttempt(activeQuiz);
+    }
+  }, [activeQuiz, preVerified, attemptId]);
+
+  useEffect(() => {
+    localStorage.setItem('quiz_current_question', currentQuestion.toString());
+  }, [currentQuestion]);
+
+  useEffect(() => {
+    localStorage.setItem('quiz_user_answers', JSON.stringify(userAnswers));
+  }, [userAnswers]);
+
+  useEffect(() => {
+    if (!attemptId) return;
+    
+    const delayDebounceFn = setTimeout(async () => {
+      try {
+        await axios.post(`${API_URL}/quizzes/save-progress`, {
+          attemptId,
+          userAnswers
+        });
+      } catch (err) {
+        console.error("Failed to auto-save quiz progress:", err);
+      }
+    }, 1500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [userAnswers, attemptId]);
 
 
 
@@ -84,7 +267,10 @@ const Quiz = () => {
   const [timeLeft, setTimeLeft] = useState(1800); // 30 mins
   const [warnings, setWarnings] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [userAnswers, setUserAnswers] = useState({});
+  const [userAnswers, setUserAnswers] = useState(() => {
+    const saved = localStorage.getItem('quiz_user_answers');
+    return saved ? JSON.parse(saved) : {};
+  });
   const [questionStatus, setQuestionStatus] = useState({}); // 'not_visited', 'visited', 'answered', 'marked'
   const videoRef = useRef(null);
   const mediaStreamRef = useRef(null);
@@ -398,13 +584,7 @@ const Quiz = () => {
   }, [activeQuiz, showResult]);
 
   useEffect(() => {
-    if (!activeQuiz || showResult) return;
-
-    // Initialize statuses
-    const initialStatus = {};
-    activeQuiz.quiz.forEach((_, i) => initialStatus[i] = 'not_visited');
-    initialStatus[0] = 'visited';
-    setQuestionStatus(initialStatus);
+    if (!activeQuiz || !attemptId || showResult) return;
 
     // Enter Fullscreen
     const enterFullscreen = async () => {
@@ -581,28 +761,61 @@ const Quiz = () => {
         mediaStreamRef.current.getTracks().forEach(track => track.stop());
       }
     };
-  }, [activeQuiz, showResult]);
+  }, [activeQuiz, attemptId, showResult]);
 
-  // AI Proctoring Evaluation Simulation Loop
+  // Real AI Proctoring Evaluation Loop
   useEffect(() => {
-    if (!activeQuiz || showResult) return;
+    if (!activeQuiz || !attemptId || showResult || !streamActive) return;
 
-    const simInterval = setInterval(() => {
-      if (Math.random() < 0.35) {
-        const candidates = [
-          27, 28, 30, 31, 32, 33, // Webcam
-          38, 39, 40, 41, 42, 43, 44, 45, // Head movement
-          46, 47, 48, 49, 50, 51, // Eye tracking
-          52, 54, 55, 57, 58, // Audio
-          61, 62, 63, 64, 65, 66, 68, 70 // Object Detection
-        ];
-        const randomId = candidates[Math.floor(Math.random() * candidates.length)];
-        triggerViolation(randomId);
+    const loadProctoringModels = async () => {
+      try {
+        if (window.faceapi) {
+          const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
+          await window.faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+          await window.faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+        }
+      } catch (err) {
+        console.error("Error loading face-api models for proctoring:", err);
       }
-    }, 20000); // Trigger check every 20 seconds
+    };
+    loadProctoringModels();
 
-    return () => clearInterval(simInterval);
-  }, [activeQuiz, showResult, currentQuestion]);
+    const proctorInterval = setInterval(async () => {
+      if (!videoRef.current || videoRef.current.paused || videoRef.current.ended) return;
+
+      try {
+        const faceapi = window.faceapi;
+        if (!faceapi || !faceapi.nets.ssdMobilenetv1.params) return;
+
+        const detections = await faceapi.detectAllFaces(
+          videoRef.current,
+          new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 })
+        ).withFaceLandmarks();
+
+        if (detections.length === 0) {
+          triggerViolation(27, "Face Not Visible: No face detected in webcam frame.");
+        } else if (detections.length > 1) {
+          triggerViolation(29, "Multiple Faces Detected: More than one face present in camera view.");
+        } else {
+          const landmarks = detections[0].landmarks.positions;
+          const jaw = landmarks.slice(0, 17);
+          const noseTip = landmarks[30];
+
+          const noseRatio = (noseTip.x - jaw[0].x) / (jaw[16].x - noseTip.x);
+          
+          if (noseRatio < 0.6) {
+            triggerViolation(38, "Looking Left/Away: Gaze shifted left.");
+          } else if (noseRatio > 1.6) {
+            triggerViolation(39, "Looking Right/Away: Gaze shifted right.");
+          }
+        }
+      } catch (err) {
+        console.error("Error running active background proctoring:", err);
+      }
+    }, 5000);
+
+    return () => clearInterval(proctorInterval);
+  }, [activeQuiz, attemptId, showResult, streamActive]);
 
   const forceSubmit = (reason = 'Security Policy Violation') => {
     if (showResult) return;
@@ -651,16 +864,34 @@ const Quiz = () => {
     setCurrentQuestion(index);
   };
 
-  const getRecordedVideoBase64 = () => {
+  const uploadProctoringVideo = () => {
     return new Promise((resolve) => {
       const recorder = mediaRecorderRef.current;
+      
+      const finalizeUpload = async (blob) => {
+        if (!blob || blob.size === 0) {
+          resolve('');
+          return;
+        }
+        try {
+          const formData = new FormData();
+          formData.append('video', blob, `proctored-${attemptId}-${Date.now()}.webm`);
+          const res = await axios.post(`${API_URL}/videos/upload-proctoring`, formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          });
+          resolve(res.data.videoRecordingUrl || '');
+        } catch (err) {
+          console.error("Failed to upload proctoring video:", err);
+          resolve('');
+        }
+      };
+
       if (!recorder || recorder.state === 'inactive') {
         if (chunksRef.current && chunksRef.current.length > 0) {
           const blob = new Blob(chunksRef.current, { type: chunksRef.current[0].type || 'video/webm' });
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result);
-          reader.onerror = () => resolve('');
-          reader.readAsDataURL(blob);
+          finalizeUpload(blob);
         } else {
           resolve('');
         }
@@ -670,10 +901,7 @@ const Quiz = () => {
       recorder.onstop = () => {
         if (chunksRef.current && chunksRef.current.length > 0) {
           const blob = new Blob(chunksRef.current, { type: chunksRef.current[0].type || 'video/webm' });
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result);
-          reader.onerror = () => resolve('');
-          reader.readAsDataURL(blob);
+          finalizeUpload(blob);
         } else {
           resolve('');
         }
@@ -682,13 +910,10 @@ const Quiz = () => {
       try {
         recorder.stop();
       } catch (err) {
-        console.error("Error stopping recorder:", err);
+        console.error("Error stopping recorder on upload:", err);
         if (chunksRef.current && chunksRef.current.length > 0) {
           const blob = new Blob(chunksRef.current, { type: chunksRef.current[0].type || 'video/webm' });
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result);
-          reader.onerror = () => resolve('');
-          reader.readAsDataURL(blob);
+          finalizeUpload(blob);
         } else {
           resolve('');
         }
@@ -697,14 +922,13 @@ const Quiz = () => {
   };
 
   const submitScore = async (forced = false, forcedReason = '') => {
-    let videoBase64 = '';
+    let videoUrl = '';
     try {
-      videoBase64 = await getRecordedVideoBase64();
+      videoUrl = await uploadProctoringVideo();
     } catch (e) {
-      console.error("Failed to get recorded video base64:", e);
+      console.error("Failed to upload proctoring video:", e);
     }
 
-    // Stop all media tracks after recording is finalized
     if (mediaStreamRef.current) {
       try {
         mediaStreamRef.current.getTracks().forEach(track => track.stop());
@@ -714,28 +938,6 @@ const Quiz = () => {
       mediaStreamRef.current = null;
     }
     setStreamActive(false);
-
-    let correctCount = 0;
-    let wrongCount = 0;
-    let notAttemptedCount = 0;
-
-    activeQuiz.quiz.forEach((q, i) => {
-      const selectedOption = userAnswers[i];
-      const correctOption = getCorrectOptionText(q);
-      
-      if (selectedOption !== undefined && selectedOption !== null && selectedOption !== '') {
-        if (selectedOption === correctOption) {
-          correctCount++;
-        } else {
-          wrongCount++;
-        }
-      } else {
-        notAttemptedCount++;
-      }
-    });
-
-    let finalScore = correctCount;
-    setScore(finalScore);
 
     let submissionType = 'Normal Submission';
     if (forced) {
@@ -750,13 +952,10 @@ const Quiz = () => {
     try {
       const duration = 1800 - timeLeft;
       const answersList = activeQuiz.quiz.map((q, i) => {
-        const selectedOption = userAnswers[i] || '';
-        const correctOption = getCorrectOptionText(q) || '';
+        const selectedOption = userAnswers[i];
         return {
           questionIndex: i,
-          candidateAnswer: selectedOption,
-          correctAnswer: correctOption,
-          isCorrect: selectedOption !== '' && selectedOption === correctOption,
+          candidateAnswer: selectedOption !== undefined && selectedOption !== null ? selectedOption : '',
           timeTaken: Math.floor(duration / activeQuiz.quiz.length) || 10,
           violationCountDuringQuestion: violationTimeline.filter(vt => vt.questionIndex === i).length
         };
@@ -764,34 +963,40 @@ const Quiz = () => {
 
       const aiSuspicionScore = Math.max(0, 100 - trustScore);
 
-      await axios.post(`${API_URL}/quizzes/submit`, {
+      const response = await axios.post(`${API_URL}/quizzes/submit`, {
         userId: user.id || user._id,
-        courseId: activeQuiz._id,
-        score: finalScore,
-        totalQuestions: activeQuiz.quiz.length,
+        attemptId,
+        courseId: activeQuiz.lessonIndex !== undefined ? activeQuiz._id : undefined,
+        quizId: activeQuiz.lessonIndex === undefined ? activeQuiz._id : undefined,
+        lessonIndex: activeQuiz.lessonIndex,
         duration,
         trustScore,
         warnings,
-        status: (finalScore / activeQuiz.quiz.length) >= 0.5 ? 'Pass' : 'Fail',
         violationTimeline: violationTimeline.slice(0, 20),
         answers: answersList,
-        videoRecordingUrl: videoBase64.length < 5000000 ? videoBase64 : '', // Aggressive 5MB limit
+        videoRecordingUrl: videoUrl,
         autoSubmitReason: forced ? (forcedReason || 'Auto-submitted due to violations') : '',
-        screenshots: screenshots.slice(0, 3), // Only 3 screenshots
+        screenshots: screenshots.slice(0, 3),
         screenActivityLog: screenActivityLog.slice(0, 10),
         audioActivityLog: audioActivityLog.slice(0, 10),
         objectDetectionLog: objectDetectionLog.slice(0, 10),
         aiSuspicionScore,
-        correctCount,
-        wrongCount,
-        notAttemptedCount,
         submissionType
       });
+
+      // Clear local storage progress upon successful submission
+      localStorage.removeItem('quiz_current_question');
+      localStorage.removeItem('quiz_user_answers');
+      localStorage.removeItem('active_quiz_meta');
+
+      setSubmissionResult(response.data);
+      setScore(response.data.score);
+      setShowResult(true);
       fetchUserAttempts();
       toast.success(forced ? `Assessment Auto-Submitted: ${forcedReason}` : 'Assessment Submitted Successfully!');
     } catch (error) {
       console.error('Failed to save score', error);
-      toast.error('Failed to save assessment! Database limit exceeded.');
+      toast.error('Failed to submit assessment evaluation.');
     }
   };
 
@@ -803,14 +1008,80 @@ const Quiz = () => {
 
   const resetQuiz = () => {
     setActiveQuiz(null);
+    setAttemptId(null);
+    localStorage.removeItem('active_quiz_meta');
+    localStorage.removeItem('quiz_current_question');
+    localStorage.removeItem('quiz_user_answers');
     setCurrentQuestion(0);
     setScore(0);
     setShowResult(false);
     setUserAnswers({});
     setWarnings(0);
+    setSubmissionResult(null);
+    setPreVerified(false);
   };
 
   if (activeQuiz) {
+    if (!preVerified) {
+      return (
+        <div className="fixed inset-0 z-[9999] bg-slate-900 flex flex-col items-center justify-center font-sans text-white p-6">
+          <div className="w-full max-w-md bg-white text-slate-900 rounded-[32px] p-8 shadow-2xl relative flex flex-col items-center">
+            <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight italic text-center mb-6">Identity Check</h2>
+            
+            <div className="w-full aspect-video bg-slate-950 rounded-2xl relative overflow-hidden border border-slate-200 shadow-inner flex items-center justify-center mb-6">
+              <video 
+                ref={preVerifyVideoRef} 
+                autoPlay 
+                playsInline 
+                muted 
+                className="w-full h-full object-cover scale-x-[-1]"
+              />
+              <div className="absolute inset-0 border-2 border-primary/20 rounded-2xl pointer-events-none">
+                <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-primary"></div>
+                <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-primary"></div>
+                <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-primary"></div>
+                <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-primary"></div>
+                
+                <div className="w-full h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent absolute top-0 animate-scanner"></div>
+              </div>
+            </div>
+
+            <div className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-center font-mono text-xs mb-6">
+              {preVerifyStep === 'loading' && <p className="text-primary animate-pulse font-bold">⏳ Initializing verification engine...</p>}
+              {preVerifyStep === 'active' && <p className="text-primary animate-pulse font-bold">▶ Look at the camera to start assessment</p>}
+              {preVerifyStep === 'verifying' && <p className="text-amber-500 animate-pulse font-bold">⏳ Synchronizing biometric ID...</p>}
+              {preVerifyStep === 'failed' && (
+                <div className="space-y-3">
+                  <p className="text-red-500 font-bold">❌ Verification failed. Profile mismatch.</p>
+                  <button type="button" onClick={startPreVerify} className="px-4 py-2 bg-primary text-white font-bold rounded-lg text-xs uppercase hover:bg-emerald-600 transition-colors">Retry Scan</button>
+                </div>
+              )}
+            </div>
+
+            <button 
+              type="button" 
+              onClick={() => {
+                setActiveQuiz(null);
+                setPreVerified(false);
+              }} 
+              className="w-full py-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-sm uppercase tracking-wider hover:bg-slate-200 transition-all"
+            >
+              Cancel Assessment
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    if (attemptLoading || !attemptId || !activeQuiz.quiz || !activeQuiz.quiz[currentQuestion]) {
+      return (
+        <div className="fixed inset-0 z-[9999] bg-slate-900 flex flex-col items-center justify-center font-sans text-white">
+          <div className="w-16 h-16 border-4 border-slate-700 border-t-primary rounded-full animate-spin mb-4"></div>
+          <p className="text-sm font-black uppercase tracking-widest text-slate-400">Initializing Secure Exam Session...</p>
+          <p className="text-xs text-slate-500 mt-2 font-medium">Restoring attempt details and verifying question integrity.</p>
+        </div>
+      );
+    }
     const q = activeQuiz.quiz[currentQuestion];
     
     return (
@@ -878,37 +1149,78 @@ const Quiz = () => {
                     );
                   })()}
 
-                  <div className="space-y-4">
-                    {q.options.map((option, i) => {
-                      const isSelected = userAnswers[currentQuestion] === option;
-                      return (
-                        <label 
-                          key={i}
-                          className={`flex items-start gap-4 p-5 rounded-xl border-2 cursor-pointer transition-all ${
-                            isSelected 
-                              ? 'border-primary bg-primary/5 shadow-[0_4px_20px_rgba(var(--primary-rgb),0.1)]' 
-                              : 'border-slate-200 bg-white hover:border-primary/40'
-                          }`}
-                        >
-                          <div className={`mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                            isSelected ? 'border-primary' : 'border-slate-300'
-                          }`}>
-                            {isSelected && <div className="w-2.5 h-2.5 bg-primary rounded-full"></div>}
+                  {q.questionType === 'text' ? (
+                    <div className="space-y-2 max-w-2xl">
+                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest block ml-1">Your Answer</label>
+                      <input
+                        type="text"
+                        className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-2xl outline-none focus:border-primary transition-all font-bold text-lg text-slate-800"
+                        placeholder="Type your answer here..."
+                        value={userAnswers[currentQuestion] || ''}
+                        onChange={(e) => setUserAnswers({ ...userAnswers, [currentQuestion]: e.target.value })}
+                      />
+                    </div>
+                  ) : q.questionType === 'multiple' ? (
+                    <div className="space-y-4">
+                      {q.options.map((option, i) => {
+                        const currentSelections = userAnswers[currentQuestion] || [];
+                        const isSelected = currentSelections.includes(option);
+                        
+                        const handleMultipleSelect = () => {
+                          let nextSelections;
+                          if (isSelected) {
+                            nextSelections = currentSelections.filter(item => item !== option);
+                          } else {
+                            nextSelections = [...currentSelections, option];
+                          }
+                          setUserAnswers({ ...userAnswers, [currentQuestion]: nextSelections });
+                        };
+
+                        return (
+                          <div 
+                            key={i}
+                            onClick={handleMultipleSelect}
+                            className={`flex items-start gap-4 p-5 rounded-xl border-2 cursor-pointer transition-all ${
+                              isSelected 
+                                ? 'border-primary bg-primary/5 shadow-[0_4px_20px_rgba(var(--primary-rgb),0.1)]' 
+                                : 'border-slate-200 bg-white hover:border-primary/40'
+                            }`}
+                          >
+                            <div className={`mt-1 w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${
+                              isSelected ? 'border-primary bg-primary text-white' : 'border-slate-300'
+                            }`}>
+                              {isSelected && <div className="text-[10px] font-black">✓</div>}
+                            </div>
+                            <span className="text-lg font-medium text-slate-700">{option}</span>
                           </div>
-                          <span className="text-lg font-medium text-slate-700">{option}</span>
-                          {/* Hidden radio for accessibility */}
-                          <input 
-                            type="radio" 
-                            name={`question-${currentQuestion}`} 
-                            value={option}
-                            checked={isSelected}
-                            onChange={() => handleOptionSelect(option)}
-                            className="hidden"
-                          />
-                        </label>
-                      );
-                    })}
-                  </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {q.options.map((option, i) => {
+                        const isSelected = userAnswers[currentQuestion] === option;
+                        return (
+                          <div 
+                            key={i}
+                            onClick={() => handleOptionSelect(option)}
+                            className={`flex items-start gap-4 p-5 rounded-xl border-2 cursor-pointer transition-all ${
+                              isSelected 
+                                ? 'border-primary bg-primary/5 shadow-[0_4px_20px_rgba(var(--primary-rgb),0.1)]' 
+                                : 'border-slate-200 bg-white hover:border-primary/40'
+                            }`}
+                          >
+                            <div className={`mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                              isSelected ? 'border-primary' : 'border-slate-300'
+                            }`}>
+                              {isSelected && <div className="w-2.5 h-2.5 bg-primary rounded-full"></div>}
+                            </div>
+                            <span className="text-lg font-medium text-slate-700">{option}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1047,26 +1359,11 @@ const Quiz = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
                 {(() => {
-                  let correctCount = 0;
-                  let wrongCount = 0;
-                  let notAttemptedCount = 0;
-
-                  activeQuiz.quiz.forEach((q, i) => {
-                    const selectedOption = userAnswers[i];
-                    const correctOption = getCorrectOptionText(q);
-                    if (selectedOption !== undefined && selectedOption !== null && selectedOption !== '') {
-                      if (selectedOption === correctOption) {
-                        correctCount++;
-                      } else {
-                        wrongCount++;
-                      }
-                    } else {
-                      notAttemptedCount++;
-                    }
-                  });
-
-                  const totalQuestions = activeQuiz.quiz.length;
-                  const scoreValue = correctCount;
+                  const totalQuestions = submissionResult ? submissionResult.totalQuestions : activeQuiz.quiz.length;
+                  const scoreValue = submissionResult ? submissionResult.score : 0;
+                  const correctCount = submissionResult ? submissionResult.correctCount : 0;
+                  const wrongCount = submissionResult ? submissionResult.wrongCount : 0;
+                  const notAttemptedCount = submissionResult ? submissionResult.notAttemptedCount : 0;
                   const percentage = totalQuestions > 0 ? ((correctCount / totalQuestions) * 100).toFixed(1) : 0;
                   const violationCount = violationTimeline.length;
 
@@ -1134,12 +1431,22 @@ const Quiz = () => {
                 })()}
               </div>
 
-              <button
-                onClick={resetQuiz}
-                className="px-10 py-4 bg-slate-900 text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-primary transition-all shadow-xl shadow-slate-900/20"
-              >
-                Exit Assessment Mode
-              </button>
+              <div className="flex gap-4 justify-center">
+                {submissionResult && (
+                  <button
+                    onClick={() => setSelectedAttempt(submissionResult)}
+                    className="px-10 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-sm uppercase tracking-widest transition-all shadow-xl shadow-emerald-600/20"
+                  >
+                    Review Questions
+                  </button>
+                )}
+                <button
+                  onClick={resetQuiz}
+                  className="px-10 py-4 bg-slate-900 text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-primary transition-all shadow-xl shadow-slate-900/20"
+                >
+                  Exit Exam Portal
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
@@ -1444,18 +1751,47 @@ const Quiz = () => {
                   <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest">Question Breakdown</h4>
                   <div className="space-y-3">
                     {selectedAttempt.answers?.map((ans, i) => (
-                      <div key={i} className={`p-4 rounded-xl border flex items-center justify-between text-[11px] ${
+                      <div key={i} className={`p-4 rounded-xl border flex flex-col gap-3 text-xs ${
                         ans.isCorrect ? 'bg-emerald-50/20 border-emerald-100' : 'bg-red-50/20 border-red-100'
                       }`}>
-                        <div>
-                          <span className="font-bold text-slate-800">Question {ans.questionIndex + 1}</span>
-                          <span className="block text-slate-500 font-medium">Your answer: {ans.candidateAnswer || 'Skipped'}</span>
-                        </div>
-                        <div className="text-right">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <span className="font-bold text-slate-800 text-sm">Question {ans.questionIndex + 1}</span>
+                            <p className="text-slate-700 font-medium text-sm mt-1 whitespace-pre-wrap">{ans.questionText}</p>
+                          </div>
                           <span className={`font-bold ${ans.isCorrect ? 'text-emerald-600' : 'text-red-600'}`}>
                             {ans.isCorrect ? 'Correct (+1)' : 'Incorrect (-0.25)'}
                           </span>
-                          <span className="block text-slate-400 text-[9px] font-mono mt-0.5">{ans.timeTaken} seconds</span>
+                        </div>
+                        
+                        {ans.options && ans.options.length > 0 && (
+                          <div className="grid grid-cols-2 gap-2 mt-2">
+                            {ans.options.map((opt, oi) => {
+                              const isSelected = ans.candidateAnswer && ans.candidateAnswer.includes(opt);
+                              const isCorrectOption = ans.correctAnswer && ans.correctAnswer.includes(opt);
+                              return (
+                                <div key={oi} className={`px-3 py-2 rounded-xl text-[10px] font-bold border ${
+                                  isCorrectOption 
+                                    ? 'bg-emerald-50 border-emerald-300 text-emerald-800 shadow-sm'
+                                    : isSelected
+                                    ? 'bg-red-50 border-red-300 text-red-800'
+                                    : 'bg-slate-50 border-slate-100 text-slate-500'
+                                }`}>
+                                  {opt}
+                                  {isCorrectOption && ' (Correct Option)'}
+                                  {isSelected && ' (Your Choice)'}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                        
+                        <div className="mt-2 space-y-1 bg-white/50 p-3 rounded-lg border border-slate-100 text-[11px]">
+                          <p className="text-slate-500 font-medium"><strong>Your Answer:</strong> {ans.candidateAnswer || <span className="italic text-slate-400">Skipped</span>}</p>
+                          <p className="text-slate-700 font-medium"><strong>Correct Answer:</strong> {ans.correctAnswer}</p>
+                          {ans.explanation && (
+                            <p className="text-slate-600 text-xs mt-1 bg-slate-50 p-2 rounded border border-slate-100"><strong>Explanation:</strong> {ans.explanation}</p>
+                          )}
                         </div>
                       </div>
                     ))}

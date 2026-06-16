@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Minus, UserCheck, Shield, Lock,
   GraduationCap, Bell, Settings, MessageSquare,
   TrendingUp, FileText, Share2, Activity,
-  Upload, Video, Clock, Tag, Zap, Crown, Flame, ChevronLeft, ChevronRight, Building
+  Upload, Video, Clock, Tag, Zap, Crown, Flame, ChevronLeft, ChevronRight, Building, ShieldAlert
 } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
@@ -236,6 +236,7 @@ const AdminDashboard = () => {
               {activeTab === 'quizzes' && <QuizManagement courses={courses} onGenQuiz={generateCourseContent} refresh={fetchData} />}
               {activeTab === 'proctoring' && <AdminProctoring />}
               {activeTab === 'admins' && <AdminApproval data={admins} onApprove={handleApproveAdmin} onToggleStatus={toggleUserStatus} onDelete={deleteUser} />}
+              {activeTab === 'integrity' && <QuestionBankIntegrityReport />}
               {activeTab === 'profile' && <AdminProfile currentUser={currentUser} refreshUser={fetchData} />}
             </motion.div>
           </AnimatePresence>
@@ -2012,6 +2013,239 @@ const AdminApproval = ({ data = [], onApprove, onToggleStatus, onDelete }) => (
     </div>
   </div>
 );
+
+const QuestionBankIntegrityReport = () => {
+  const [report, setReport] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [activeSubTab, setActiveSubTab] = useState('summary'); // 'summary', 'duplicates', 'similars', 'answers'
+
+  const fetchReport = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get(`${API_URL}/quizzes/integrity-report`);
+      setReport(res.data);
+    } catch (err) {
+      toast.error("Failed to load integrity report data.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchReport();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 bg-slate-50 rounded-[32px] border border-slate-100 min-h-[400px]">
+        <div className="w-12 h-12 border-4 border-slate-200 border-t-primary rounded-full animate-spin"></div>
+        <p className="mt-4 text-xs font-black text-slate-400 uppercase tracking-widest">Running Question Bank Integrity Scan...</p>
+      </div>
+    );
+  }
+
+  if (!report) {
+    return (
+      <div className="text-center py-20 text-slate-400 font-bold bg-slate-50 rounded-[32px] border border-slate-100">
+        Failed to fetch integrity analysis. Please try again.
+      </div>
+    );
+  }
+
+  const getScoreColor = (score) => {
+    if (score >= 90) return 'text-emerald-500 bg-emerald-50/50 border-emerald-100';
+    if (score >= 70) return 'text-amber-500 bg-amber-50/50 border-amber-100';
+    return 'text-rose-500 bg-rose-50/50 border-rose-100';
+  };
+
+  return (
+    <div className="space-y-8 bg-slate-50 p-8 rounded-[48px] border border-slate-100 shadow-sm">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter italic flex items-center gap-3">
+            <ShieldAlert className="text-primary animate-pulse" size={32} /> Question Bank Integrity Dashboard
+          </h2>
+          <p className="text-slate-500 font-medium mt-1">Real-time similarity metrics, quality audits, and copy prevention.</p>
+        </div>
+        <button
+          onClick={fetchReport}
+          className="px-6 py-3 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-wider hover:bg-primary transition-all shadow-md"
+        >
+          Re-Scan Question Bank
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+        <div className={`p-6 rounded-[32px] border shadow-sm flex flex-col justify-between ${getScoreColor(report.qualityScore)}`}>
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Quality Score</span>
+            <h4 className="text-5xl font-black tracking-tighter mt-2">{report.qualityScore}%</h4>
+          </div>
+          <span className="text-[9px] font-black uppercase tracking-widest mt-4">Database Health</span>
+        </div>
+
+        {[
+          { label: 'Total Questions Checked', value: report.totalQuestions, sub: 'Across Quizzes & Lessons', color: 'slate' },
+          { label: 'Exact Duplicates', value: report.exactDuplicatesCount, sub: 'Identical fingerprints', color: 'red' },
+          { label: 'Similar Questions', value: report.similarQuestionsCount, sub: '>= 85% Jaccard match', color: 'orange' },
+          { label: 'Duplicate Answer Options', value: report.duplicateAnswersCount, sub: 'Choice repetitions', color: 'rose' }
+        ].map((w, idx) => (
+          <div key={idx} className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm flex flex-col justify-between">
+            <div>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{w.label}</span>
+              <h4 className={`text-4xl font-black tracking-tighter mt-2 ${w.value > 0 && w.color !== 'slate' ? 'text-rose-600' : 'text-slate-900'}`}>{w.value}</h4>
+            </div>
+            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-4">{w.sub}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex gap-2 p-1.5 bg-slate-100 rounded-2xl w-max">
+        {[
+          { id: 'summary', label: 'Analysis Summary' },
+          { id: 'duplicates', label: `Exact Duplicates (${report.exactDuplicatesCount})` },
+          { id: 'similars', label: `Similar Questions (${report.similarQuestionsCount})` },
+          { id: 'answers', label: `Duplicate Options (${report.duplicateAnswersCount})` }
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveSubTab(tab.id)}
+            className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${activeSubTab === tab.id ? 'bg-white text-slate-900 shadow-md' : 'text-slate-500 hover:text-slate-800'}`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="bg-white p-8 rounded-[48px] border border-slate-100 shadow-xl min-h-[300px]">
+        {activeSubTab === 'summary' && (
+          <div className="space-y-6">
+            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter italic">Integrity Overview</h3>
+            <p className="text-slate-600 text-sm max-w-3xl leading-relaxed">
+              The Question Bank Integrity & Anti-Repetition System audits all questions across standard assessments, courses, and lessons. 
+              It prevents identical fingerprints, wording permutations, or options cloning. A Quality Score of 90% or higher is recommended for secure testing environments.
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+              <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 space-y-2">
+                <h4 className="font-bold text-slate-900 uppercase text-xs tracking-wider">Fingerprint Match Algorithm</h4>
+                <p className="text-slate-500 text-xs leading-relaxed">
+                  Questions are normalized by stripping punctuation, removing capitalization, sorting the words alphabetically, and hashing. 
+                  This catches duplicates even if candidates or authors rearrange phrases or change letter casing.
+                </p>
+              </div>
+
+              <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 space-y-2">
+                <h4 className="font-bold text-slate-900 uppercase text-xs tracking-wider">Jaccard Similarity Checking</h4>
+                <p className="text-slate-500 text-xs leading-relaxed">
+                  Calculates Jaccard intersection size over union size. Thresholds &gt;= 85% similarities are automatically blocked on create, 
+                  ensuring a diverse question pool.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeSubTab === 'duplicates' && (
+          <div className="space-y-6">
+            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter italic">Duplicate Questions Report</h3>
+            {report.exactDuplicates.length === 0 ? (
+              <div className="text-slate-400 font-bold text-sm py-10">No exact duplicates found. Your database question bank is clean!</div>
+            ) : (
+              <div className="space-y-6">
+                {report.exactDuplicates.map((group, idx) => (
+                  <div key={idx} className="p-6 bg-rose-50/50 rounded-3xl border border-rose-100/50 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest">Duplicate Group #{idx + 1}</span>
+                      <span className="px-3 py-1 bg-rose-100 text-rose-700 font-bold text-[9px] uppercase tracking-widest rounded-full">{group.questions.length} Repetitions</span>
+                    </div>
+                    <p className="text-slate-900 font-bold text-sm">"{group.questions[0].text}"</p>
+                    <div className="space-y-2 border-t border-rose-100/50 pt-3">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Occurrences:</p>
+                      {group.questions.map((occ, oIdx) => (
+                        <div key={oIdx} className="text-xs text-slate-600 flex justify-between">
+                          <span>• {occ.sourceName} <span className="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-bold ml-2 uppercase">{occ.sourceType}</span></span>
+                          <span className="text-slate-400">Question #{occ.questionIndex + 1} {occ.lessonIndex !== null ? `(Lesson ${occ.lessonIndex + 1})` : ''}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeSubTab === 'similars' && (
+          <div className="space-y-6">
+            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter italic">Similar Questions Report</h3>
+            {report.similarQuestions.length === 0 ? (
+              <div className="text-slate-400 font-bold text-sm py-10">No highly similar questions detected (similarity &gt;= 85%). Good quality pool!</div>
+            ) : (
+              <div className="space-y-6">
+                {report.similarQuestions.map((pair, idx) => (
+                  <div key={idx} className="p-6 bg-amber-50/50 rounded-3xl border border-amber-100/50 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-black text-amber-600 bg-amber-100 px-3 py-1 rounded-full uppercase tracking-widest">Match Score: {pair.similarity}</span>
+                      <span className="text-[10px] text-slate-400 font-bold">Pair #{idx + 1}</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Question A ({pair.q1.sourceName} - {pair.q1.sourceType})</p>
+                        <p className="text-xs text-slate-800 font-bold">"{pair.q1.text}"</p>
+                      </div>
+                      <div className="space-y-1 border-l border-slate-100 pl-4">
+                        <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Question B ({pair.q2.sourceName} - {pair.q2.sourceType})</p>
+                        <p className="text-xs text-slate-800 font-bold">"{pair.q2.text}"</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeSubTab === 'answers' && (
+          <div className="space-y-6">
+            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter italic">Duplicate Answer Options Report</h3>
+            {report.duplicateAnswers.length === 0 ? (
+              <div className="text-slate-400 font-bold text-sm py-10">No duplicate answer choices or blank options found. Well structured choices!</div>
+            ) : (
+              <div className="space-y-6">
+                {report.duplicateAnswers.map((issue, idx) => (
+                  <div key={idx} className="p-6 bg-rose-50/50 rounded-3xl border border-rose-100/50 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest">{issue.sourceName} ({issue.sourceType})</span>
+                      <span className="text-[10px] text-rose-600 bg-rose-100 px-3 py-0.5 rounded-full font-black uppercase tracking-widest">Option Error</span>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Question Text</p>
+                      <p className="text-slate-900 font-bold text-sm mt-1">"{issue.questionText}"</p>
+                    </div>
+                    <div className="p-4 bg-white rounded-2xl border border-rose-100/50">
+                      <p className="text-rose-600 font-bold text-xs">{issue.error}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Current Choices</p>
+                      <div className="grid grid-cols-2 gap-2 mt-2">
+                        {issue.options.map((opt, oIdx) => (
+                          <div key={oIdx} className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                            {String.fromCharCode(65 + oIdx)}. {opt}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 export default AdminDashboard;
 

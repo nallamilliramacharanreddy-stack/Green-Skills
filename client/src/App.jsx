@@ -89,6 +89,7 @@ function App() {
             <Route path="/admin/proctoring" element={<ProtectedRoute allowedRoles={['admin', 'admin_course', 'admin_hiring', 'admin_exam', 'super-admin']}><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/admins" element={<ProtectedRoute allowedRoles={['admin', 'admin_course', 'admin_hiring', 'admin_exam', 'super-admin']}><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/notifications" element={<ProtectedRoute allowedRoles={['admin', 'admin_course', 'admin_hiring', 'admin_exam', 'super-admin']}><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin/integrity" element={<ProtectedRoute allowedRoles={['admin', 'admin_course', 'admin_hiring', 'admin_exam', 'super-admin']}><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/profile" element={<ProtectedRoute allowedRoles={['admin', 'admin_course', 'admin_hiring', 'admin_exam', 'super-admin']}><ProfilePage /></ProtectedRoute>} />
             <Route path="/guide" element={<ProtectedRoute><GuideDashboard /></ProtectedRoute>} />
             <Route path="/guide/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
