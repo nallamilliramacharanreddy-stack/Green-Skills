@@ -450,6 +450,7 @@ const generateAIAssessment = async (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // Prevent buffering on Render/Nginx reverse proxy
   res.flushHeaders();
 
   const sendEvent = (data) => {
@@ -472,12 +473,21 @@ const generateAIAssessment = async (req, res) => {
     sendEvent({ progress: 'Analyzing Transcript...' });
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     const totalQuestions = parseInt(numQuestions) || 50;
-    const questionsPerChunk = 10;
-    const chunkCount = Math.ceil(totalQuestions / questionsPerChunk);
+    
+    // Smart chunking based on transcript size and question count (reducing number of chunks)
+    let questionsPerChunk = 10;
+    if (transcript.length < 12000 || totalQuestions <= 15) {
+      questionsPerChunk = totalQuestions; // 1 single chunk!
+    } else if (totalQuestions <= 30) {
+      questionsPerChunk = 15; // 2 chunks
+    } else {
+      questionsPerChunk = 20; // 2 or 3 chunks
+    }
 
+    const chunkCount = Math.ceil(totalQuestions / questionsPerChunk);
     const transcriptLength = transcript.length;
     const charsPerChunk = Math.ceil(transcriptLength / chunkCount);
 
@@ -515,64 +525,105 @@ const generateAIAssessment = async (req, res) => {
 
       let attempt = 1;
       const maxAttempts = 3;
-      const retryDelays = [5000, 10000, 20000]; // 5s, 10s, 20s
+      const retryDelays = [4000, 8000, 15000]; // 4s, 8s, 15s
 
       while (attempt <= maxAttempts) {
         try {
           const result = await model.generateContent(prompt);
-          let responseText = result.response.text();
-          responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-          const parsed = JSON.parse(responseText);
+          let responseText = result.response.text().trim();
+          
+          if (responseText.startsWith("```")) {
+            responseText = responseText.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
+          } else {
+            const jsonStart = responseText.indexOf('[');
+            const jsonStartObj = responseText.indexOf('{');
+            let startIdx = -1;
+            if (jsonStart !== -1 && jsonStartObj !== -1) {
+              startIdx = Math.min(jsonStart, jsonStartObj);
+            } else {
+              startIdx = jsonStart !== -1 ? jsonStart : jsonStartObj;
+            }
+            if (startIdx !== -1) {
+              const jsonEnd = Math.max(responseText.lastIndexOf(']'), responseText.lastIndexOf('}'));
+              if (jsonEnd !== -1 && jsonEnd > startIdx) {
+                responseText = responseText.substring(startIdx, jsonEnd + 1);
+              }
+            }
+          }
+          
+          let parsed = JSON.parse(responseText);
+          let questionsArray = [];
+          
           if (Array.isArray(parsed)) {
-            return parsed.map(q => {
-              const opts = Array.isArray(q.options) && q.options.length === 4 ? q.options : ['Option A', 'Option B', 'Option C', 'Option D'];
-              let correctAns = q.correctAnswer;
-              if (correctAns !== undefined && correctAns !== null && correctAns !== '') {
-                if (typeof correctAns === 'number') {
-                  if (correctAns >= 0 && correctAns < opts.length) {
-                    correctAns = opts[correctAns];
-                  }
-                } else if (typeof correctAns === 'string') {
-                  const trimmed = correctAns.trim();
-                  const optIdx = opts.map(o => String(o).trim().toLowerCase()).indexOf(trimmed.toLowerCase());
-                  if (optIdx >= 0) {
-                    correctAns = opts[optIdx];
+            questionsArray = parsed;
+          } else if (parsed && typeof parsed === 'object') {
+            const keys = ['questions', 'quiz', 'assessment', 'questionsList', 'items', 'list'];
+            for (const key of keys) {
+              if (Array.isArray(parsed[key])) {
+                questionsArray = parsed[key];
+                break;
+              }
+            }
+            if (questionsArray.length === 0) {
+              const possibleArray = Object.values(parsed).find(val => Array.isArray(val));
+              if (possibleArray) {
+                questionsArray = possibleArray;
+              }
+            }
+          }
+
+          if (questionsArray.length === 0) {
+            throw new Error('No valid questions found in AI response structure');
+          }
+
+          return questionsArray.map(q => {
+            const opts = Array.isArray(q.options) && q.options.length === 4 ? q.options : ['Option A', 'Option B', 'Option C', 'Option D'];
+            let correctAns = q.correctAnswer;
+            if (correctAns !== undefined && correctAns !== null && correctAns !== '') {
+              if (typeof correctAns === 'number') {
+                if (correctAns >= 0 && correctAns < opts.length) {
+                  correctAns = opts[correctAns];
+                }
+              } else if (typeof correctAns === 'string') {
+                const trimmed = correctAns.trim();
+                const optIdx = opts.map(o => String(o).trim().toLowerCase()).indexOf(trimmed.toLowerCase());
+                if (optIdx >= 0) {
+                  correctAns = opts[optIdx];
+                } else {
+                  const idxNum = Number(trimmed);
+                  if (!isNaN(idxNum) && idxNum >= 0 && idxNum < opts.length) {
+                    correctAns = opts[idxNum];
                   } else {
-                    const idxNum = Number(trimmed);
-                    if (!isNaN(idxNum) && idxNum >= 0 && idxNum < opts.length) {
-                      correctAns = opts[idxNum];
-                    } else {
-                      correctAns = trimmed;
-                    }
+                    correctAns = trimmed;
                   }
                 }
               }
-              return {
-                question: q.question || q.questionText || 'Concept Question',
-                options: opts,
-                correctAnswer: correctAns || opts[0],
-                explanation: q.explanation || 'Based on the video concepts.',
-                difficulty: q.difficulty || difficulty || 'Medium',
-                marks: typeof q.marks === 'number' ? q.marks : 1
-              };
-            });
-          }
-          return [];
+            }
+            return {
+              question: q.question || q.questionText || 'Concept Question',
+              options: opts,
+              correctAnswer: correctAns || opts[0],
+              explanation: q.explanation || 'Based on the video concepts.',
+              difficulty: q.difficulty || difficulty || 'Medium',
+              marks: typeof q.marks === 'number' ? q.marks : 1
+            };
+          });
         } catch (error) {
-          const status = error.status || error.response?.status;
-          if (status === 429 || status === 503 || status === 504) {
-            if (attempt === maxAttempts) throw new Error('AI generation temporarily unavailable. Please try again later.');
-            console.log(`Rate limit hit, waiting ${retryDelays[attempt - 1]}ms before retry ${attempt + 1}...`);
-            await delay(retryDelays[attempt - 1]);
-            attempt++;
-          } else {
-            throw error; // If it's a parsing error or other 4xx error, throw it
+          console.warn(`[AI Assessment Chunk Attempt ${attempt}/${maxAttempts}] Generation failed:`, error.message);
+          if (attempt === maxAttempts) {
+            throw new Error(`AI assessment generation failed after ${maxAttempts} attempts: ${error.message}`);
           }
+          const jitter = Math.random() * 2000;
+          const delayMs = retryDelays[attempt - 1] + jitter;
+          console.log(`Waiting ${Math.round(delayMs)}ms before retry ${attempt + 1}...`);
+          await delay(delayMs);
+          attempt++;
         }
       }
     };
 
     let allGeneratedQuestions = [];
+    const chunkPromises = [];
 
     for (let i = 0; i < chunkCount; i++) {
       const startIdx = i * charsPerChunk;
@@ -583,10 +634,18 @@ const generateAIAssessment = async (req, res) => {
       const qEnd = Math.min((i + 1) * questionsPerChunk, totalQuestions);
       const chunkQuestionsCount = qEnd - qStart + 1;
 
-      sendEvent({ progress: `Generating Questions ${qStart}-${qEnd}...` });
+      sendEvent({ progress: `Requesting Questions ${qStart}-${qEnd}...` });
 
-      const questionsChunk = await generateChunkWithRetry(chunkText, chunkQuestionsCount);
+      chunkPromises.push(
+        generateChunkWithRetry(chunkText, chunkQuestionsCount).then(res => {
+          sendEvent({ progress: `Received Questions ${qStart}-${qEnd}...` });
+          return res;
+        })
+      );
+    }
 
+    const chunksResults = await Promise.all(chunkPromises);
+    for (const questionsChunk of chunksResults) {
       if (Array.isArray(questionsChunk)) {
         allGeneratedQuestions = [...allGeneratedQuestions, ...questionsChunk];
       }
@@ -766,7 +825,7 @@ const regenerateSingleQuestion = async (req, res) => {
 
     const { GoogleGenerativeAI } = require('@google/generative-ai');
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     const prompt = `Analyze the educational transcript and generate a completely unique multiple-choice question that is NOT similar to any of these existing questions:
 ${existingQuestions.map((q, i) => `${i+1}. "${q}"`).join('\n')}
@@ -786,10 +845,42 @@ Ensure:
   "marks": 1
 }`;
 
-    const result = await model.generateContent(prompt);
-    let responseText = result.response.text().trim();
-    responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-    const newQ = JSON.parse(responseText);
+    const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+    let attempt = 1;
+    const maxAttempts = 3;
+    const retryDelays = [3000, 6000, 12000];
+    let newQ = null;
+
+    while (attempt <= maxAttempts) {
+      try {
+        const result = await model.generateContent(prompt);
+        let responseText = result.response.text().trim();
+        if (responseText.startsWith("```")) {
+          responseText = responseText.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
+        } else {
+          const jsonStart = responseText.indexOf('{');
+          if (jsonStart !== -1) {
+            const jsonEnd = responseText.lastIndexOf('}');
+            if (jsonEnd !== -1 && jsonEnd > jsonStart) {
+              responseText = responseText.substring(jsonStart, jsonEnd + 1);
+            }
+          }
+        }
+        newQ = JSON.parse(responseText);
+        if (newQ && (newQ.question || newQ.questionText)) {
+          break;
+        }
+        throw new Error('Invalid question response format');
+      } catch (err) {
+        console.warn(`[Single Question Regen Attempt ${attempt}/${maxAttempts}] Failed:`, err.message);
+        if (attempt === maxAttempts) {
+          throw new Error(`Failed to regenerate question after ${maxAttempts} attempts: ${err.message}`);
+        }
+        const jitter = Math.random() * 2000;
+        await delay(retryDelays[attempt - 1] + jitter);
+        attempt++;
+      }
+    }
 
     const opts = Array.isArray(newQ.options) && newQ.options.length === 4 ? newQ.options : ['Option A', 'Option B', 'Option C', 'Option D'];
     let correctAns = newQ.correctAnswer;
