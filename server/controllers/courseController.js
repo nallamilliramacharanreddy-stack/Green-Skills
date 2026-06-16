@@ -493,7 +493,7 @@ const generateAIAssessment = async (req, res) => {
       4. ALL questions MUST be derived entirely from the provided transcript content.
       5. Include a variety of question types: Conceptual, Numerical, Scenario, Application, and Fact-Based.
       6. Provide 4 unique, meaningful options per question. No generic options.
-      7. Provide the correct answer index (0-3).
+      7. Identify the actual correct answer from the transcript content and store its exact text value in "correctAnswer".
       8. Provide a detailed, highly specific explanation based on the transcript to justify the answer.
       9. Return the result strictly as a JSON array of objects.
 
@@ -502,9 +502,10 @@ const generateAIAssessment = async (req, res) => {
         {
           "question": "Actual question text extracted from transcript logic",
           "options": ["Meaningful Option A", "Meaningful Option B", "Meaningful Option C", "Meaningful Option D"],
-          "correctAnswer": 0,
+          "correctAnswer": "Meaningful Option A",
           "explanation": "Actual explanation based on transcript content.",
-          "difficulty": "Easy/Medium/Hard"
+          "difficulty": "Easy/Medium/Hard",
+          "marks": 1
         }
       ]
 
@@ -521,7 +522,27 @@ const generateAIAssessment = async (req, res) => {
           const result = await model.generateContent(prompt);
           let responseText = result.response.text();
           responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-          return JSON.parse(responseText);
+          const parsed = JSON.parse(responseText);
+          if (Array.isArray(parsed)) {
+            return parsed.map(q => {
+              const opts = Array.isArray(q.options) && q.options.length === 4 ? q.options : ['Option A', 'Option B', 'Option C', 'Option D'];
+              let correctAns = q.correctAnswer;
+              if (typeof correctAns === 'number' && correctAns >= 0 && correctAns < 4) {
+                correctAns = opts[correctAns];
+              } else if (typeof correctAns === 'string') {
+                correctAns = correctAns.trim();
+              }
+              return {
+                question: q.question || q.questionText || 'Concept Question',
+                options: opts,
+                correctAnswer: correctAns || opts[0],
+                explanation: q.explanation || 'Based on the video concepts.',
+                difficulty: q.difficulty || difficulty || 'Medium',
+                marks: typeof q.marks === 'number' ? q.marks : 1
+              };
+            });
+          }
+          return [];
         } catch (error) {
           const status = error.status || error.response?.status;
           if (status === 429 || status === 503 || status === 504) {
@@ -639,7 +660,7 @@ const generateAIAssessment = async (req, res) => {
             const regenPrompt = `Analyze the topic and generate a completely unique multiple-choice question that is NOT similar or duplicate to the following:
 1. "${qText}"
 2. Any of these: ${allDbQuestions.slice(0, 10).map(x => `"${x}"`).join(', ')} (and general database questions).
-
+ 
 Ensure:
 - Meaningful question statement.
 - Exactly 4 unique choices (no blank options, no duplicate options, no nearly-identical options).
@@ -648,18 +669,34 @@ Ensure:
 {
   "question": "Unique question text",
   "options": ["Option A", "Option B", "Option C", "Option D"],
-  "correctAnswer": 0,
+  "correctAnswer": "Option A",
   "explanation": "Detailed explanation matching correct answer.",
-  "difficulty": "${difficulty || 'Medium'}"
+  "difficulty": "${difficulty || 'Medium'}",
+  "marks": 1
 }
 No markdown wrappers, just raw JSON.`;
-
+ 
             const result = await model.generateContent(regenPrompt);
             let responseText = result.response.text().trim();
             responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
             const newQ = JSON.parse(responseText);
             if (newQ && (newQ.question || newQ.questionText)) {
-              allGeneratedQuestions[i] = newQ;
+              const opts = Array.isArray(newQ.options) && newQ.options.length === 4 ? newQ.options : ['Option A', 'Option B', 'Option C', 'Option D'];
+              let correctAns = newQ.correctAnswer;
+              if (typeof correctAns === 'number' && correctAns >= 0 && correctAns < 4) {
+                correctAns = opts[correctAns];
+              } else if (typeof correctAns === 'string') {
+                correctAns = correctAns.trim();
+              }
+              const standardized = {
+                question: newQ.question || newQ.questionText || 'Concept Question',
+                options: opts,
+                correctAnswer: correctAns || opts[0],
+                explanation: newQ.explanation || 'Based on the video concepts.',
+                difficulty: newQ.difficulty || difficulty || 'Medium',
+                marks: typeof newQ.marks === 'number' ? newQ.marks : 1
+              };
+              allGeneratedQuestions[i] = standardized;
               i--; 
               continue;
             }

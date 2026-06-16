@@ -508,7 +508,7 @@ The output MUST be a valid JSON array matching this format EXACTLY:
   {
     "questionText": "Question text here",
     "options": ["Option A", "Option B", "Option C", "Option D"],
-    "correctAnswer": 0, // 0-based index of the correct option
+    "correctAnswer": "Option A", // The exact text value of the correct option
     "explanation": "Brief explanation of why this option is correct"
   }
 ]
@@ -529,12 +529,21 @@ ${transcriptText}
         
         const parsedQuestions = JSON.parse(responseText);
         if (Array.isArray(parsedQuestions) && parsedQuestions.length > 0) {
-          questions = parsedQuestions.map(q => ({
-            questionText: q.questionText || q.question || 'Concept Question',
-            options: Array.isArray(q.options) && q.options.length === 4 ? q.options : ['Option A', 'Option B', 'Option C', 'Option D'],
-            correctAnswer: typeof q.correctAnswer === 'number' && q.correctAnswer >= 0 && q.correctAnswer < 4 ? q.correctAnswer : 0,
-            explanation: q.explanation || 'Based on the video concepts.'
-          }));
+          questions = parsedQuestions.map(q => {
+            const opts = Array.isArray(q.options) && q.options.length === 4 ? q.options : ['Option A', 'Option B', 'Option C', 'Option D'];
+            let correctAns = q.correctAnswer;
+            if (typeof correctAns === 'number' && correctAns >= 0 && correctAns < 4) {
+              correctAns = opts[correctAns];
+            } else if (typeof correctAns === 'string') {
+              correctAns = correctAns.trim();
+            }
+            return {
+              questionText: q.questionText || q.question || 'Concept Question',
+              options: opts,
+              correctAnswer: correctAns || opts[0],
+              explanation: q.explanation || 'Based on the video concepts.'
+            };
+          });
         }
       } catch (err) {
         console.error("Gemini AI Quiz Generation failed, using default questions:", err.message);

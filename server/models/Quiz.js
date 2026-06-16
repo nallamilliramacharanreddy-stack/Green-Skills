@@ -20,11 +20,13 @@ const quizSchema = new mongoose.Schema({
           if (v === undefined || v === null || v === '') return false;
           const type = this.questionType || 'single';
           if (type === 'single' || type === 'boolean') {
+            if (this.options && this.options.includes(v)) return true;
             const idx = Number(v);
             return !isNaN(idx) && idx >= 0 && idx < this.options.length;
           }
           if (type === 'multiple') {
             if (Array.isArray(v)) {
+              if (v.every(opt => this.options.includes(opt))) return true;
               return v.length > 0 && v.every(idx => {
                 const n = Number(idx);
                 return !isNaN(n) && n >= 0 && n < this.options.length;
@@ -34,15 +36,17 @@ const quizSchema = new mongoose.Schema({
               try {
                 const parsed = JSON.parse(v);
                 if (Array.isArray(parsed)) {
+                  if (parsed.every(opt => this.options.includes(opt))) return true;
                   return parsed.length > 0 && parsed.every(idx => {
                     const n = Number(idx);
                     return !isNaN(n) && n >= 0 && n < this.options.length;
                   });
                 }
               } catch (e) {
-                const parts = v.split(',');
+                const parts = v.split(',').map(part => part.trim());
+                if (parts.every(opt => this.options.includes(opt))) return true;
                 return parts.length > 0 && parts.every(part => {
-                  const n = Number(part.trim());
+                  const n = Number(part);
                   return !isNaN(n) && n >= 0 && n < this.options.length;
                 });
               }
