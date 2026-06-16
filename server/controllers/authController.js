@@ -317,13 +317,37 @@ const login = async (req, res) => {
         return res.status(400).json({ message: 'Invalid credentials' });
       }
 
-      const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
-      const userResponse = user.toObject();
-      delete userResponse.password;
-      return res.json({
-        token,
-        user: userResponse
+      // Reuse existing valid OTP if generated recently (within last 3 minutes) to prevent invalidation on multiple clicks
+      let otp = user.adminOtp;
+      const now = Date.now();
+      const threeMinutesInMs = 3 * 60 * 1000;
+      const isOtpRecent = user.adminOtpExpires && (new Date(user.adminOtpExpires).getTime() - now > (15 * 60 * 1000 - threeMinutesInMs));
+      
+      if (!otp || !isOtpRecent) {
+        otp = Math.floor(100000 + Math.random() * 900000).toString();
+        user.adminOtp = otp;
+        user.adminOtpExpires = new Date(now + 15 * 60 * 1000); // 15 minutes
+        await user.save();
+      }
+
+      const mailOptions = {
+        from: '"Green Skill Rural Security" <nallamilliramacharanreddy@gmail.com>',
+        to: user.email,
+        subject: 'Green Skill Rural Admin - Security OTP',
+        html: generatePremiumEmail(otp)
+      };
+
+      console.log(`[SECURITY] Admin Login OTP generated for ${user.email}: ${otp}`);
+      // Send email asynchronously so that login is fast and doesn't block the client response
+      sendEmail({
+        to: user.email,
+        subject: 'Green Skill Rural Admin - Security OTP',
+        html: mailOptions.html
+      }).catch((err) => {
+        console.error('Error sending OTP email (handled asynchronously):', err);
       });
+
+      return res.json({ requiresOtp: true, email: user.email, message: 'Security OTP sent to your email.', otp });
     }
 
     if (user.role === 'employer') {
