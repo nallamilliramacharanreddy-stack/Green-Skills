@@ -42,6 +42,36 @@ const Quiz = () => {
   const preVerifyStreamRef = useRef(null);
   const preVerifyLoopRef = useRef(null);
 
+  // Anti-Cheating & Assessment State
+  const [timeLeft, setTimeLeft] = useState(1800); // 30 mins
+  const [warnings, setWarnings] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [userAnswers, setUserAnswers] = useState(() => {
+    const saved = localStorage.getItem('quiz_user_answers');
+    return saved ? JSON.parse(saved) : {};
+  });
+  const [questionStatus, setQuestionStatus] = useState({}); // 'not_visited', 'visited', 'answered', 'marked'
+  const videoRef = useRef(null);
+  const mediaStreamRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const chunksRef = useRef([]);
+  const [streamActive, setStreamActive] = useState(false);
+  const [trustScore, setTrustScore] = useState(100);
+  const [submissionTypeState, setSubmissionTypeState] = useState('Normal Submission');
+  const isProctoringReady = useRef(false);
+
+  // Advanced Enterprise-Grade Proctoring States
+  const [violationTimeline, setViolationTimeline] = useState([]);
+  const [screenActivityLog, setScreenActivityLog] = useState([]);
+  const [audioActivityLog, setAudioActivityLog] = useState([]);
+  const [objectDetectionLog, setObjectDetectionLog] = useState([]);
+  const [screenshots, setScreenshots] = useState([]);
+  const [highSeverityCount, setHighSeverityCount] = useState(0);
+  const [criticalSeverityCount, setCriticalSeverityCount] = useState(0);
+  const [phoneDetectionCount, setPhoneDetectionCount] = useState(0);
+  const [activeBox, setActiveBox] = useState(null);
+  const [autoSubmitReasonState, setAutoSubmitReasonState] = useState('');
+
   const startPreVerify = async () => {
     setPreVerifyStep('loading');
     try {
@@ -263,23 +293,7 @@ const Quiz = () => {
 
 
 
-  // Anti-Cheating & Assessment State
-  const [timeLeft, setTimeLeft] = useState(1800); // 30 mins
-  const [warnings, setWarnings] = useState(0);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [userAnswers, setUserAnswers] = useState(() => {
-    const saved = localStorage.getItem('quiz_user_answers');
-    return saved ? JSON.parse(saved) : {};
-  });
-  const [questionStatus, setQuestionStatus] = useState({}); // 'not_visited', 'visited', 'answered', 'marked'
-  const videoRef = useRef(null);
-  const mediaStreamRef = useRef(null);
-  const mediaRecorderRef = useRef(null);
-  const chunksRef = useRef([]);
-  const [streamActive, setStreamActive] = useState(false);
-  const [trustScore, setTrustScore] = useState(100);
-  const [submissionTypeState, setSubmissionTypeState] = useState('Normal Submission');
-  const isProctoringReady = useRef(false);
+  // Anti-Cheating & Assessment State (Moved to top of component to prevent TDZ ReferenceError)
 
   const getCorrectOptionText = (q) => {
     if (!q) return null;
@@ -294,17 +308,7 @@ const Quiz = () => {
     return String(q.correctAnswer);
   };
 
-  // Advanced Enterprise-Grade Proctoring States
-  const [violationTimeline, setViolationTimeline] = useState([]);
-  const [screenActivityLog, setScreenActivityLog] = useState([]);
-  const [audioActivityLog, setAudioActivityLog] = useState([]);
-  const [objectDetectionLog, setObjectDetectionLog] = useState([]);
-  const [screenshots, setScreenshots] = useState([]);
-  const [highSeverityCount, setHighSeverityCount] = useState(0);
-  const [criticalSeverityCount, setCriticalSeverityCount] = useState(0);
-  const [phoneDetectionCount, setPhoneDetectionCount] = useState(0);
-  const [activeBox, setActiveBox] = useState(null);
-  const [autoSubmitReasonState, setAutoSubmitReasonState] = useState('');
+  // Advanced Enterprise-Grade Proctoring States (Moved to top of component to prevent TDZ ReferenceError)
 
   // 120 Violations Catalog Registry
   const VIOLATIONS_REGISTRY = {
