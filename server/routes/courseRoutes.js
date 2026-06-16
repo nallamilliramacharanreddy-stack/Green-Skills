@@ -9,6 +9,7 @@ router.put('/:id', updateCourse);
 router.delete('/:id', deleteCourse);
 router.post('/:id/generate-quiz', generateQuizFromYoutube);
 router.post('/generate-ai-assessment', generateAIAssessment);
+router.post('/regenerate-question', require('../controllers/courseController').regenerateSingleQuestion);
 router.post('/:id/enroll', enrollInCourse);
 router.post('/:id/unenroll', unenrollInCourse);
 router.post('/:id/complete', completeCourse);

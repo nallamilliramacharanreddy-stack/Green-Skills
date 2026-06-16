@@ -1323,6 +1323,47 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
 
   const [questions, setQuestions] = useState([]);
   const [assessments, setAssessments] = useState([]);
+  const [editingQuestionId, setEditingQuestionId] = useState(null);
+
+  const handleAddQuestion = () => {
+    const newQ = {
+      id: Date.now() + Math.random(),
+      question: "New Question Text (Click Edit to modify)",
+      options: ["Option A", "Option B", "Option C", "Option D"],
+      correctAnswer: "Option A",
+      explanation: "Explanation text.",
+      difficulty: "Medium",
+      marks: 1
+    };
+    setQuestions([...questions, newQ]);
+    setEditingQuestionId(newQ.id);
+  };
+
+  const handleRegenerateSingleQuestion = async (qId) => {
+    if (!formData.transcript || formData.transcript.trim() === '') {
+      toast.error('Please provide transcript content in the form before regenerating.');
+      return;
+    }
+    try {
+      toast.loading("Regenerating question with Gemini AI...");
+      const otherQuestions = questions.filter(q => q.id !== qId).map(q => q.question || q.questionText);
+      const response = await axios.post(`${API_URL}/courses/regenerate-question`, {
+        transcript: formData.transcript,
+        existingQuestions: otherQuestions,
+        difficulty: formData.difficulty,
+        language: formData.language
+      });
+      toast.dismiss();
+      if (response.data) {
+        setQuestions(questions.map(q => q.id === qId ? { ...response.data, id: qId } : q));
+        toast.success("Question regenerated successfully!");
+      }
+    } catch (err) {
+      toast.dismiss();
+      console.error(err);
+      toast.error(err.response?.data?.message || "Failed to regenerate question.");
+    }
+  };
 
   useEffect(() => {
     // initialize from courses for published assessments
@@ -1662,45 +1703,113 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
       <div className="flex justify-between items-center px-4">
         <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter italic">{questions.length} Generated Questions</h3>
         <div className="flex gap-4">
-          <button className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold uppercase hover:bg-slate-200 flex items-center gap-2"><Plus size={14}/> Add Question</button>
-          <button className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold uppercase hover:bg-slate-200 flex items-center gap-2"><Activity size={14}/> Regenerate All</button>
+          <button onClick={handleAddQuestion} className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold uppercase hover:bg-slate-200 flex items-center gap-2"><Plus size={14}/> Add Question</button>
+          <button onClick={handleGenerate} className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold uppercase hover:bg-slate-200 flex items-center gap-2"><Activity size={14}/> Regenerate All</button>
         </div>
       </div>
 
       <div className="space-y-6">
-        {questions.map((q, index) => (
-          <div key={q.id} className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm relative group">
-            <div className="absolute top-8 right-8 flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
-              <button className="p-2 bg-slate-50 text-slate-600 rounded-lg hover:bg-primary hover:text-white transition-all"><Edit size={16}/></button>
-              <button className="p-2 bg-slate-50 text-slate-600 rounded-lg hover:bg-primary hover:text-white transition-all" title="Regenerate"><Activity size={16}/></button>
-              <button onClick={() => setQuestions(questions.filter(qu => qu.id !== q.id))} className="p-2 bg-slate-50 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all"><Trash2 size={16}/></button>
-            </div>
-            
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center font-black">{index + 1}</div>
-              <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-md text-[10px] font-black uppercase tracking-widest">{q.difficulty || 'Medium'}</span>
-            </div>
-            
-            <h4 className="text-lg font-bold text-slate-900 mb-6">{q.question || q.questionText || q.text || "Question text unavailable"}</h4>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {q.options.map((opt, i) => {
-                const isCorrect = Number(i) === Number(q.correctAnswer) || opt === q.correctAnswer;
-                return (
-                  <div key={i} className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between ${isCorrect ? 'border-emerald-500 bg-emerald-50 text-emerald-900' : 'border-slate-100 hover:border-slate-300'}`}>
-                     <span className="font-medium text-sm">{opt}</span>
-                     {isCorrect && <CheckCircle size={18} className="text-emerald-500" />}
+        {questions.map((q, index) => {
+          if (q.id === editingQuestionId) {
+            return (
+              <div key={q.id} className="bg-white p-8 rounded-[32px] border-2 border-primary/30 shadow-md relative space-y-6">
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-500 block mb-2">Question Text</label>
+                  <input 
+                    value={q.question || q.questionText || ''} 
+                    onChange={e => {
+                      const text = e.target.value;
+                      setQuestions(questions.map(item => item.id === q.id ? { ...item, question: text, questionText: text } : item));
+                    }} 
+                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-primary"
+                    placeholder="Enter question text..."
+                  />
+                </div>
+                <div className="space-y-4">
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-500 block">Options (Select radio for correct answer)</label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {q.options.map((opt, i) => (
+                      <div key={i} className="flex items-center gap-3 p-2 bg-slate-50 rounded-xl border border-slate-200">
+                        <input 
+                          type="radio" 
+                          name={`correct-${q.id}`} 
+                          checked={q.options[i] === q.correctAnswer} 
+                          onChange={() => {
+                            setQuestions(questions.map(item => item.id === q.id ? { ...item, correctAnswer: q.options[i] } : item));
+                          }}
+                          className="w-4 h-4 text-primary focus:ring-primary"
+                        />
+                        <input 
+                          value={opt} 
+                          onChange={e => {
+                            const val = e.target.value;
+                            const newOpts = [...q.options];
+                            const oldOptVal = newOpts[i];
+                            newOpts[i] = val;
+                            const newCorrect = q.correctAnswer === oldOptVal ? val : q.correctAnswer;
+                            setQuestions(questions.map(item => item.id === q.id ? { ...item, options: newOpts, correctAnswer: newCorrect } : item));
+                          }} 
+                          className="w-full bg-transparent font-medium text-slate-900 text-sm outline-none" 
+                          placeholder={`Option ${i + 1}`}
+                        />
+                      </div>
+                    ))}
                   </div>
-                );
-              })}
+                </div>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-500 block mb-2">AI Explanation</label>
+                  <textarea 
+                    value={q.explanation || ''} 
+                    onChange={e => {
+                      setQuestions(questions.map(item => item.id === q.id ? { ...item, explanation: e.target.value } : item));
+                    }} 
+                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-primary resize-y min-h-[80px]"
+                    placeholder="Provide an explanation for the correct answer..."
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <button onClick={() => setEditingQuestionId(null)} className="px-6 py-3 bg-slate-950 text-white rounded-xl text-xs font-bold uppercase hover:bg-slate-800 transition-all">
+                    Done Editing
+                  </button>
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <div key={q.id} className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm relative group">
+              <div className="absolute top-8 right-8 flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                <button onClick={() => setEditingQuestionId(q.id)} className="p-2 bg-slate-50 text-slate-600 rounded-lg hover:bg-primary hover:text-white transition-all" title="Edit Question"><Edit size={16}/></button>
+                <button onClick={() => handleRegenerateSingleQuestion(q.id)} className="p-2 bg-slate-50 text-slate-600 rounded-lg hover:bg-primary hover:text-white transition-all" title="Regenerate with AI"><Activity size={16}/></button>
+                <button onClick={() => setQuestions(questions.filter(qu => qu.id !== q.id))} className="p-2 bg-slate-50 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all" title="Delete Question"><Trash2 size={16}/></button>
+              </div>
+              
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center font-black">{index + 1}</div>
+                <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-md text-[10px] font-black uppercase tracking-widest">{q.difficulty || 'Medium'}</span>
+              </div>
+              
+              <h4 className="text-lg font-bold text-slate-900 mb-6">{q.question || q.questionText || q.text || "Question text unavailable"}</h4>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {q.options.map((opt, i) => {
+                  const isCorrect = Number(i) === Number(q.correctAnswer) || opt === q.correctAnswer;
+                  return (
+                    <div key={i} className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between ${isCorrect ? 'border-emerald-500 bg-emerald-50 text-emerald-900' : 'border-slate-100 hover:border-slate-300'}`}>
+                       <span className="font-medium text-sm">{opt}</span>
+                       {isCorrect && <CheckCircle size={18} className="text-emerald-500" />}
+                    </div>
+                  );
+                })}
+              </div>
+              
+              <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
+                <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">AI Explanation</p>
+                <p className="text-sm text-blue-900 font-medium">{q.explanation || "No explanation provided."}</p>
+              </div>
             </div>
-            
-            <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
-              <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">AI Explanation</p>
-              <p className="text-sm text-blue-900 font-medium">{q.explanation || "No explanation provided."}</p>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

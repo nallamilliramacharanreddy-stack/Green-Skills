@@ -753,4 +753,81 @@ No markdown wrappers, just raw JSON.`;
   }
 };
 
-module.exports = { getAllCourses, getCourseById, createCourse, updateCourse, deleteCourse, generateQuizFromYoutube, generateAIAssessment, enrollInCourse, unenrollInCourse, completeCourse, completeLesson, completeTask };
+const regenerateSingleQuestion = async (req, res) => {
+  try {
+    const { transcript, existingQuestions = [], difficulty, language } = req.body;
+    if (!transcript || transcript.trim() === '') {
+      return res.status(400).json({ message: 'Transcript content is missing or empty.' });
+    }
+
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(400).json({ message: 'GEMINI_API_KEY is not configured in the server environment.' });
+    }
+
+    const { GoogleGenerativeAI } = require('@google/generative-ai');
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
+
+    const prompt = `Analyze the educational transcript and generate a completely unique multiple-choice question that is NOT similar to any of these existing questions:
+${existingQuestions.map((q, i) => `${i+1}. "${q}"`).join('\n')}
+
+Ensure:
+1. Question statement is meaningful, specific, and derived from the transcript. Do not generate generic or placeholder questions.
+2. Exactly 4 unique options.
+3. Identify the actual correct answer from transcript and store its exact text value in "correctAnswer".
+4. Provide a detailed explanation.
+5. Return strictly a JSON object:
+{
+  "question": "Question text",
+  "options": ["Option A", "Option B", "Option C", "Option D"],
+  "correctAnswer": "Option A",
+  "explanation": "Detailed explanation.",
+  "difficulty": "${difficulty || 'Medium'}",
+  "marks": 1
+}`;
+
+    const result = await model.generateContent(prompt);
+    let responseText = result.response.text().trim();
+    responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+    const newQ = JSON.parse(responseText);
+
+    const opts = Array.isArray(newQ.options) && newQ.options.length === 4 ? newQ.options : ['Option A', 'Option B', 'Option C', 'Option D'];
+    let correctAns = newQ.correctAnswer;
+    if (correctAns !== undefined && correctAns !== null && correctAns !== '') {
+      if (typeof correctAns === 'number') {
+        if (correctAns >= 0 && correctAns < opts.length) {
+          correctAns = opts[correctAns];
+        }
+      } else if (typeof correctAns === 'string') {
+        const trimmed = correctAns.trim();
+        const optIdx = opts.map(o => String(o).trim().toLowerCase()).indexOf(trimmed.toLowerCase());
+        if (optIdx >= 0) {
+          correctAns = opts[optIdx];
+        } else {
+          const idxNum = Number(trimmed);
+          if (!isNaN(idxNum) && idxNum >= 0 && idxNum < opts.length) {
+            correctAns = opts[idxNum];
+          } else {
+            correctAns = trimmed;
+          }
+        }
+      }
+    }
+
+    const standardized = {
+      question: newQ.question || newQ.questionText || 'Concept Question',
+      options: opts,
+      correctAnswer: correctAns || opts[0],
+      explanation: newQ.explanation || 'Based on the video concepts.',
+      difficulty: newQ.difficulty || difficulty || 'Medium',
+      marks: typeof newQ.marks === 'number' ? newQ.marks : 1
+    };
+
+    res.json(standardized);
+  } catch (error) {
+    console.error('Failed to regenerate single question:', error);
+    res.status(500).json({ message: 'Error regenerating question: ' + error.message });
+  }
+};
+
+module.exports = { getAllCourses, getCourseById, createCourse, updateCourse, deleteCourse, generateQuizFromYoutube, generateAIAssessment, enrollInCourse, unenrollInCourse, completeCourse, completeLesson, completeTask, regenerateSingleQuestion };
