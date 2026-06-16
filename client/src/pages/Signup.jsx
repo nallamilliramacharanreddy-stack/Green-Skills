@@ -277,9 +277,9 @@ const Signup = () => {
           let passed = false;
           
           if (currentStep === 'blink') {
-            if (averageEAR < 0.20 && !eyeClosedRef.current) {
+            if (averageEAR < 0.23 && !eyeClosedRef.current) {
               eyeClosedRef.current = true;
-            } else if (averageEAR > 0.24 && eyeClosedRef.current) {
+            } else if (averageEAR > 0.26 && eyeClosedRef.current) {
               eyeClosedRef.current = false;
               blinkCountRef.current += 1;
               setBlinkCount(blinkCountRef.current);
@@ -712,7 +712,7 @@ const Signup = () => {
                   
                   let readout = '';
                   if (isActive) {
-                    if (c.type === 'blink') readout = ` (${blinkCount}/2) (EAR: ${currentEAR} / Target: < 0.20)`;
+                    if (c.type === 'blink') readout = ` (${blinkCount}/2) (EAR: ${currentEAR} / Target: < 0.23)`;
                     if (c.type === 'turnLeft' || c.type === 'turnRight') readout = ` (Nose Ratio: ${currentNoseRatio})`;
                     if (c.type === 'smile') readout = ` (Smile Ratio: ${currentSmileRatio} / Target: > 0.35)`;
                   }
