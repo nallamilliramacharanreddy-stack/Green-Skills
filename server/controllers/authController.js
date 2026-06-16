@@ -347,7 +347,7 @@ const login = async (req, res) => {
         console.error('Error sending OTP email (handled asynchronously):', err);
       });
 
-      return res.json({ requiresOtp: true, email: user.email, message: 'Security OTP sent to your email.', otp });
+      return res.json({ requiresOtp: true, email: user.email, message: 'Security OTP sent to your email.' });
     }
 
     if (user.role === 'employer') {
@@ -641,7 +641,7 @@ const forgotPasswordRequest = async (req, res) => {
     }).catch((err) => {
       console.error('Error sending Forgot Password OTP email (handled asynchronously):', err);
     });
-    res.json({ message: 'OTP sent to your registered email address.', otp });
+    res.json({ message: 'OTP sent to your registered email address.' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Failed to send OTP' });

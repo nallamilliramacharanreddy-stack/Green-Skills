@@ -21,19 +21,13 @@ const HirerLogin = () => {
   const [forgotPasswordStage, setForgotPasswordStage] = useState(0); // 0: None, 1: Email, 2: OTP, 3: New Password
   const [resetOtp, setResetOtp] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [receivedOtp, setReceivedOtp] = useState('');
 
   const handleForgotPasswordSubmit = async (e) => {
     e.preventDefault();
     if (forgotPasswordStage === 1) {
       try {
         const res = await axios.post(`${API_URL}/auth/forgot-password-request`, { email });
-        if (res.data.otp) {
-          toast.success(`[DEV MODE] Reset OTP: ${res.data.otp}`, { duration: 15000 });
-          setReceivedOtp(res.data.otp);
-        } else {
-          toast.success(res.data.message);
-        }
+        toast.success(res.data.message || 'OTP sent to your registered email address.');
         setForgotPasswordStage(2);
       } catch (error) {
         toast.error(error.response?.data?.message || 'Failed to send OTP');
@@ -58,7 +52,6 @@ const HirerLogin = () => {
         setPassword('');
         setConfirmPassword('');
         setResetOtp('');
-        setReceivedOtp('');
       } catch (error) {
         toast.error(error.response?.data?.message || 'Failed to reset password');
       }
@@ -245,27 +238,6 @@ const HirerLogin = () => {
                               />
                             </div>
                             <p className="text-[10px] text-slate-500 text-center mt-4">Check your email for the reset code.</p>
-                            {receivedOtp && (
-                              <div className="mt-4 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between text-left">
-                                <div className="flex items-center gap-3">
-                                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0"></span>
-                                  <div>
-                                    <p className="text-[9px] font-black text-emerald-800 uppercase tracking-widest">Demo Sandbox Mode</p>
-                                    <p className="text-[11px] font-bold text-emerald-600">Verification Code: <strong className="font-mono text-xs tracking-widest bg-emerald-100/50 px-2 py-0.5 rounded">{receivedOtp}</strong></p>
-                                  </div>
-                                </div>
-                                <button 
-                                  type="button" 
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(receivedOtp);
-                                    toast.success("Code copied!");
-                                  }}
-                                  className="text-[9px] font-black text-emerald-700 uppercase tracking-widest hover:underline flex-shrink-0 ml-2"
-                                >
-                                  Copy
-                                </button>
-                              </div>
-                            )}
                           </div>
                         )}
                         {forgotPasswordStage === 3 && (
@@ -308,7 +280,7 @@ const HirerLogin = () => {
                           </>
                         )}
                         <div className="flex justify-between items-center text-[10px] font-black text-gray-600 uppercase tracking-widest px-1 mt-6">
-                          <button type="button" onClick={() => { setForgotPasswordStage(0); setPassword(''); setConfirmPassword(''); setResetOtp(''); setReceivedOtp(''); }} className="hover:text-red-500 transition-colors">
+                          <button type="button" onClick={() => { setForgotPasswordStage(0); setPassword(''); setConfirmPassword(''); setResetOtp(''); }} className="hover:text-red-500 transition-colors">
                             Cancel Reset
                           </button>
                         </div>
