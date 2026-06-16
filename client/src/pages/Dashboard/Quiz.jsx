@@ -250,10 +250,11 @@ const Quiz = () => {
         return;
       }
 
+      const isCourse = quizToStart.lessonIndex !== undefined || quizToStart.quiz !== undefined;
       const payload = {
         userId: currentUserId,
-        courseId: quizToStart.lessonIndex !== undefined ? quizToStart._id : undefined,
-        quizId: quizToStart.lessonIndex === undefined ? quizToStart._id : undefined,
+        courseId: isCourse ? quizToStart._id : undefined,
+        quizId: !isCourse ? quizToStart._id : undefined,
         lessonIndex: quizToStart.lessonIndex
       };
 
@@ -1007,11 +1008,12 @@ const Quiz = () => {
 
       const aiSuspicionScore = Math.max(0, 100 - trustScore);
 
+      const isCourse = activeQuiz.lessonIndex !== undefined || activeQuiz.quiz !== undefined;
       const response = await axios.post(`${API_URL}/quizzes/submit`, {
         userId: user.id || user._id,
         attemptId,
-        courseId: activeQuiz.lessonIndex !== undefined ? activeQuiz._id : undefined,
-        quizId: activeQuiz.lessonIndex === undefined ? activeQuiz._id : undefined,
+        courseId: isCourse ? activeQuiz._id : undefined,
+        quizId: !isCourse ? activeQuiz._id : undefined,
         lessonIndex: activeQuiz.lessonIndex,
         duration,
         trustScore,
