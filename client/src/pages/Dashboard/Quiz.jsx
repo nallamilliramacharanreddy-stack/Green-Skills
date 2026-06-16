@@ -18,7 +18,13 @@ const Quiz = () => {
       return location.state.activeQuiz;
     }
     const saved = localStorage.getItem('active_quiz_meta');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      return saved && saved !== 'undefined' ? JSON.parse(saved) : null;
+    } catch (e) {
+      console.error("Failed to parse active_quiz_meta from localStorage:", e);
+      localStorage.removeItem('active_quiz_meta');
+      return null;
+    }
   });
   const [attemptId, setAttemptId] = useState(null);
   const [attemptLoading, setAttemptLoading] = useState(false);
@@ -48,7 +54,13 @@ const Quiz = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [userAnswers, setUserAnswers] = useState(() => {
     const saved = localStorage.getItem('quiz_user_answers');
-    return saved ? JSON.parse(saved) : {};
+    try {
+      return saved && saved !== 'undefined' ? JSON.parse(saved) : {};
+    } catch (e) {
+      console.error("Failed to parse quiz_user_answers from localStorage:", e);
+      localStorage.removeItem('quiz_user_answers');
+      return {};
+    }
   });
   const [questionStatus, setQuestionStatus] = useState({}); // 'not_visited', 'visited', 'answered', 'marked'
   const videoRef = useRef(null);
@@ -124,7 +136,12 @@ const Quiz = () => {
         }
 
         const savedUserStr = localStorage.getItem('user');
-        const savedUser = savedUserStr ? JSON.parse(savedUserStr) : null;
+        let savedUser = null;
+        try {
+          savedUser = savedUserStr && savedUserStr !== 'undefined' ? JSON.parse(savedUserStr) : null;
+        } catch (e) {
+          console.error("Failed to parse user in face tracking loop:", e);
+        }
         const currentUserId = user?.id || user?._id || savedUser?.id || savedUser?._id;
 
         const verificationToast = toast.loading('Matching facial credentials for exam session...');
@@ -179,7 +196,12 @@ const Quiz = () => {
   const fetchUserAttempts = async () => {
     try {
       const savedUserStr = localStorage.getItem('user');
-      const savedUser = savedUserStr ? JSON.parse(savedUserStr) : null;
+      let savedUser = null;
+      try {
+        savedUser = savedUserStr && savedUserStr !== 'undefined' ? JSON.parse(savedUserStr) : null;
+      } catch (e) {
+        console.error("Failed to parse user in fetchUserAttempts:", e);
+      }
       const currentUserId = (user?.id || user?._id || savedUser?.id || savedUser?._id)?.toString();
       
       const res = await axios.get(`${API_URL}/quizzes/results`, {
@@ -211,7 +233,12 @@ const Quiz = () => {
     try {
       setAttemptLoading(true);
       const savedUserStr = localStorage.getItem('user');
-      const savedUser = savedUserStr ? JSON.parse(savedUserStr) : null;
+      let savedUser = null;
+      try {
+        savedUser = savedUserStr && savedUserStr !== 'undefined' ? JSON.parse(savedUserStr) : null;
+      } catch (e) {
+        console.error("Failed to parse user in startAttempt:", e);
+      }
       const currentUserId = user?.id || user?._id || savedUser?.id || savedUser?._id;
       
       if (!currentUserId) {
@@ -235,7 +262,12 @@ const Quiz = () => {
 
       // Load/merge saved answers from database and local storage
       const localAnswersStr = localStorage.getItem('quiz_user_answers');
-      const localAnswers = localAnswersStr ? JSON.parse(localAnswersStr) : {};
+      let localAnswers = {};
+      try {
+        localAnswers = localAnswersStr && localAnswersStr !== 'undefined' ? JSON.parse(localAnswersStr) : {};
+      } catch (e) {
+        console.error("Failed to parse quiz_user_answers inside startAttempt:", e);
+      }
       const mergedAnswers = { ...savedUserAnswers, ...localAnswers };
       setUserAnswers(mergedAnswers);
       localStorage.setItem('quiz_user_answers', JSON.stringify(mergedAnswers));

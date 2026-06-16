@@ -62,7 +62,13 @@ const Courses = () => {
   // Notes state
   const [notes, setNotes] = useState(() => {
     const saved = localStorage.getItem('course_notes');
-    return saved ? JSON.parse(saved) : {};
+    try {
+      return saved && saved !== 'undefined' ? JSON.parse(saved) : {};
+    } catch (e) {
+      console.error("Failed to parse course_notes from localStorage:", e);
+      localStorage.removeItem('course_notes');
+      return {};
+    }
   });
   const [noteInput, setNoteInput] = useState('');
   const [editingNoteId, setEditingNoteId] = useState(null);
