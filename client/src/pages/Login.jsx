@@ -170,7 +170,11 @@ const Login = () => {
     if (forgotPasswordStage === 1) {
       try {
         const res = await axios.post(`${API_URL}/auth/forgot-password-request`, { email });
-        toast.success(res.data.message);
+        if (res.data.otp) {
+          toast.success(`[DEV MODE] Reset OTP: ${res.data.otp}`, { duration: 15000 });
+        } else {
+          toast.success(res.data.message);
+        }
         setForgotPasswordStage(2);
       } catch (error) {
         toast.error(error.response?.data?.message || 'Failed to send OTP');
@@ -256,7 +260,11 @@ const Login = () => {
       if (res.requiresOtp) {
         setIsOtpMode(true);
         setCountdown(180);
-        toast.success(res.message || 'OTP sent to your email');
+        if (res.otp) {
+          toast.success(`[DEV MODE] OTP: ${res.otp}`, { duration: 15000 });
+        } else {
+          toast.success(res.message || 'OTP sent to your email');
+        }
         return;
       }
 

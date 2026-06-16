@@ -253,10 +253,10 @@ const login = async (req, res) => {
       console.log(`[SECURITY] Admin Login OTP generated for ${user.email}: ${otp}`);
       try {
         await transporter.sendMail(mailOptions);
-        return res.json({ requiresOtp: true, email: user.email, message: 'Security OTP sent to your email.' });
+        return res.json({ requiresOtp: true, email: user.email, message: 'Security OTP sent to your email.', otp });
       } catch (err) {
         console.error('Error sending OTP email (gracefully handled):', err);
-        return res.json({ requiresOtp: true, email: user.email, message: 'Security OTP generated (retrieve from console logs).' });
+        return res.json({ requiresOtp: true, email: user.email, message: 'Security OTP generated (retrieve from console logs).', otp });
       }
     }
 
@@ -540,7 +540,7 @@ const forgotPasswordRequest = async (req, res) => {
     } catch (err) {
       console.error('Error sending Forgot Password OTP email (gracefully handled):', err);
     }
-    res.json({ message: 'OTP sent to your registered email address.' });
+    res.json({ message: 'OTP sent to your registered email address.', otp });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Failed to send OTP' });

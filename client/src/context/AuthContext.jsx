@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }) => {
       const response = await axios.post(`${API_URL}/auth/login`, { email, password, role });
       
       if (response.data.requiresOtp) {
-        return { success: true, requiresOtp: true, email: response.data.email, message: response.data.message };
+        return { success: true, requiresOtp: true, email: response.data.email, message: response.data.message, otp: response.data.otp };
       }
 
       if (response.data.requiresFace) {
