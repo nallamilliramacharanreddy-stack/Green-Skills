@@ -44,20 +44,20 @@ const Login = () => {
         throw new Error('Face-API library not loaded yet');
       }
       const MODEL_URL = '/models/';
-      await window.faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
-      await window.faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
-      await window.faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+      if (!window.faceapi.nets.ssdMobilenetv1.params) {
+        await window.faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+      }
+      if (!window.faceapi.nets.faceLandmark68Net.params) {
+        await window.faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+      }
+      if (!window.faceapi.nets.faceRecognitionNet.params) {
+        await window.faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+      }
       
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: 640, height: 480, facingMode: 'user' }
       });
       setFaceStream(stream);
-      if (faceVideoRef.current) {
-        faceVideoRef.current.srcObject = stream;
-        faceVideoRef.current.onloadedmetadata = () => {
-          faceVideoRef.current.play().catch(e => console.error("Webcam play failed in Login:", e));
-        };
-      }
       faceVerificationStepRef.current = 'active';
       setFaceVerificationStep('active');
     } catch (err) {
@@ -146,6 +146,15 @@ const Login = () => {
       }
     };
   }, [isFaceVerifying]);
+
+  useEffect(() => {
+    if (faceStream && faceVideoRef.current) {
+      faceVideoRef.current.srcObject = faceStream;
+      faceVideoRef.current.onloadedmetadata = () => {
+        faceVideoRef.current.play().catch(e => console.error("Webcam play failed in Login:", e));
+      };
+    }
+  }, [faceStream, isFaceVerifying]);
 
   useEffect(() => {
     let timer;

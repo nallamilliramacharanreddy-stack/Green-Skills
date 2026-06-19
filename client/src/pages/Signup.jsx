@@ -116,20 +116,20 @@ const Signup = () => {
         throw new Error('Face-API library not loaded yet');
       }
       const MODEL_URL = '/models/';
-      await window.faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
-      await window.faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
-      await window.faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+      if (!window.faceapi.nets.ssdMobilenetv1.params) {
+        await window.faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+      }
+      if (!window.faceapi.nets.faceLandmark68Net.params) {
+        await window.faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+      }
+      if (!window.faceapi.nets.faceRecognitionNet.params) {
+        await window.faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+      }
       
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: 640, height: 480, facingMode: 'user' }
       });
       setWebcamStream(stream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current.play().catch(e => console.error("Webcam play failed in Signup:", e));
-        };
-      }
       setStepState('position');
     } catch (err) {
       console.error(err);
@@ -356,6 +356,15 @@ const Signup = () => {
       }
     };
   }, [isEnrolling]);
+
+  useEffect(() => {
+    if (webcamStream && videoRef.current) {
+      videoRef.current.srcObject = webcamStream;
+      videoRef.current.onloadedmetadata = () => {
+        videoRef.current.play().catch(e => console.error("Webcam play failed in Signup:", e));
+      };
+    }
+  }, [webcamStream, isEnrolling]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

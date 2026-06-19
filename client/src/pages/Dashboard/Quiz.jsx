@@ -46,6 +46,7 @@ const Quiz = () => {
   const [preVerifyStep, setPreVerifyStep] = useState('loading');
   const preVerifyVideoRef = useRef(null);
   const preVerifyStreamRef = useRef(null);
+  const [preVerifyStream, setPreVerifyStream] = useState(null);
   const preVerifyLoopRef = useRef(null);
 
   // Anti-Cheating & Assessment State
@@ -65,6 +66,7 @@ const Quiz = () => {
   const [questionStatus, setQuestionStatus] = useState({}); // 'not_visited', 'visited', 'answered', 'marked'
   const videoRef = useRef(null);
   const mediaStreamRef = useRef(null);
+  const [proctorStream, setProctorStream] = useState(null);
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
   const [streamActive, setStreamActive] = useState(false);
@@ -94,20 +96,21 @@ const Quiz = () => {
         throw new Error('Face-api not loaded');
       }
       const MODEL_URL = '/models/';
-      await window.faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
-      await window.faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
-      await window.faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+      if (!window.faceapi.nets.ssdMobilenetv1.params) {
+        await window.faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+      }
+      if (!window.faceapi.nets.faceLandmark68Net.params) {
+        await window.faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+      }
+      if (!window.faceapi.nets.faceRecognitionNet.params) {
+        await window.faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+      }
 
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: 640, height: 480, facingMode: 'user' }
       });
       preVerifyStreamRef.current = stream;
-      if (preVerifyVideoRef.current) {
-        preVerifyVideoRef.current.srcObject = stream;
-        preVerifyVideoRef.current.onloadedmetadata = () => {
-          preVerifyVideoRef.current.play().catch(e => console.error("Webcam play failed:", e));
-        };
-      }
+      setPreVerifyStream(stream);
       setPreVerifyStep('active');
       preVerifyLoopRef.current = requestAnimationFrame(runPreVerifyTracking);
     } catch (err) {
@@ -140,6 +143,7 @@ const Quiz = () => {
           preVerifyStreamRef.current.getTracks().forEach(track => track.stop());
           preVerifyStreamRef.current = null;
         }
+        setPreVerifyStream(null);
 
         const savedUserStr = localStorage.getItem('user');
         let savedUser = null;
@@ -191,8 +195,27 @@ const Quiz = () => {
         preVerifyStreamRef.current.getTracks().forEach(track => track.stop());
         preVerifyStreamRef.current = null;
       }
+      setPreVerifyStream(null);
     };
   }, [activeQuiz, preVerified]);
+
+  useEffect(() => {
+    if (preVerifyStream && preVerifyVideoRef.current) {
+      preVerifyVideoRef.current.srcObject = preVerifyStream;
+      preVerifyVideoRef.current.onloadedmetadata = () => {
+        preVerifyVideoRef.current.play().catch(e => console.error("Webcam play failed:", e));
+      };
+    }
+  }, [preVerifyStream, activeQuiz, preVerified]);
+
+  useEffect(() => {
+    if (proctorStream && videoRef.current) {
+      videoRef.current.srcObject = proctorStream;
+      videoRef.current.onloadedmetadata = () => {
+        videoRef.current.play().catch(e => console.error("Proctoring video play failed:", e));
+      };
+    }
+  }, [proctorStream, activeQuiz, preVerified]);
 
   useEffect(() => {
     fetchCoursesWithQuizzes();
@@ -733,12 +756,7 @@ const Quiz = () => {
     navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       .then((stream) => {
         mediaStreamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.onloadedmetadata = () => {
-            videoRef.current.play().catch(e => console.error("Proctoring video play failed:", e));
-          };
-        }
+        setProctorStream(stream);
         setStreamActive(true);
 
         // Start video recording
@@ -801,6 +819,7 @@ const Quiz = () => {
       if (mediaStreamRef.current) {
         mediaStreamRef.current.getTracks().forEach(track => track.stop());
       }
+      setProctorStream(null);
     };
   }, [activeQuiz, attemptId, showResult]);
 
@@ -1002,6 +1021,7 @@ const Quiz = () => {
         console.error("Error stopping media stream tracks:", e);
       }
       mediaStreamRef.current = null;
+      setProctorStream(null);
     }
     setStreamActive(false);
 
