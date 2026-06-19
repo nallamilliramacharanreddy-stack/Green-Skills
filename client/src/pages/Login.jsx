@@ -35,10 +35,17 @@ const Login = () => {
   const faceVideoRef = useRef(null);
   const faceTrackingLoopRef = useRef(null);
   const faceVerificationStepRef = useRef('loading');
+  const isInitializingRef = useRef(false);
 
   const startFaceVerification = async () => {
+    if (isInitializingRef.current) {
+      console.log("[FaceAPI] startFaceVerification: already initializing, skipping");
+      return;
+    }
+    isInitializingRef.current = true;
     faceVerificationStepRef.current = 'loading';
     setFaceVerificationStep('loading');
+    
     try {
       console.log("[FaceAPI] startFaceVerification: initiated");
       if (!window.faceapi) {
@@ -47,10 +54,17 @@ const Login = () => {
       console.log("[FaceAPI] startFaceVerification: faceapi found in window");
       const MODEL_URL = '/models';
       
+      const withTimeout = (promise, ms, description) => {
+        return Promise.race([
+          promise,
+          new Promise((_, reject) => setTimeout(() => reject(new Error(`Timeout: ${description}`)), ms))
+        ]);
+      };
+
       console.log("[FaceAPI] startFaceVerification: checking ssdMobilenetv1...");
       if (!window.faceapi.nets.ssdMobilenetv1.params) {
         console.log("[FaceAPI] startFaceVerification: loading ssdMobilenetv1 weights from", MODEL_URL);
-        await window.faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+        await withTimeout(window.faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL), 10000, "ssdMobilenetv1 weights load");
         console.log("[FaceAPI] startFaceVerification: ssdMobilenetv1 weights loaded successfully");
       } else {
         console.log("[FaceAPI] startFaceVerification: ssdMobilenetv1 already cached/loaded");
@@ -59,7 +73,7 @@ const Login = () => {
       console.log("[FaceAPI] startFaceVerification: checking faceLandmark68Net...");
       if (!window.faceapi.nets.faceLandmark68Net.params) {
         console.log("[FaceAPI] startFaceVerification: loading faceLandmark68Net weights from", MODEL_URL);
-        await window.faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+        await withTimeout(window.faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL), 10000, "faceLandmark68Net weights load");
         console.log("[FaceAPI] startFaceVerification: faceLandmark68Net weights loaded successfully");
       } else {
         console.log("[FaceAPI] startFaceVerification: faceLandmark68Net already cached/loaded");
@@ -68,16 +82,25 @@ const Login = () => {
       console.log("[FaceAPI] startFaceVerification: checking faceRecognitionNet...");
       if (!window.faceapi.nets.faceRecognitionNet.params) {
         console.log("[FaceAPI] startFaceVerification: loading faceRecognitionNet weights from", MODEL_URL);
-        await window.faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+        await withTimeout(window.faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL), 10000, "faceRecognitionNet weights load");
         console.log("[FaceAPI] startFaceVerification: faceRecognitionNet weights loaded successfully");
       } else {
         console.log("[FaceAPI] startFaceVerification: faceRecognitionNet already cached/loaded");
       }
       
+      if (faceStream) {
+        console.log("[FaceAPI] startFaceVerification: stopping existing stream");
+        faceStream.getTracks().forEach(track => track.stop());
+      }
+
       console.log("[FaceAPI] startFaceVerification: requesting webcam stream...");
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480, facingMode: 'user' }
-      });
+      const stream = await withTimeout(
+        navigator.mediaDevices.getUserMedia({
+          video: { width: 640, height: 480, facingMode: 'user' }
+        }),
+        10000,
+        "webcam access permission"
+      );
       console.log("[FaceAPI] startFaceVerification: webcam stream acquired successfully", stream);
       setFaceStream(stream);
       faceVerificationStepRef.current = 'active';
@@ -85,8 +108,10 @@ const Login = () => {
       console.log("[FaceAPI] startFaceVerification: active state set");
     } catch (err) {
       console.error("[FaceAPI] startFaceVerification Error:", err);
-      toast.error('Webcam access or model loading failed.');
+      toast.error(err.message || 'Webcam access or model loading failed.');
       setIsFaceVerifying(false);
+    } finally {
+      isInitializingRef.current = false;
     }
   };
 

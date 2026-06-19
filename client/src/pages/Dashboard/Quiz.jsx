@@ -48,6 +48,7 @@ const Quiz = () => {
   const preVerifyStreamRef = useRef(null);
   const [preVerifyStream, setPreVerifyStream] = useState(null);
   const preVerifyLoopRef = useRef(null);
+  const isInitializingRef = useRef(false);
 
   // Anti-Cheating & Assessment State
   const [timeLeft, setTimeLeft] = useState(1800); // 30 mins
@@ -90,7 +91,13 @@ const Quiz = () => {
   const [autoSubmitReasonState, setAutoSubmitReasonState] = useState('');
 
   const startPreVerify = async () => {
+    if (isInitializingRef.current) {
+      console.log("[FaceAPI] startPreVerify: already initializing, skipping");
+      return;
+    }
+    isInitializingRef.current = true;
     setPreVerifyStep('loading');
+    
     try {
       console.log("[FaceAPI] startPreVerify: initiated");
       if (!window.faceapi) {
@@ -99,10 +106,17 @@ const Quiz = () => {
       console.log("[FaceAPI] startPreVerify: faceapi found in window");
       const MODEL_URL = '/models';
       
+      const withTimeout = (promise, ms, description) => {
+        return Promise.race([
+          promise,
+          new Promise((_, reject) => setTimeout(() => reject(new Error(`Timeout: ${description}`)), ms))
+        ]);
+      };
+
       console.log("[FaceAPI] startPreVerify: checking ssdMobilenetv1...");
       if (!window.faceapi.nets.ssdMobilenetv1.params) {
         console.log("[FaceAPI] startPreVerify: loading ssdMobilenetv1 weights from", MODEL_URL);
-        await window.faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+        await withTimeout(window.faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL), 10000, "ssdMobilenetv1 weights load");
         console.log("[FaceAPI] startPreVerify: ssdMobilenetv1 weights loaded successfully");
       } else {
         console.log("[FaceAPI] startPreVerify: ssdMobilenetv1 already cached/loaded");
@@ -111,7 +125,7 @@ const Quiz = () => {
       console.log("[FaceAPI] startPreVerify: checking faceLandmark68Net...");
       if (!window.faceapi.nets.faceLandmark68Net.params) {
         console.log("[FaceAPI] startPreVerify: loading faceLandmark68Net weights from", MODEL_URL);
-        await window.faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+        await withTimeout(window.faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL), 10000, "faceLandmark68Net weights load");
         console.log("[FaceAPI] startPreVerify: faceLandmark68Net weights loaded successfully");
       } else {
         console.log("[FaceAPI] startPreVerify: faceLandmark68Net already cached/loaded");
@@ -120,16 +134,25 @@ const Quiz = () => {
       console.log("[FaceAPI] startPreVerify: checking faceRecognitionNet...");
       if (!window.faceapi.nets.faceRecognitionNet.params) {
         console.log("[FaceAPI] startPreVerify: loading faceRecognitionNet weights from", MODEL_URL);
-        await window.faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+        await withTimeout(window.faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL), 10000, "faceRecognitionNet weights load");
         console.log("[FaceAPI] startPreVerify: faceRecognitionNet weights loaded successfully");
       } else {
         console.log("[FaceAPI] startPreVerify: faceRecognitionNet already cached/loaded");
       }
 
+      if (preVerifyStreamRef.current) {
+        console.log("[FaceAPI] startPreVerify: stopping existing stream");
+        preVerifyStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+
       console.log("[FaceAPI] startPreVerify: requesting webcam stream...");
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480, facingMode: 'user' }
-      });
+      const stream = await withTimeout(
+        navigator.mediaDevices.getUserMedia({
+          video: { width: 640, height: 480, facingMode: 'user' }
+        }),
+        10000,
+        "webcam access permission"
+      );
       console.log("[FaceAPI] startPreVerify: webcam stream acquired successfully", stream);
       preVerifyStreamRef.current = stream;
       setPreVerifyStream(stream);
@@ -138,8 +161,10 @@ const Quiz = () => {
       console.log("[FaceAPI] startPreVerify: active state set and tracking started");
     } catch (err) {
       console.error("[FaceAPI] startPreVerify Error:", err);
-      toast.error('Webcam or models failed to initialize.');
+      toast.error(err.message || 'Webcam or models failed to initialize.');
       setActiveQuiz(null);
+    } finally {
+      isInitializingRef.current = false;
     }
   };
 

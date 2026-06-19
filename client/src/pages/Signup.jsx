@@ -48,6 +48,7 @@ const Signup = () => {
   const eyeClosedRef = useRef(false);
   const blinkCountRef = useRef(0);
   const trackingLoopRef = useRef(null);
+  const isInitializingRef = useRef(false);
 
   // 3D Parallax Effect
   const x = useMotionValue(0);
@@ -110,7 +111,13 @@ const Signup = () => {
   };
 
   const startEnrollment = async () => {
+    if (isInitializingRef.current) {
+      console.log("[FaceAPI] startEnrollment: already initializing, skipping");
+      return;
+    }
+    isInitializingRef.current = true;
     setStepState('loading');
+    
     try {
       console.log("[FaceAPI] startEnrollment: initiated");
       if (!window.faceapi) {
@@ -119,10 +126,17 @@ const Signup = () => {
       console.log("[FaceAPI] startEnrollment: faceapi found in window");
       const MODEL_URL = '/models';
       
+      const withTimeout = (promise, ms, description) => {
+        return Promise.race([
+          promise,
+          new Promise((_, reject) => setTimeout(() => reject(new Error(`Timeout: ${description}`)), ms))
+        ]);
+      };
+
       console.log("[FaceAPI] startEnrollment: checking ssdMobilenetv1...");
       if (!window.faceapi.nets.ssdMobilenetv1.params) {
         console.log("[FaceAPI] startEnrollment: loading ssdMobilenetv1 weights from", MODEL_URL);
-        await window.faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+        await withTimeout(window.faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL), 10000, "ssdMobilenetv1 weights load");
         console.log("[FaceAPI] startEnrollment: ssdMobilenetv1 weights loaded successfully");
       } else {
         console.log("[FaceAPI] startEnrollment: ssdMobilenetv1 already cached/loaded");
@@ -131,7 +145,7 @@ const Signup = () => {
       console.log("[FaceAPI] startEnrollment: checking faceLandmark68Net...");
       if (!window.faceapi.nets.faceLandmark68Net.params) {
         console.log("[FaceAPI] startEnrollment: loading faceLandmark68Net weights from", MODEL_URL);
-        await window.faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+        await withTimeout(window.faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL), 10000, "faceLandmark68Net weights load");
         console.log("[FaceAPI] startEnrollment: faceLandmark68Net weights loaded successfully");
       } else {
         console.log("[FaceAPI] startEnrollment: faceLandmark68Net already cached/loaded");
@@ -140,24 +154,35 @@ const Signup = () => {
       console.log("[FaceAPI] startEnrollment: checking faceRecognitionNet...");
       if (!window.faceapi.nets.faceRecognitionNet.params) {
         console.log("[FaceAPI] startEnrollment: loading faceRecognitionNet weights from", MODEL_URL);
-        await window.faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+        await withTimeout(window.faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL), 10000, "faceRecognitionNet weights load");
         console.log("[FaceAPI] startEnrollment: faceRecognitionNet weights loaded successfully");
       } else {
         console.log("[FaceAPI] startEnrollment: faceRecognitionNet already cached/loaded");
       }
       
+      if (webcamStream) {
+        console.log("[FaceAPI] startEnrollment: stopping existing stream");
+        webcamStream.getTracks().forEach(track => track.stop());
+      }
+
       console.log("[FaceAPI] startEnrollment: requesting webcam stream...");
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480, facingMode: 'user' }
-      });
+      const stream = await withTimeout(
+        navigator.mediaDevices.getUserMedia({
+          video: { width: 640, height: 480, facingMode: 'user' }
+        }),
+        10000,
+        "webcam access permission"
+      );
       console.log("[FaceAPI] startEnrollment: webcam stream acquired successfully", stream);
       setWebcamStream(stream);
       setStepState('position');
       console.log("[FaceAPI] startEnrollment: position state set");
     } catch (err) {
       console.error("[FaceAPI] startEnrollment Error:", err);
-      toast.error('Webcam access or model loading failed. Please check permissions.');
+      toast.error(err.message || 'Webcam access or model loading failed. Please check permissions.');
       setIsEnrolling(false);
+    } finally {
+      isInitializingRef.current = false;
     }
   };
 
