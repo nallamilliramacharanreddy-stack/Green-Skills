@@ -82,9 +82,24 @@ app.use('/api', limiter);
 // app.use(xss()); // Deprecated and incompatible with Express 5
 
 // Redis Cache Setup (Optional/Graceful Degradation)
-const redisClient = createClient({ url: process.env.REDIS_URL || 'redis://localhost:6379' });
-redisClient.on('error', (err) => console.log('Redis Cache Error (Gracefully handled):', err.message));
-redisClient.connect().then(() => console.log('Redis Connected (Optional)')).catch(() => {});
+let redisClient = null;
+if (process.env.REDIS_URL) {
+  redisClient = createClient({
+    url: process.env.REDIS_URL,
+    socket: {
+      reconnectStrategy(retries) {
+        if (retries > 3) {
+          return new Error('Redis connection failed permanently');
+        }
+        return 5000;
+      }
+    }
+  });
+  redisClient.on('error', (err) => console.log('Redis Cache Error (Gracefully handled):', err.message));
+  redisClient.connect().then(() => console.log('Redis Connected (Optional)')).catch(() => {});
+} else {
+  console.log('Redis cache disabled in local development');
+}
 app.set('redis', redisClient);
 
 // Middleware
