@@ -117,11 +117,20 @@ const Courses = () => {
 
     if (!prog) return isCompleted(course._id) ? 100 : 0;
 
-    const totalItems = (course.lessons?.length || 0) + (course.tasks?.length || 0);
+    const totalLessons = course.lessons?.length || 0;
+    const totalTasks = course.tasks?.length || 0;
+    const totalItems = totalLessons + totalTasks;
     if (totalItems === 0) return isCompleted(course._id) ? 100 : 0;
 
-    const completedItems = (prog.completedLessons?.length || 0) + (prog.completedTasks?.length || 0);
-    return Math.round((completedItems / totalItems) * 100);
+    // Filter unique completed items that actually exist in the current course
+    const completedLessonsCount = [...new Set(prog.completedLessons || [])]
+      .filter(idx => idx >= 0 && idx < totalLessons).length;
+    const completedTasksCount = [...new Set(prog.completedTasks || [])]
+      .filter(idx => idx >= 0 && idx < totalTasks).length;
+
+    const completedItems = completedLessonsCount + completedTasksCount;
+    const percentage = Math.round((completedItems / totalItems) * 100);
+    return Math.min(percentage, 100);
   }
 
   const fetchCourses = async () => {
@@ -266,9 +275,15 @@ const Courses = () => {
       const course = courses.find(c => c._id === courseId);
 
       // Auto complete the course if progress hits 100% after this lesson
-      const totalItems = (course.lessons?.length || 0) + (course.tasks?.length || 0);
-      const newCompletedItems = ((res.data.user?.progress?.courseProgress?.find(p => p.courseId.toString() === courseId.toString())?.completedLessons?.length) || 0) +
-        ((res.data.user?.progress?.courseProgress?.find(p => p.courseId.toString() === courseId.toString())?.completedTasks?.length) || 0);
+      const totalLessons = course.lessons?.length || 0;
+      const totalTasks = course.tasks?.length || 0;
+      const totalItems = totalLessons + totalTasks;
+      const userProg = res.data.user?.progress?.courseProgress?.find(p => p.courseId.toString() === courseId.toString());
+      const completedLessonsCount = [...new Set(userProg?.completedLessons || [])]
+        .filter(idx => idx >= 0 && idx < totalLessons).length;
+      const completedTasksCount = [...new Set(userProg?.completedTasks || [])]
+        .filter(idx => idx >= 0 && idx < totalTasks).length;
+      const newCompletedItems = completedLessonsCount + completedTasksCount;
 
       if (newCompletedItems >= totalItems && totalItems > 0) {
         handleCompleteCourse(courseId);

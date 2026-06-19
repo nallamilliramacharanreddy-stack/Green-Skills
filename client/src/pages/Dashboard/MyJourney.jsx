@@ -91,14 +91,34 @@ const MyJourney = () => {
 
   const getCourseProgress = (course) => {
     if (!user || !course) return 0;
-    const prog = user.progress?.courseProgress?.find(p => (p.courseId?._id || p.courseId) === (course._id || course));
-    if (!prog) return 0;
-    
-    const totalItems = (course.lessons?.length || 0) + (course.tasks?.length || 0);
-    if (totalItems === 0) return 0;
-    
-    const completedItems = (prog.completedLessons?.length || 0) + (prog.completedTasks?.length || 0);
-    return Math.round((completedItems / totalItems) * 100);
+    const targetId = (course._id || course).toString();
+    const prog = user.progress?.courseProgress?.find(p => {
+      const id = p.courseId?._id || p.courseId;
+      return id && id.toString() === targetId;
+    });
+
+    if (!prog) {
+      const isCompleted = user.progress?.completedCourses?.some(c => (c?._id || c).toString() === targetId);
+      return isCompleted ? 100 : 0;
+    }
+
+    const totalLessons = course.lessons?.length || 0;
+    const totalTasks = course.tasks?.length || 0;
+    const totalItems = totalLessons + totalTasks;
+    if (totalItems === 0) {
+      const isCompleted = user.progress?.completedCourses?.some(c => (c?._id || c).toString() === targetId);
+      return isCompleted ? 100 : 0;
+    }
+
+    // Filter unique completed items that actually exist in the current course
+    const completedLessonsCount = [...new Set(prog.completedLessons || [])]
+      .filter(idx => idx >= 0 && idx < totalLessons).length;
+    const completedTasksCount = [...new Set(prog.completedTasks || [])]
+      .filter(idx => idx >= 0 && idx < totalTasks).length;
+
+    const completedItems = completedLessonsCount + completedTasksCount;
+    const percentage = Math.round((completedItems / totalItems) * 100);
+    return Math.min(percentage, 100);
   };
 
   const currentCourses = user?.progress?.currentCourses || [];
