@@ -43,7 +43,7 @@ const Login = () => {
       if (!window.faceapi) {
         throw new Error('Face-API library not loaded yet');
       }
-      const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
+      const MODEL_URL = '/models/';
       await window.faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
       await window.faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
       await window.faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);

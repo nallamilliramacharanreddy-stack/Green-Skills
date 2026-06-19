@@ -1,9 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldAlert, Play, Video, Clock, CheckCircle, AlertTriangle, User, BrainCircuit, PlayCircle, Eye, Activity, Shield, FastForward, Rewind, Pause, Search } from 'lucide-react';
+import { ShieldAlert, Play, Video, Clock, CheckCircle, AlertTriangle, User, BrainCircuit, PlayCircle, Eye, Activity, Shield, FastForward, Rewind, Pause, Search, Trash2 } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { API_URL } from '../../utils/api';
+
+const getVideoUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    try {
+      const parsed = new URL(url);
+      if (parsed.pathname.startsWith('/uploads/')) {
+        const baseApi = API_URL.endsWith('/api') ? API_URL.substring(0, API_URL.length - 4) : API_URL;
+        return `${baseApi}${parsed.pathname}`;
+      }
+    } catch (e) {
+      console.error("Failed to parse video URL:", e);
+    }
+    return url;
+  }
+  const baseApi = API_URL.endsWith('/api') ? API_URL.substring(0, API_URL.length - 4) : API_URL;
+  return `${baseApi}${url.startsWith('/') ? '' : '/'}${url}`;
+};
 
 const AdminProctoring = () => {
   const [results, setResults] = useState([]);
@@ -30,7 +48,16 @@ const AdminProctoring = () => {
   const filteredResults = results.filter(r => r.user?.name?.toLowerCase().includes(search.toLowerCase()) || r.course?.title?.toLowerCase().includes(search.toLowerCase()));
 
   if (selectedResult) {
-    return <ReportViewer result={selectedResult} onBack={() => setSelectedResult(null)} />;
+    return (
+      <ReportViewer 
+        result={selectedResult} 
+        onBack={() => setSelectedResult(null)} 
+        onInvalidate={(updatedResult) => {
+          setResults(prev => prev.map(r => r._id === updatedResult._id ? updatedResult : r));
+          setSelectedResult(updatedResult);
+        }}
+      />
+    );
   }
 
   return (
@@ -75,9 +102,15 @@ const AdminProctoring = () => {
                 <td className="p-6 font-bold text-slate-700 text-sm">{res.course?.title}</td>
                 <td className="p-6">
                   <div className="flex flex-col gap-1">
-                    <span className="px-3 py-1 bg-slate-100 rounded-md font-black text-slate-900 text-sm w-max">
-                      {res.totalQuestions ? Math.round((res.score / res.totalQuestions) * 100) : 0}% ({res.score}/{res.totalQuestions})
-                    </span>
+                    {res.isInvalidated ? (
+                      <span className="px-3 py-1 bg-red-50 border border-red-100 text-red-600 rounded-md font-black text-[10px] uppercase tracking-wider w-max">
+                        Invalidated
+                      </span>
+                    ) : (
+                      <span className="px-3 py-1 bg-slate-100 rounded-md font-black text-slate-900 text-sm w-max">
+                        {res.totalQuestions ? Math.round((res.score / res.totalQuestions) * 100) : 0}% ({res.score}/{res.totalQuestions})
+                      </span>
+                    )}
                     <div className="text-[10px] text-slate-400 font-bold">
                       C: <span className="text-emerald-500 font-bold">{res.correctCount ?? res.score}</span> | W: <span className="text-red-500 font-bold">{res.wrongCount ?? 0}</span> | N/A: <span className="text-slate-500 font-bold">{res.notAttemptedCount ?? 0}</span>
                     </div>
@@ -126,10 +159,30 @@ const AdminProctoring = () => {
   );
 };
 
-const ReportViewer = ({ result, onBack }) => {
+const ReportViewer = ({ result, onBack, onInvalidate }) => {
   const [activeTab, setActiveTab] = useState('screen');
   const [isPlaying, setIsPlaying] = useState(false);
+  const [invalidating, setInvalidating] = useState(false);
   const videoRef = React.useRef(null);
+
+  const handleRemoveScore = async () => {
+    const confirm = window.confirm("Are you sure you want to invalidate this candidate's quiz attempt? This will set their score to 0 and remove it from their learning streak / progress metrics. This action cannot be undone.");
+    if (!confirm) return;
+
+    setInvalidating(true);
+    try {
+      const res = await axios.put(`${API_URL}/quizzes/results/${result._id}/invalidate`);
+      toast.success("Assessment score successfully invalidated.");
+      if (onInvalidate) {
+        onInvalidate(res.data.result);
+      }
+    } catch (err) {
+      console.error("Failed to invalidate score:", err);
+      toast.error(err.response?.data?.message || "Failed to invalidate assessment score.");
+    } finally {
+      setInvalidating(false);
+    }
+  };
 
   const handlePlayPause = () => {
     if (videoRef.current) {
@@ -207,10 +260,27 @@ const ReportViewer = ({ result, onBack }) => {
 
   return (
     <div className="space-y-8 pb-16">
-      {/* Back Button */}
-      <button onClick={onBack} className="text-slate-600 hover:text-slate-900 font-bold text-sm flex items-center gap-2 transition-colors">
-        &larr; Back to Proctoring Hub
-      </button>
+      <div className="flex justify-between items-center">
+        {/* Back Button */}
+        <button onClick={onBack} className="text-slate-600 hover:text-slate-900 font-bold text-sm flex items-center gap-2 transition-colors">
+          &larr; Back to Proctoring Hub
+        </button>
+
+        {/* Invalidate / Remove Score Button */}
+        {result.isInvalidated ? (
+          <span className="px-4 py-2 bg-red-550 border border-red-200 text-red-600 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 bg-red-50/50">
+            Score Invalidated
+          </span>
+        ) : (
+          <button 
+            onClick={handleRemoveScore} 
+            disabled={invalidating}
+            className="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg shadow-red-500/10 hover:shadow-red-500/25 disabled:opacity-50"
+          >
+            <Trash2 size={12} /> {invalidating ? 'Removing...' : 'Remove Score'}
+          </button>
+        )}
+      </div>
 
       {/* Auto Submit Violation Banner */}
       {result.autoSubmitReason && (
@@ -264,10 +334,12 @@ const ReportViewer = ({ result, onBack }) => {
           <div className="w-px h-16 bg-slate-100"></div>
           <div>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Assessment Score</p>
-            <p className="text-5xl font-black text-slate-900 tracking-tighter">
+            <p className={`text-5xl font-black tracking-tighter ${result.isInvalidated ? 'text-red-600 line-through' : 'text-slate-900'}`}>
               {result.totalQuestions ? Math.round((result.score / result.totalQuestions) * 100) : 0}%
             </p>
-            <p className="text-xs font-bold text-slate-500 mt-1">{result.score} / {result.totalQuestions} Questions</p>
+            <p className="text-xs font-bold text-slate-500 mt-1">
+              {result.isInvalidated ? 'Score Invalidated' : `${result.score} / ${result.totalQuestions} Questions`}
+            </p>
           </div>
         </div>
       </div>
@@ -324,7 +396,7 @@ const ReportViewer = ({ result, onBack }) => {
             <div className="aspect-video bg-black rounded-3xl relative overflow-hidden border border-slate-800 shadow-inner group">
               <video 
                 ref={videoRef}
-                src={result.videoRecordingUrl || "https://assets.mixkit.co/videos/preview/mixkit-woman-working-on-laptop-43091-large.mp4"} 
+                src={getVideoUrl(result.videoRecordingUrl) || "https://assets.mixkit.co/videos/preview/mixkit-woman-working-on-laptop-43091-large.mp4"} 
                 className="w-full h-full object-cover opacity-85" 
                 playsInline
                 loop
@@ -332,6 +404,16 @@ const ReportViewer = ({ result, onBack }) => {
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
               />
+              
+              {!result.videoRecordingUrl && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/75 z-10 p-4 text-center">
+                  <Video size={36} className="text-slate-400 mb-2 animate-pulse" />
+                  <p className="text-sm font-black text-white uppercase tracking-wider">No Recorded Video Available</p>
+                  <p className="text-[10px] text-slate-400 mt-1 max-w-[280px] leading-relaxed">
+                    This attempt was completed without a live webcam feed recording.
+                  </p>
+                </div>
+              )}
               
               {/* Bounding box simulation overlays */}
               <div className="absolute top-1/4 left-1/3 w-1/3 h-1/2 border-2 border-emerald-500 rounded flex flex-col justify-between p-1 pointer-events-none">

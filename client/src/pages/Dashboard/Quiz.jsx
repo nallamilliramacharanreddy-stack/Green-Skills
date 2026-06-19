@@ -93,7 +93,7 @@ const Quiz = () => {
       if (!window.faceapi) {
         throw new Error('Face-api not loaded');
       }
-      const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
+      const MODEL_URL = '/models/';
       await window.faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
       await window.faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
       await window.faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
@@ -811,7 +811,7 @@ const Quiz = () => {
     const loadProctoringModels = async () => {
       try {
         if (window.faceapi) {
-          const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
+          const MODEL_URL = '/models/';
           await window.faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
           await window.faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
         }
@@ -1620,9 +1620,13 @@ const Quiz = () => {
                       <div className="space-y-2">
                         <div className="flex justify-between items-start">
                           <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
-                            attempt.status === 'Pass' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-red-50 text-red-600 border border-red-100'
+                            attempt.isInvalidated
+                              ? 'bg-red-50 text-red-600 border border-red-100'
+                              : attempt.status === 'Pass' 
+                              ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
+                              : 'bg-red-50 text-red-600 border border-red-100'
                           }`}>
-                            {attempt.status || 'Fail'}
+                            {attempt.isInvalidated ? 'Invalidated' : (attempt.status || 'Fail')}
                           </span>
                           <span className="text-[9px] text-slate-400 font-mono font-medium">
                             {new Date(attempt.completedAt).toLocaleDateString()}
@@ -1634,7 +1638,9 @@ const Quiz = () => {
                         <div className="grid grid-cols-2 gap-2 py-2 text-[10px] uppercase font-bold text-slate-500">
                           <div>
                             <span className="block text-slate-400 text-[8px] font-black">Score</span>
-                            <span className="text-slate-800 font-black text-sm">{attempt.totalQuestions ? Math.round((attempt.score / attempt.totalQuestions) * 100) : 0}%</span>
+                            <span className={`font-black text-sm ${attempt.isInvalidated ? 'text-red-600 line-through' : 'text-slate-800'}`}>
+                              {attempt.isInvalidated ? '0%' : `${attempt.totalQuestions ? Math.round((attempt.score / attempt.totalQuestions) * 100) : 0}%`}
+                            </span>
                           </div>
                           <div>
                             <span className="block text-slate-400 text-[8px] font-black">Trust Score</span>

@@ -9,7 +9,8 @@ const {
   getAllResults,
   startQuizAttempt,
   saveQuizProgress,
-  getIntegrityReport
+  getIntegrityReport,
+  invalidateResultScore
 } = require('../controllers/quizController');
 const router = express.Router();
 
@@ -23,5 +24,6 @@ router.post('/start-attempt', startQuizAttempt);
 router.post('/save-progress', saveQuizProgress);
 router.post('/generate-from-youtube', generateFromYoutube);
 router.post('/:quizId/publish', publishQuiz);
+router.put('/results/:id/invalidate', invalidateResultScore);
 
 module.exports = router;

@@ -855,6 +855,40 @@ const getIntegrityReport = async (req, res) => {
   }
 };
 
+const invalidateResultScore = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Find the Result document
+    const resultDoc = await Result.findById(id);
+    if (!resultDoc) {
+      return res.status(404).json({ message: 'Result not found' });
+    }
+
+    // Set score to 0, status to 'Fail', and isInvalidated to true
+    resultDoc.score = 0;
+    resultDoc.status = 'Fail';
+    resultDoc.isInvalidated = true;
+    await resultDoc.save();
+
+    // Pull from the User's quizScores array matching this course
+    if (resultDoc.course) {
+      await User.findByIdAndUpdate(resultDoc.user, {
+        $pull: {
+          quizScores: {
+            courseId: resultDoc.course
+          }
+        }
+      });
+    }
+
+    res.json({ message: 'Score successfully invalidated', result: resultDoc });
+  } catch (error) {
+    console.error('Invalidate score error:', error);
+    res.status(500).json({ message: 'Error invalidating score: ' + error.message });
+  }
+};
+
 module.exports = {
   getAllQuizzes,
   submitQuiz,
@@ -865,5 +899,6 @@ module.exports = {
   getAllResults,
   startQuizAttempt,
   saveQuizProgress,
-  getIntegrityReport
+  getIntegrityReport,
+  invalidateResultScore
 };

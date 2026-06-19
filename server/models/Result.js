@@ -55,6 +55,7 @@ const resultSchema = new mongoose.Schema({
   videoRecordingUrl: String,
   screenRecordingUrl: String,
   audioRecordingUrl: String,
+  isInvalidated: { type: Boolean, default: false },
   completedAt: { type: Date, default: Date.now }
 });
 
