@@ -821,10 +821,6 @@ const Quiz = () => {
           recorder.ondataavailable = (e) => {
             if (e.data && e.data.size > 0) {
               chunksRef.current.push(e.data);
-              // Cap at 30 chunks (30 seconds) to avoid database memory overload
-              if (chunksRef.current.length > 30) {
-                chunksRef.current.shift();
-              }
             }
           };
           recorder.start(1000); // Record in 1s slices
@@ -1011,8 +1007,10 @@ const Quiz = () => {
           return;
         }
         try {
+          const mimeType = (recorder && recorder.mimeType) || blob.type || 'video/webm';
+          const extension = mimeType.includes('mp4') ? 'mp4' : 'webm';
           const formData = new FormData();
-          formData.append('video', blob, `proctored-${attemptId}-${Date.now()}.webm`);
+          formData.append('video', blob, `proctored-${attemptId}-${Date.now()}.${extension}`);
           const res = await axios.post(`${API_URL}/videos/upload-proctoring`, formData, {
             headers: {
               'Content-Type': 'multipart/form-data'
