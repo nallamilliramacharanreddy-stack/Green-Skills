@@ -77,6 +77,8 @@ const Quiz = () => {
   const consecutiveNoFaceCount = useRef(0);
   const consecutiveMultipleFacesCount = useRef(0);
   const consecutiveLookingAwayCount = useRef(0);
+  const consecutiveIdentityMismatchCount = useRef(0);
+  const [registeredFaceEmbedding, setRegisteredFaceEmbedding] = useState(null);
 
   // Advanced Enterprise-Grade Proctoring States
   const [violationTimeline, setViolationTimeline] = useState([]);
@@ -105,6 +107,28 @@ const Quiz = () => {
       }
       console.log("[FaceAPI] startPreVerify: faceapi found in window");
       const MODEL_URL = '/models';
+      
+      // Fetch user's registered face descriptor for identity verification
+      const savedUserStr = localStorage.getItem('user');
+      let savedUser = null;
+      try {
+        savedUser = savedUserStr && savedUserStr !== 'undefined' ? JSON.parse(savedUserStr) : null;
+      } catch (e) {
+        console.error("Failed to parse user in startPreVerify:", e);
+      }
+      const currentUserId = user?.id || user?._id || savedUser?.id || savedUser?._id;
+      if (currentUserId && !registeredFaceEmbedding) {
+        try {
+          console.log("[FaceAPI] startPreVerify: fetching registered face descriptor for user:", currentUserId);
+          const faceRes = await axios.get(`${API_URL}/auth/users/${currentUserId}/face-descriptor`);
+          if (faceRes.data && faceRes.data.facialEmbedding) {
+            setRegisteredFaceEmbedding(faceRes.data.facialEmbedding);
+            console.log("[FaceAPI] startPreVerify: face descriptor fetched successfully");
+          }
+        } catch (faceErr) {
+          console.error("[FaceAPI] startPreVerify: failed to fetch face descriptor:", faceErr);
+        }
+      }
       
       const withTimeout = (promise, ms, description) => {
         return Promise.race([
@@ -881,6 +905,9 @@ const Quiz = () => {
           if (!window.faceapi.nets.faceLandmark68Net.params) {
             await window.faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
           }
+          if (!window.faceapi.nets.faceRecognitionNet.params) {
+            await window.faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+          }
         }
       } catch (err) {
         console.error("Error loading face-api models for proctoring:", err);
@@ -888,22 +915,50 @@ const Quiz = () => {
     };
     loadProctoringModels();
 
+    // Make sure we fetch the face profile for matching during the quiz
+    const fetchRegisteredEmbedding = async () => {
+      if (!registeredFaceEmbedding) {
+        const savedUserStr = localStorage.getItem('user');
+        let savedUser = null;
+        try {
+          savedUser = savedUserStr && savedUserStr !== 'undefined' ? JSON.parse(savedUserStr) : null;
+        } catch (e) {
+          console.error("Failed to parse user in loadProctoringModels:", e);
+        }
+        const currentUserId = user?.id || user?._id || savedUser?.id || savedUser?._id;
+        if (currentUserId) {
+          try {
+            console.log("[FaceAPI] Fetching registered facial embedding for user during proctoring:", currentUserId);
+            const faceRes = await axios.get(`${API_URL}/auth/users/${currentUserId}/face-descriptor`);
+            if (faceRes.data && faceRes.data.facialEmbedding) {
+              setRegisteredFaceEmbedding(faceRes.data.facialEmbedding);
+              console.log("[FaceAPI] Registered facial embedding loaded successfully for proctoring");
+            }
+          } catch (e) {
+            console.error("Failed to fetch registered embedding:", e);
+          }
+        }
+      }
+    };
+    fetchRegisteredEmbedding();
+
     const proctorInterval = setInterval(async () => {
       if (!videoRef.current || videoRef.current.paused || videoRef.current.ended) return;
 
       try {
         const faceapi = window.faceapi;
-        if (!faceapi || !faceapi.nets.ssdMobilenetv1.params) return;
+        if (!faceapi || !faceapi.nets.ssdMobilenetv1.params || !faceapi.nets.faceRecognitionNet.params) return;
 
         const detections = await faceapi.detectAllFaces(
           videoRef.current,
           new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 })
-        ).withFaceLandmarks();
+        ).withFaceLandmarks().withFaceDescriptors();
 
         if (detections.length === 0) {
           consecutiveNoFaceCount.current += 1;
           consecutiveMultipleFacesCount.current = 0;
           consecutiveLookingAwayCount.current = 0;
+          consecutiveIdentityMismatchCount.current = 0;
 
           if (consecutiveNoFaceCount.current >= 5) { // 25 seconds of continuous absence
             triggerViolation(27, "Face Not Visible: No face detected in webcam frame for 25s.");
@@ -913,6 +968,7 @@ const Quiz = () => {
           consecutiveMultipleFacesCount.current += 1;
           consecutiveNoFaceCount.current = 0;
           consecutiveLookingAwayCount.current = 0;
+          consecutiveIdentityMismatchCount.current = 0;
 
           if (consecutiveMultipleFacesCount.current >= 3) { // 15 seconds of continuous presence
             triggerViolation(29, "Multiple Faces Detected: More than one face present in camera view for 15s.");
@@ -922,6 +978,24 @@ const Quiz = () => {
           consecutiveNoFaceCount.current = 0;
           consecutiveMultipleFacesCount.current = 0;
 
+          // 1. Verify candidate identity matches the registered face profile
+          if (registeredFaceEmbedding && detections[0].descriptor) {
+            const currentDescriptor = Array.from(detections[0].descriptor);
+            const distance = faceapi.euclideanDistance(currentDescriptor, registeredFaceEmbedding);
+            console.log(`[FaceAPI Proctoring] Identity Distance: ${distance.toFixed(4)}`);
+            
+            if (distance > 0.6) {
+              consecutiveIdentityMismatchCount.current += 1;
+              if (consecutiveIdentityMismatchCount.current >= 3) { // 15 seconds of continuous mismatch
+                triggerViolation(107, "Identity Mismatch: Candidate face does not match the registered user profile.");
+                consecutiveIdentityMismatchCount.current = 0;
+              }
+            } else {
+              consecutiveIdentityMismatchCount.current = 0;
+            }
+          }
+
+          // 2. Gaze detection
           const landmarks = detections[0].landmarks.positions;
           const jaw = landmarks.slice(0, 17);
           const noseTip = landmarks[30];
@@ -948,7 +1022,7 @@ const Quiz = () => {
     }, 5000);
 
     return () => clearInterval(proctorInterval);
-  }, [activeQuiz, attemptId, showResult, streamActive]);
+  }, [activeQuiz, attemptId, showResult, streamActive, registeredFaceEmbedding]);
 
   const forceSubmit = (reason = 'Security Policy Violation') => {
     if (showResult) return;

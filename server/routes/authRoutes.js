@@ -3,7 +3,7 @@ const {
   signup, login, getAllUsers, getAllHirers, getAllAdmins, 
   approveAdmin, approveHirer, rejectHirer, updateUserStatus, deleteUser, getLeaderboard,
   requestReactivation, handleSuspensionRequest, updateProfile, forgotPasswordRequest, verifyForgotPasswordOtp, resetPasswordWithOtp, verifyAdminOtp,
-  addNote, deleteNote, editNote, verifyFaceLogin
+  addNote, deleteNote, editNote, verifyFaceLogin, getFaceDescriptor
 } = require('../controllers/authController');
 const router = express.Router();
 
@@ -50,6 +50,7 @@ router.get('/leaderboard', getLeaderboard);
 
 // Profile Routes
 router.put('/profile/:id', upload.single('profilePicture'), updateProfile);
+router.get('/users/:id/face-descriptor', getFaceDescriptor);
 
 // Notes Routes
 router.post('/users/:id/notes', addNote);

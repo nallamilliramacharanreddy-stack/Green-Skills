@@ -882,9 +882,30 @@ const editNote = async (req, res) => {
   }
 };
 
+const getFaceDescriptor = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    if (!user.facialEmbedding) {
+      return res.status(404).json({ message: 'No face profile registered for this user' });
+    }
+    const registeredEmbed = decryptEmbedding(user.facialEmbedding);
+    if (!registeredEmbed) {
+      return res.status(500).json({ message: 'Failed to decrypt face profile' });
+    }
+    res.json({ success: true, facialEmbedding: registeredEmbed });
+  } catch (error) {
+    console.error('Error fetching face descriptor:', error);
+    res.status(500).json({ message: 'Server error fetching face descriptor' });
+  }
+};
+
 module.exports = { 
   signup, login, getAllUsers, getAllHirers, getAllAdmins, 
   approveAdmin, approveHirer, rejectHirer, updateUserStatus, deleteUser, getLeaderboard,
   requestReactivation, handleSuspensionRequest, updateProfile, forgotPasswordRequest, verifyForgotPasswordOtp, resetPasswordWithOtp, verifyAdminOtp,
-  addNote, deleteNote, editNote, verifyFaceLogin
+  addNote, deleteNote, editNote, verifyFaceLogin, getFaceDescriptor
 };
