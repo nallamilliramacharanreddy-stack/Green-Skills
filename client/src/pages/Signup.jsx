@@ -112,27 +112,50 @@ const Signup = () => {
   const startEnrollment = async () => {
     setStepState('loading');
     try {
+      console.log("[FaceAPI] startEnrollment: initiated");
       if (!window.faceapi) {
         throw new Error('Face-API library not loaded yet');
       }
-      const MODEL_URL = '/models/';
+      console.log("[FaceAPI] startEnrollment: faceapi found in window");
+      const MODEL_URL = '/models';
+      
+      console.log("[FaceAPI] startEnrollment: checking ssdMobilenetv1...");
       if (!window.faceapi.nets.ssdMobilenetv1.params) {
+        console.log("[FaceAPI] startEnrollment: loading ssdMobilenetv1 weights from", MODEL_URL);
         await window.faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
-      }
-      if (!window.faceapi.nets.faceLandmark68Net.params) {
-        await window.faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
-      }
-      if (!window.faceapi.nets.faceRecognitionNet.params) {
-        await window.faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+        console.log("[FaceAPI] startEnrollment: ssdMobilenetv1 weights loaded successfully");
+      } else {
+        console.log("[FaceAPI] startEnrollment: ssdMobilenetv1 already cached/loaded");
       }
       
+      console.log("[FaceAPI] startEnrollment: checking faceLandmark68Net...");
+      if (!window.faceapi.nets.faceLandmark68Net.params) {
+        console.log("[FaceAPI] startEnrollment: loading faceLandmark68Net weights from", MODEL_URL);
+        await window.faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+        console.log("[FaceAPI] startEnrollment: faceLandmark68Net weights loaded successfully");
+      } else {
+        console.log("[FaceAPI] startEnrollment: faceLandmark68Net already cached/loaded");
+      }
+      
+      console.log("[FaceAPI] startEnrollment: checking faceRecognitionNet...");
+      if (!window.faceapi.nets.faceRecognitionNet.params) {
+        console.log("[FaceAPI] startEnrollment: loading faceRecognitionNet weights from", MODEL_URL);
+        await window.faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+        console.log("[FaceAPI] startEnrollment: faceRecognitionNet weights loaded successfully");
+      } else {
+        console.log("[FaceAPI] startEnrollment: faceRecognitionNet already cached/loaded");
+      }
+      
+      console.log("[FaceAPI] startEnrollment: requesting webcam stream...");
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: 640, height: 480, facingMode: 'user' }
       });
+      console.log("[FaceAPI] startEnrollment: webcam stream acquired successfully", stream);
       setWebcamStream(stream);
       setStepState('position');
+      console.log("[FaceAPI] startEnrollment: position state set");
     } catch (err) {
-      console.error(err);
+      console.error("[FaceAPI] startEnrollment Error:", err);
       toast.error('Webcam access or model loading failed. Please check permissions.');
       setIsEnrolling(false);
     }
