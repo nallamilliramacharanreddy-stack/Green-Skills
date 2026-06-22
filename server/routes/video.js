@@ -46,7 +46,10 @@ router.post('/upload-proctoring', upload.single('video'), (req, res) => {
 router.get('/stream/:videoId', (req, res) => {
   const videoId = req.params.videoId;
   // Handle both exact filenames (direct uploads) and raw IDs (yt-dlp)
-  const filename = videoId.endsWith('.mp4') ? videoId : `${videoId}.mp4`;
+  let filename = videoId;
+  if (!videoId.endsWith('.mp4') && !videoId.endsWith('.webm')) {
+    filename = `${videoId}.mp4`;
+  }
   const filePath = path.join(videosDir, filename);
 
   if (!fs.existsSync(filePath)) {
@@ -56,6 +59,7 @@ router.get('/stream/:videoId', (req, res) => {
   const stat = fs.statSync(filePath);
   const fileSize = stat.size;
   const range = req.headers.range;
+  const contentType = filename.endsWith('.webm') ? 'video/webm' : 'video/mp4';
 
   if (range) {
     const parts = range.replace(/bytes=/, "").split("-");
@@ -68,7 +72,7 @@ router.get('/stream/:videoId', (req, res) => {
       'Content-Range': `bytes ${start}-${end}/${fileSize}`,
       'Accept-Ranges': 'bytes',
       'Content-Length': chunksize,
-      'Content-Type': 'video/mp4',
+      'Content-Type': contentType,
     };
 
     res.writeHead(206, head);
@@ -76,7 +80,7 @@ router.get('/stream/:videoId', (req, res) => {
   } else {
     const head = {
       'Content-Length': fileSize,
-      'Content-Type': 'video/mp4',
+      'Content-Type': contentType,
     };
     res.writeHead(200, head);
     fs.createReadStream(filePath).pipe(res);
@@ -115,6 +119,9 @@ router.post('/process-legacy', async (req, res) => {
   }
 });
 
+// In-memory cache for YouTube stream URLs
+const streamUrlCache = {};
+
 // Real-time instant streaming proxy for YouTube links (Supports Seeking & Timeline!)
 router.get('/stream-live/:videoId', async (req, res) => {
   let videoId = req.params.videoId;
@@ -125,9 +132,44 @@ router.get('/stream-live/:videoId', async (req, res) => {
     videoId = 'xKxrkht7CpY';
   }
 
+  const makeRequest = (urlToFetch) => {
+    const https = require('https');
+    const options = {
+      rejectUnauthorized: false,
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }
+    };
+    if (req.headers.range) options.headers['Range'] = req.headers.range;
+
+    https.get(urlToFetch, options, (proxyRes) => {
+      // Handle Redirects (Google Video often 302s to another caching server)
+      if (proxyRes.statusCode === 301 || proxyRes.statusCode === 302 || proxyRes.statusCode === 307) {
+        const redirectUrl = proxyRes.headers.location;
+        if (redirectUrl) {
+          return makeRequest(redirectUrl);
+        }
+      }
+
+      // 3. Forward all critical headers (206 Partial Content, Content-Length)
+      res.writeHead(proxyRes.statusCode, proxyRes.headers);
+      proxyRes.pipe(res);
+    }).on('error', (err) => {
+      console.error('[STREAM-LIVE] Proxy request error:', err);
+      if (!res.headersSent) {
+        res.status(500).send('Streaming error');
+      }
+    });
+  };
+
+  const now = Date.now();
+  const cached = streamUrlCache[videoId];
+
+  if (cached && cached.expiresAt > now) {
+    console.log(`[STREAM-LIVE] Serving cached stream URL for video ${videoId}`);
+    return makeRequest(cached.url);
+  }
+
   const { exec } = require('child_process');
   const ytDlpPath = path.resolve(__dirname, '../node_modules/youtube-dl-exec/bin/yt-dlp');
-  const https = require('https');
 
   // 1. Instantly extract the raw underlying streaming URL (bypasses 60s download)
   exec(`"${ytDlpPath}" -g "https://www.youtube.com/watch?v=${videoId}" --format "best[ext=mp4]" --no-check-certificates --force-ipv4`, (error, stdout, stderr) => {
@@ -139,31 +181,13 @@ router.get('/stream-live/:videoId', async (req, res) => {
 
     const streamUrl = stdout.trim();
 
-    // 2. Proxy the request, forwarding the browser's Range header, and handle redirects
-    const makeRequest = (urlToFetch) => {
-      const options = {
-        rejectUnauthorized: false,
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }
-      };
-      if (req.headers.range) options.headers['Range'] = req.headers.range;
-
-      https.get(urlToFetch, options, (proxyRes) => {
-        // Handle Redirects (Google Video often 302s to another caching server)
-        if (proxyRes.statusCode === 301 || proxyRes.statusCode === 302 || proxyRes.statusCode === 307) {
-          const redirectUrl = proxyRes.headers.location;
-          if (redirectUrl) {
-            return makeRequest(redirectUrl);
-          }
-        }
-
-        // 3. Forward all critical headers (206 Partial Content, Content-Length)
-        res.writeHead(proxyRes.statusCode, proxyRes.headers);
-        proxyRes.pipe(res);
-      }).on('error', (err) => {
-        res.status(500).send('Streaming error');
-      });
+    // Cache the URL for 2 hours (Google Video URLs typically last 4-6 hours)
+    streamUrlCache[videoId] = {
+      url: streamUrl,
+      expiresAt: now + 2 * 60 * 60 * 1000
     };
 
+    console.log(`[STREAM-LIVE] Extracted and cached new stream URL for video ${videoId}`);
     makeRequest(streamUrl);
   });
 });
