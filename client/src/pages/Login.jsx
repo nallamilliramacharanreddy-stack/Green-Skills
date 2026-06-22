@@ -3,9 +3,9 @@ import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { 
+import {
   Mail, Lock, LogIn, Users, Briefcase, Building,
-  Target, BookOpen, ArrowRight, 
+  Target, BookOpen, ArrowRight,
   Leaf, Zap, Globe, Cpu, ShieldCheck, Clock,
   Eye, EyeOff, Key
 } from 'lucide-react';
@@ -31,7 +31,7 @@ const Login = () => {
   const [faceUserId, setFaceUserId] = useState('');
   const [faceVerificationStep, setFaceVerificationStep] = useState('loading');
   const [faceStream, setFaceStream] = useState(null);
-  
+
   const faceVideoRef = useRef(null);
   const faceTrackingLoopRef = useRef(null);
   const faceVerificationStepRef = useRef('loading');
@@ -45,7 +45,7 @@ const Login = () => {
     isInitializingRef.current = true;
     faceVerificationStepRef.current = 'loading';
     setFaceVerificationStep('loading');
-    
+
     try {
       console.log("[FaceAPI] startFaceVerification: initiated");
       if (!window.faceapi) {
@@ -53,7 +53,7 @@ const Login = () => {
       }
       console.log("[FaceAPI] startFaceVerification: faceapi found in window");
       const MODEL_URL = '/models';
-      
+
       const withTimeout = (promise, ms, description) => {
         return Promise.race([
           promise,
@@ -69,7 +69,7 @@ const Login = () => {
       } else {
         console.log("[FaceAPI] startFaceVerification: ssdMobilenetv1 already cached/loaded");
       }
-      
+
       console.log("[FaceAPI] startFaceVerification: checking faceLandmark68Net...");
       if (!window.faceapi.nets.faceLandmark68Net.params) {
         console.log("[FaceAPI] startFaceVerification: loading faceLandmark68Net weights from", MODEL_URL);
@@ -78,7 +78,7 @@ const Login = () => {
       } else {
         console.log("[FaceAPI] startFaceVerification: faceLandmark68Net already cached/loaded");
       }
-      
+
       console.log("[FaceAPI] startFaceVerification: checking faceRecognitionNet...");
       if (!window.faceapi.nets.faceRecognitionNet.params) {
         console.log("[FaceAPI] startFaceVerification: loading faceRecognitionNet weights from", MODEL_URL);
@@ -87,7 +87,7 @@ const Login = () => {
       } else {
         console.log("[FaceAPI] startFaceVerification: faceRecognitionNet already cached/loaded");
       }
-      
+
       if (faceStream) {
         console.log("[FaceAPI] startFaceVerification: stopping existing stream");
         faceStream.getTracks().forEach(track => track.stop());
@@ -126,14 +126,14 @@ const Login = () => {
         faceVideoRef.current,
         new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 })
       )
-      .withFaceLandmarks()
-      .withFaceDescriptor();
+        .withFaceLandmarks()
+        .withFaceDescriptor();
 
       if (detection) {
         // Stop tracking loop
         faceVerificationStepRef.current = 'verifying';
         setFaceVerificationStep('verifying');
-        
+
         // Stop stream
         if (faceStream) {
           faceStream.getTracks().forEach(track => track.stop());
@@ -148,7 +148,7 @@ const Login = () => {
           setFaceVerificationStep('success');
           toast.success('Access Granted. Welcome back!');
           setIsFaceVerifying(false);
-          
+
           const savedUser = JSON.parse(localStorage.getItem('user'));
           if (savedUser.role === 'admin') {
             navigate('/admin');
@@ -363,31 +363,31 @@ const Login = () => {
   return (
     <div className="w-full overflow-x-hidden bg-white">
       <div className="min-h-screen bg-white flex justify-center items-start lg:items-center p-6 pt-24 relative font-sans cursor-default w-full" onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
-        
+
         {/* Cinematic 3D Background */}
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-emerald-50 via-white to-blue-50 opacity-80"></div>
-          
+
           {/* Floating 3D Orbs */}
-          <motion.div 
-            animate={{ y: [0, -20, 0], x: [0, 10, 0], scale: [1, 1.1, 1] }} 
+          <motion.div
+            animate={{ y: [0, -20, 0], x: [0, 10, 0], scale: [1, 1.1, 1] }}
             transition={{ duration: 8, repeat: Infinity }}
             className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[100px] mix-blend-multiply"
           ></motion.div>
-          <motion.div 
-            animate={{ y: [0, 30, 0], x: [0, -20, 0], scale: [1.2, 1, 1.2] }} 
+          <motion.div
+            animate={{ y: [0, 30, 0], x: [0, -20, 0], scale: [1.2, 1, 1.2] }}
             transition={{ duration: 10, repeat: Infinity }}
             className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[120px] mix-blend-multiply"
           ></motion.div>
         </div>
 
         <div className="max-w-7xl w-full flex flex-col lg:flex-row items-center justify-between gap-12 relative z-10">
-          
+
           {/* Left Side: Info */}
           <div className="flex-1 hidden lg:block">
             <div className="relative">
               <div className="space-y-4">
-                <motion.h1 
+                <motion.h1
                   initial={{ opacity: 0, x: -50 }}
                   animate={{ opacity: 1, x: 0 }}
                   className="text-7xl font-black text-slate-900 leading-tight"
@@ -400,63 +400,60 @@ const Login = () => {
                   Experience the world's first cinematic empowerment platform. Powered by AI, built for the community.
                 </p>
               </div>
-              
+
               {/* God-Tier Extraordinary Role Modes */}
               <div className="mt-12 grid grid-cols-2 md:grid-cols-3 gap-4 max-w-2xl relative">
                 {roles.map((r, i) => (
                   <motion.div
                     key={r.id}
                     onClick={() => {
-                    if (r.id === 'employer') {
-                      navigate('/hirer/login');
-                    } else {
-                      setRole(r.id);
-                    }
-                  }}
+                      if (r.id === 'employer') {
+                        navigate('/hirer/login');
+                      } else {
+                        setRole(r.id);
+                      }
+                    }}
                     whileHover={{ y: -5, scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                      className="relative p-6 rounded-[32px] border-2 cursor-pointer transition-all duration-500 overflow-hidden group bg-white"
-                      style={{ 
-                        borderColor: role === r.id ? r.color : '#F1F5F9',
-                        boxShadow: role === r.id ? `0 20px 40px ${r.color}20` : 'none'
-                      }}
+                    className="relative p-6 rounded-[32px] border-2 cursor-pointer transition-all duration-500 overflow-hidden group bg-white"
+                    style={{
+                      borderColor: role === r.id ? r.color : '#F1F5F9',
+                      boxShadow: role === r.id ? `0 20px 40px ${r.color}20` : 'none'
+                    }}
                   >
                     {/* Background Pattern/Texture */}
-                    <div className={`absolute inset-0 opacity-[0.03] pointer-events-none ${
-                      role === r.id ? 'opacity-[0.08]' : ''
-                    }`}>
+                    <div className={`absolute inset-0 opacity-[0.03] pointer-events-none ${role === r.id ? 'opacity-[0.08]' : ''
+                      }`}>
                       <div className="absolute inset-0" style={{ backgroundImage: `radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)`, backgroundSize: '12px 12px' }}></div>
                     </div>
 
                     {/* Active Indicator: Corner Color Accent */}
                     {role === r.id && (
-                      <motion.div 
+                      <motion.div
                         layoutId="bento-accent"
-                        className={`absolute top-0 right-0 w-12 h-12 rounded-bl-[32px] ${
-                          r.color === 'emerald' ? 'bg-emerald-500/10' :
+                        className={`absolute top-0 right-0 w-12 h-12 rounded-bl-[32px] ${r.color === 'emerald' ? 'bg-emerald-500/10' :
                           r.color === 'blue' ? 'bg-blue-500/10' :
-                          r.color === 'purple' ? 'bg-purple-500/10' :
-                          r.color === 'orange' ? 'bg-orange-500/10' :
-                          'bg-red-500/10'
-                        }`}
+                            r.color === 'purple' ? 'bg-purple-500/10' :
+                              r.color === 'orange' ? 'bg-orange-500/10' :
+                                'bg-red-500/10'
+                          }`}
                       />
                     )}
 
                     <div className="relative z-10 flex flex-col gap-4">
-                      <div 
+                      <div
                         className="w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm"
-                        style={{ 
+                        style={{
                           backgroundColor: role === r.id ? r.color : '#FFFFFF',
                           color: role === r.id ? '#FFFFFF' : '#94A3B8'
                         }}
                       >
                         <r.icon size={20} strokeWidth={2.5} />
                       </div>
-                      
+
                       <div className="space-y-1">
-                        <span className={`text-[10px] font-black uppercase tracking-[0.3em] block transition-colors ${
-                          role === r.id ? 'text-slate-900' : 'text-slate-500'
-                        }`}>
+                        <span className={`text-[10px] font-black uppercase tracking-[0.3em] block transition-colors ${role === r.id ? 'text-slate-900' : 'text-slate-500'
+                          }`}>
                           {r.title}
                         </span>
                       </div>
@@ -464,13 +461,12 @@ const Login = () => {
 
                     {/* Liquid Glow (Active) */}
                     {role === r.id && (
-                      <div className={`absolute -bottom-12 -right-12 w-24 h-24 rounded-full blur-2xl ${
-                        r.color === 'emerald' ? 'bg-emerald-500/20' :
+                      <div className={`absolute -bottom-12 -right-12 w-24 h-24 rounded-full blur-2xl ${r.color === 'emerald' ? 'bg-emerald-500/20' :
                         r.color === 'blue' ? 'bg-blue-500/20' :
-                        r.color === 'purple' ? 'bg-purple-500/20' :
-                        r.color === 'orange' ? 'bg-orange-500/20' :
-                        'bg-red-500/20'
-                      }`}></div>
+                          r.color === 'purple' ? 'bg-purple-500/20' :
+                            r.color === 'orange' ? 'bg-orange-500/20' :
+                              'bg-red-500/20'
+                        }`}></div>
                     )}
                   </motion.div>
                 ))}
@@ -484,13 +480,13 @@ const Login = () => {
             <div className="absolute inset-0 p-[2px] rounded-[42px] overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 via-blue-500 via-purple-500 via-orange-500 to-red-500 w-[300%] animate-border-travel shadow-[0_0_20px_rgba(16,185,129,0.5)]"></div>
             </div>
-            
+
             <div className="relative group p-[2px] rounded-[40px] bg-slate-100 overflow-hidden shadow-2xl">
               <div className="bg-white/90 backdrop-blur-3xl p-10 rounded-[38px] relative overflow-hidden border border-slate-200">
-                
+
                 {/* Internal Glows */}
                 <div className="absolute top-[-20%] right-[-20%] w-40 h-40 bg-primary/10 rounded-full blur-3xl"></div>
-                
+
                 <div className="relative z-10">
                   <div className="flex items-center justify-between mb-12">
                     <div>
@@ -507,14 +503,14 @@ const Login = () => {
                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">Security OTP</label>
                         <div className="relative">
                           <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within/input:text-primary transition-colors" size={18} />
-                          <input 
-                            type="text" 
+                          <input
+                            type="text"
                             autoComplete="off"
-                            className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 outline-none focus:bg-white focus:border-primary/50 transition-all font-mono text-xl tracking-[0.5em] text-center placeholder:text-slate-400 placeholder:tracking-normal" 
+                            className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 outline-none focus:bg-white focus:border-primary/50 transition-all font-mono text-xl tracking-[0.5em] text-center placeholder:text-slate-400 placeholder:tracking-normal"
                             value={otp}
                             onChange={(e) => setOtp(e.target.value)}
                             placeholder="Enter 6-digit OTP"
-                            required 
+                            required
                           />
                         </div>
                         <div className="flex flex-col items-center gap-2 mt-4">
@@ -526,8 +522,8 @@ const Login = () => {
                           ) : (
                             <div className="flex flex-col items-center gap-2">
                               <p className="text-[11px] font-black text-red-500 tracking-widest animate-pulse">TIME EXPIRED</p>
-                              <button 
-                                type="button" 
+                              <button
+                                type="button"
                                 onClick={handleResendOtp}
                                 className="text-[10px] font-black text-primary hover:text-emerald-600 underline tracking-widest transition-colors"
                               >
@@ -544,13 +540,13 @@ const Login = () => {
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">Registered Email</label>
                             <div className="relative">
                               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within/input:text-primary transition-colors" size={18} />
-                              <input 
-                                type="email" 
+                              <input
+                                type="email"
                                 autoComplete="off"
-                                className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 outline-none focus:bg-white focus:border-primary/50 transition-all font-mono text-sm placeholder:text-slate-400 lowercase" 
+                                className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 outline-none focus:bg-white focus:border-primary/50 transition-all font-mono text-sm placeholder:text-slate-400 lowercase"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value.toLowerCase())}
-                                required 
+                                required
                               />
                             </div>
                           </div>
@@ -560,14 +556,14 @@ const Login = () => {
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">Reset OTP</label>
                             <div className="relative">
                               <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within/input:text-primary transition-colors" size={18} />
-                              <input 
-                                type="text" 
+                              <input
+                                type="text"
                                 autoComplete="off"
-                                className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 outline-none focus:bg-white focus:border-primary/50 transition-all font-mono text-xl tracking-[0.5em] text-center placeholder:text-slate-400 placeholder:tracking-normal" 
+                                className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 outline-none focus:bg-white focus:border-primary/50 transition-all font-mono text-xl tracking-[0.5em] text-center placeholder:text-slate-400 placeholder:tracking-normal"
                                 value={resetOtp}
                                 onChange={(e) => setResetOtp(e.target.value)}
                                 placeholder="Enter 6-digit OTP"
-                                required 
+                                required
                               />
                             </div>
                             <p className="text-[10px] text-slate-500 text-center mt-4">Check your email for the reset code.</p>
@@ -579,14 +575,14 @@ const Login = () => {
                               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">New Password</label>
                               <div className="relative">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/input:text-primary transition-colors" size={18} />
-                                <input 
-                                  type={showPassword ? "text" : "password"} 
+                                <input
+                                  type={showPassword ? "text" : "password"}
                                   autoComplete="new-password"
-                                  className="w-full pl-12 pr-12 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 outline-none focus:bg-white focus:border-primary/50 transition-all font-mono text-sm placeholder:text-slate-400" 
+                                  className="w-full pl-12 pr-12 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 outline-none focus:bg-white focus:border-primary/50 transition-all font-mono text-sm placeholder:text-slate-400"
                                   value={password}
                                   onChange={(e) => setPassword(e.target.value)}
                                   placeholder="Enter New Password"
-                                  required 
+                                  required
                                 />
                                 <button
                                   type="button"
@@ -601,14 +597,14 @@ const Login = () => {
                               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">Confirm Password</label>
                               <div className="relative">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/input:text-primary transition-colors" size={18} />
-                                <input 
-                                  type={showPassword ? "text" : "password"} 
+                                <input
+                                  type={showPassword ? "text" : "password"}
                                   autoComplete="new-password"
-                                  className="w-full pl-12 pr-12 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 outline-none focus:bg-white focus:border-primary/50 transition-all font-mono text-sm placeholder:text-slate-400" 
+                                  className="w-full pl-12 pr-12 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 outline-none focus:bg-white focus:border-primary/50 transition-all font-mono text-sm placeholder:text-slate-400"
                                   value={confirmPassword}
                                   onChange={(e) => setConfirmPassword(e.target.value)}
                                   placeholder="Confirm New Password"
-                                  required 
+                                  required
                                 />
                               </div>
                             </div>
@@ -626,13 +622,13 @@ const Login = () => {
                           <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">Email</label>
                           <div className="relative">
                             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within/input:text-primary transition-colors" size={18} />
-                            <input 
-                              type="email" 
+                            <input
+                              type="email"
                               autoComplete="off"
-                              className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 outline-none focus:bg-white focus:border-primary/50 transition-all font-mono text-sm placeholder:text-slate-400 lowercase" 
+                              className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 outline-none focus:bg-white focus:border-primary/50 transition-all font-mono text-sm placeholder:text-slate-400 lowercase"
                               value={email}
                               onChange={(e) => setEmail(e.target.value.toLowerCase())}
-                              required 
+                              required
                             />
                           </div>
                         </div>
@@ -641,13 +637,13 @@ const Login = () => {
                           <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">Password</label>
                           <div className="relative">
                             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/input:text-primary transition-colors" size={18} />
-                            <input 
-                              type={showPassword ? "text" : "password"} 
+                            <input
+                              type={showPassword ? "text" : "password"}
                               autoComplete="new-password"
-                              className="w-full pl-12 pr-12 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 outline-none focus:bg-white focus:border-primary/50 transition-all font-mono text-sm placeholder:text-slate-400" 
+                              className="w-full pl-12 pr-12 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 outline-none focus:bg-white focus:border-primary/50 transition-all font-mono text-sm placeholder:text-slate-400"
                               value={password}
                               onChange={(e) => setPassword(e.target.value)}
-                              required 
+                              required
                             />
                             <button
                               type="button"
@@ -672,7 +668,7 @@ const Login = () => {
                     )}
 
                     {suspendedInfo && (
-                      <motion.div 
+                      <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         className="p-6 bg-red-50 rounded-[32px] border border-red-100 space-y-4"
@@ -690,7 +686,7 @@ const Login = () => {
                             <span className="text-[10px] font-black uppercase tracking-widest text-center">Sync Request Pending...</span>
                           </div>
                         ) : (
-                          <button 
+                          <button
                             type="button"
                             onClick={handleRequestReactivation}
                             className="w-full py-4 bg-red-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-700 transition-all shadow-lg shadow-red-200"
@@ -701,16 +697,15 @@ const Login = () => {
                       </motion.div>
                     )}
 
-                    <button 
-                      type="submit" 
+                    <button
+                      type="submit"
                       disabled={isOtpMode && countdown === 0}
-                      className={`w-full py-5 text-white rounded-full font-black text-lg transition-all flex items-center justify-center gap-4 uppercase tracking-tighter shadow-2xl group ${
-                        isOtpMode && countdown === 0 
-                          ? 'bg-slate-300 cursor-not-allowed shadow-none' 
-                          : 'bg-slate-900 hover:bg-primary shadow-slate-900/20'
-                      }`}
+                      className={`w-full py-5 text-white rounded-full font-black text-lg transition-all flex items-center justify-center gap-4 uppercase tracking-tighter shadow-2xl group ${isOtpMode && countdown === 0
+                        ? 'bg-slate-300 cursor-not-allowed shadow-none'
+                        : 'bg-slate-900 hover:bg-primary shadow-slate-900/20'
+                        }`}
                     >
-                      {isOtpMode ? 'VERIFY OTP' : forgotPasswordStage === 1 ? 'SEND OTP' : forgotPasswordStage === 2 ? 'VERIFY OTP' : forgotPasswordStage === 3 ? 'CONFIRM NEW PASSWORD' : 'LOGIN'} 
+                      {isOtpMode ? 'VERIFY OTP' : forgotPasswordStage === 1 ? 'SEND OTP' : forgotPasswordStage === 2 ? 'VERIFY OTP' : forgotPasswordStage === 3 ? 'CONFIRM NEW PASSWORD' : 'LOGIN'}
                       <ArrowRight size={20} className={`transition-transform ${isOtpMode && countdown === 0 ? '' : 'group-hover:translate-x-1'}`} />
                     </button>
                   </form>
@@ -728,7 +723,8 @@ const Login = () => {
         </div>
       </div>
 
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @keyframes border-travel {
           0% { transform: translateX(-100%); }
           100% { transform: translateX(100%); }
@@ -758,7 +754,7 @@ const Login = () => {
       {isFaceVerifying && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4">
           <div className="w-full max-w-xl bg-white border border-slate-200 rounded-[32px] overflow-hidden shadow-2xl p-8 relative flex flex-col items-center">
-            
+
             <div className="text-center mb-6">
               <h3 className="text-2xl font-black text-slate-950 uppercase tracking-tight italic">Biometric Face Login</h3>
               <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">SECURE PROTOCOL IDENTITY CHECK</p>
@@ -766,22 +762,22 @@ const Login = () => {
 
             {/* Webcam Viewport */}
             <div className="w-full max-w-sm aspect-video bg-slate-950 rounded-2xl relative overflow-hidden border border-slate-200 shadow-inner flex items-center justify-center mb-6">
-              <video 
-                ref={faceVideoRef} 
-                autoPlay 
-                playsInline 
-                muted 
+              <video
+                ref={faceVideoRef}
+                autoPlay
+                playsInline
+                muted
                 onPlay={handleFaceVideoPlay}
                 className="w-full h-full object-cover scale-x-[-1]"
               />
-              
+
               {/* Pulse Scanner Line and target boxes */}
               <div className="absolute inset-0 border-2 border-primary/20 rounded-2xl pointer-events-none">
                 <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-primary"></div>
                 <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-primary"></div>
                 <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-primary"></div>
                 <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-primary"></div>
-                
+
                 <div className="w-full h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent absolute top-0 animate-scanner"></div>
               </div>
             </div>
@@ -803,9 +799,9 @@ const Login = () => {
               {faceVerificationStep === 'failed' && (
                 <div className="space-y-4">
                   <p className="text-red-500 font-bold">❌ Biometric Match Failed</p>
-                  <button 
-                    type="button" 
-                    onClick={startFaceVerification} 
+                  <button
+                    type="button"
+                    onClick={startFaceVerification}
                     className="px-6 py-2 bg-primary text-white font-bold rounded-xl text-xs hover:bg-emerald-600 transition-colors uppercase tracking-wider"
                   >
                     Retry Scan
@@ -814,9 +810,9 @@ const Login = () => {
               )}
             </div>
 
-            <button 
-              type="button" 
-              onClick={() => setIsFaceVerifying(false)} 
+            <button
+              type="button"
+              onClick={() => setIsFaceVerifying(false)}
               className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-sm uppercase tracking-wider hover:bg-red-600 transition-all shadow-md"
             >
               Cancel Login

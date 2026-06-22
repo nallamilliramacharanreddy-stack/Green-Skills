@@ -478,13 +478,13 @@ const Courses = () => {
                           if (internalUrl) {
                             sourceUrl = internalUrl;
                           } else if (ytVideoId) {
-                            sourceUrl = `${API_URL}/videos/stream/${ytVideoId}`;
+                            sourceUrl = `${API_URL}/videos/stream-live/${ytVideoId}`;
                           } else {
                             playMode = 'youtube';
                           }
                         } else if (videoSourceIndex === 1) {
                           if (ytVideoId) {
-                            sourceUrl = `http://localhost:5001/api/videos/stream/${ytVideoId}`;
+                            sourceUrl = `http://localhost:5001/api/videos/stream-live/${ytVideoId}`;
                           } else {
                             playMode = 'youtube';
                           }
