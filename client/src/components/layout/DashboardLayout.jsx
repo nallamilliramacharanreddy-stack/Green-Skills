@@ -5,14 +5,16 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { 
   Home, BookOpen, Award, Briefcase, 
   Settings, LogOut, MessageSquare, Bell,
-  Menu, X, User, Users, Shield, Trophy, Sparkles, Crown, ShieldAlert, FileText
+  Menu, X, User, Users, Shield, Trophy, Sparkles, Crown, ShieldAlert, FileText, Headphones
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 
 const DashboardLayout = ({ children, role: propRole }) => {
   const { user, logout } = useAuth();
   let role = propRole || user?.role || 'student';
-  if (['admin', 'admin_course', 'admin_hiring', 'admin_exam', 'super-admin'].includes(role)) {
+  if (user && ['admin', 'admin_course', 'admin_hiring', 'admin_exam', 'super-admin'].includes(user.role)) {
+    role = 'admin';
+  } else if (['admin', 'admin_course', 'admin_hiring', 'admin_exam', 'super-admin'].includes(role)) {
     role = 'admin';
   }
   const { language, setLanguage } = useLanguage();
@@ -95,6 +97,7 @@ const DashboardLayout = ({ children, role: propRole }) => {
         { icon: MessageSquare, label: 'Quiz Management', path: '/admin/quizzes' },
         { icon: Shield, label: 'AI Proctoring', path: '/admin/proctoring' },
         { icon: ShieldAlert, label: 'Integrity Report', path: '/admin/integrity' },
+        { icon: Headphones, label: 'Support Tickets', path: '/support' },
       ]},
       { category: 'DATA & USERS', items: [
         { icon: Award, label: 'Leaderboard', path: '/admin/leaderboard' },
@@ -104,6 +107,14 @@ const DashboardLayout = ({ children, role: propRole }) => {
       ]},
       { category: 'ACCOUNT', items: [
         { icon: User, label: 'Profile', path: '/admin/profile' },
+      ]}
+    ],
+    support: [
+      { category: 'SYSTEM', items: [
+        { icon: Home, label: 'Overwatch Command', path: '/support' },
+      ]},
+      { category: 'ACCOUNT', items: [
+        { icon: User, label: 'Profile', path: '/support/profile' },
       ]}
     ]
   };
