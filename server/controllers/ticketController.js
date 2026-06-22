@@ -1,4 +1,53 @@
 const Ticket = require('../models/Ticket');
+const User = require('../models/User');
+const { sendEmail } = require('../utils/emailService');
+
+const generateTicketEmail = (ticket, user) => `
+  <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+    <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
+      <h1 style="margin: 0; font-size: 24px; font-weight: 900; color: #ffffff; letter-spacing: 1px; text-transform: uppercase;">
+        🎧 SUPPORT TICKET RAISED
+      </h1>
+      <p style="color: #94a3b8; font-size: 11px; letter-spacing: 3px; margin-top: 8px; text-transform: uppercase;">Green Skill Platform</p>
+    </div>
+    <div style="background-color: white; padding: 40px 30px; border-radius: 0 0 12px 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);">
+      <h2 style="color: #0f172a; margin-top: 0; font-size: 18px; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px;">Ticket Information</h2>
+      
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+        <tr>
+          <td style="padding: 8px 0; font-weight: bold; color: #475569; width: 120px; font-size: 13px;">Subject:</td>
+          <td style="padding: 8px 0; color: #0f172a; font-size: 14px; font-weight: 600;">${ticket.subject}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; font-weight: bold; color: #475569; font-size: 13px;">Category:</td>
+          <td style="padding: 8px 0; color: #0f172a; font-size: 13px;"><span style="background-color: #f1f5f9; padding: 4px 8px; border-radius: 4px; font-weight: 600; text-transform: uppercase; font-size: 11px;">${ticket.category}</span></td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; font-weight: bold; color: #475569; font-size: 13px;">Type:</td>
+          <td style="padding: 8px 0; color: #0f172a; font-size: 13px; text-transform: capitalize;">${ticket.type}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; font-weight: bold; color: #475569; font-size: 13px;">Priority:</td>
+          <td style="padding: 8px 0; font-size: 13px;"><span style="color: ${ticket.priority === 'high' || ticket.priority === 'urgent' ? '#ef4444' : '#f59e0b'}; font-weight: bold; text-transform: uppercase;">${ticket.priority || 'medium'}</span></td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; font-weight: bold; color: #475569; font-size: 13px;">Raised By:</td>
+          <td style="padding: 8px 0; color: #0f172a; font-size: 13px; font-weight: 600;">${user ? user.name : 'Unknown User'} (${user ? user.email : 'No Email'})</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; font-weight: bold; color: #475569; font-size: 13px;">Raised At:</td>
+          <td style="padding: 8px 0; color: #0f172a; font-size: 13px;">${new Date(ticket.createdAt).toLocaleString()}</td>
+        </tr>
+      </table>
+
+      <h3 style="color: #0f172a; font-size: 15px; margin-bottom: 8px;">Description</h3>
+      <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; color: #334155; line-height: 1.6; font-size: 14px; white-space: pre-wrap;">${ticket.description}</div>
+    </div>
+    <div style="text-align: center; margin-top: 20px;">
+      <p style="color: #94a3b8; font-size: 12px; font-weight: 500;">© ${new Date().getFullYear()} Green Skill. All rights reserved.</p>
+    </div>
+  </div>
+`;
 
 exports.createTicket = async (req, res) => {
   try {
@@ -8,6 +57,22 @@ exports.createTicket = async (req, res) => {
     }
     const ticket = new Ticket({ ...req.body, user: userId });
     await ticket.save();
+
+    // Fetch user details for email notification
+    const user = await User.findById(userId);
+
+    // Send email to nallamilliramacharanreddy@gmail.com
+    try {
+      await sendEmail({
+        to: 'nallamilliramacharanreddy@gmail.com',
+        subject: `[Support Ticket] ${ticket.subject}`,
+        html: generateTicketEmail(ticket, user)
+      });
+    } catch (emailError) {
+      // Log email failure but don't fail the API request
+      console.error('Failed to send support ticket email notification:', emailError);
+    }
+
     res.status(201).json({ success: true, ticket });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
