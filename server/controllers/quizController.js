@@ -97,7 +97,7 @@ const stripQuizAnswers = (quiz, isAdminOrEmployer) => {
 
 const getAllQuizzes = async (req, res) => {
   try {
-    const quizzes = await Quiz.find();
+    const quizzes = await Quiz.find().populate('createdBy', 'name companyName role');
     const user = getUserFromRequest(req);
     const isAdminOrEmployer = user && ['admin', 'employer', 'admin_course', 'admin_hiring', 'admin_exam', 'super-admin'].includes(user.role);
     
@@ -335,6 +335,7 @@ Match Result: ${isCorrect ? 'SUCCESS (CORRECT)' : 'FAIL (INCORRECT)'}
     const result = new Result({
       user: userId,
       course: courseId || (attemptDoc ? attemptDoc.course : null),
+      quiz: quizId || (attemptDoc ? attemptDoc.quiz : null),
       score: finalScore,
       totalQuestions,
       duration,
@@ -362,6 +363,7 @@ Match Result: ${isCorrect ? 'SUCCESS (CORRECT)' : 'FAIL (INCORRECT)'}
       $push: {
         quizScores: {
           courseId: courseId || (attemptDoc ? attemptDoc.course : null),
+          quizId: quizId || (attemptDoc ? attemptDoc.quiz : null),
           score: finalScore,
           totalQuestions
         }

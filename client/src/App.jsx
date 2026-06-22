@@ -18,6 +18,7 @@ import HirerSignup from './pages/HirerSignup';
 const StudentDashboard = React.lazy(() => import('./pages/Dashboard/StudentDashboard'));
 const Courses = React.lazy(() => import('./pages/Dashboard/Courses'));
 const Hiring = React.lazy(() => import('./pages/Dashboard/Hiring'));
+const HiringExams = React.lazy(() => import('./pages/Dashboard/HiringExams'));
 const Quiz = React.lazy(() => import('./pages/Dashboard/Quiz'));
 const AdminDashboard = React.lazy(() => import('./pages/Dashboard/AdminDashboard'));
 const AIChat = React.lazy(() => import('./pages/Dashboard/AIChat'));
@@ -70,6 +71,7 @@ function App() {
             <Route path="/dashboard" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
             <Route path="/dashboard/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />
             <Route path="/dashboard/hiring" element={<ProtectedRoute><Hiring /></ProtectedRoute>} />
+            <Route path="/dashboard/hiring-exams" element={<ProtectedRoute><HiringExams /></ProtectedRoute>} />
             <Route path="/dashboard/quiz" element={<ProtectedRoute allowedRoles={['student']}><Quiz /></ProtectedRoute>} />
             <Route path="/dashboard/ai" element={<ProtectedRoute><AIChat /></ProtectedRoute>} />
             <Route path="/dashboard/journey" element={<ProtectedRoute><MyJourney /></ProtectedRoute>} />

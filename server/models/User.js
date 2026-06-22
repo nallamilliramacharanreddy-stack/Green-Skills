@@ -15,6 +15,7 @@ const userSchema = new mongoose.Schema({
   isAdminApproved: { type: Boolean, default: false },
   quizScores: [{
     courseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Course' },
+    quizId: { type: mongoose.Schema.Types.ObjectId, ref: 'Quiz' },
     score: Number,
     totalQuestions: Number,
     completedAt: { type: Date, default: Date.now }

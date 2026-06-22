@@ -5,7 +5,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { 
   Home, BookOpen, Award, Briefcase, 
   Settings, LogOut, MessageSquare, Bell,
-  Menu, X, User, Users, Shield, Trophy, Sparkles, Crown, ShieldAlert
+  Menu, X, User, Users, Shield, Trophy, Sparkles, Crown, ShieldAlert, FileText
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -63,6 +63,7 @@ const DashboardLayout = ({ children, role: propRole }) => {
       ]},
       { category: 'CAREERS', items: [
         { icon: Briefcase, label: 'Apply Jobs', path: '/dashboard/hiring' },
+        { icon: FileText, label: 'Hiring Exams', path: '/dashboard/hiring-exams' },
       ]},
       { category: 'ACCOUNT', items: [
         { icon: User, label: 'Profile', path: '/dashboard/profile' },
