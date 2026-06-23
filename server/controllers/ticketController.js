@@ -6,7 +6,7 @@ const generateTicketEmail = (ticket, user) => `
   <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
     <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
       <h1 style="margin: 0; font-size: 24px; font-weight: 900; color: #ffffff; letter-spacing: 1px; text-transform: uppercase;">
-        🎧 SUPPORT TICKET RAISED
+        SUPPORT TICKET RAISED
       </h1>
       <p style="color: #94a3b8; font-size: 11px; letter-spacing: 3px; margin-top: 8px; text-transform: uppercase;">Green Skill Platform</p>
     </div>
