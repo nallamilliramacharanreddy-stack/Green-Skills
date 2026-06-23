@@ -18,6 +18,7 @@ import ExamCreator from './ExamCreator';
 import CandidateList from './CandidateList';
 import ApplicationsList from './ApplicationsList';
 import HiredUsers from './HiredUsers';
+import ShortlistedUsers from './ShortlistedUsers';
 
 const EmployerDashboard = () => {
   const { user } = useAuth();
@@ -227,6 +228,8 @@ const EmployerDashboard = () => {
       {activeTab === 'exams' && <ExamCreator />}
 
       {activeTab === 'candidates' && <CandidateList />}
+
+      {activeTab === 'shortlisted' && <ShortlistedUsers />}
 
       {activeTab === 'hired' && <HiredUsers />}
 

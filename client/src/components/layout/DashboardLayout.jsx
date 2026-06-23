@@ -220,7 +220,8 @@ const DashboardLayout = ({ children, role: propRole }) => {
       { category: 'RECRUITMENT', items: [
         { icon: Briefcase, label: 'Job Details', path: '/employer/jobs' },
         { icon: MessageSquare, label: 'Applications', path: '/employer/applications' },
-        { icon: Users, label: 'User', path: '/employer/candidates' },
+        { icon: Users, label: 'Shortlisted Users', path: '/employer/shortlisted' },
+        { icon: User, label: 'User', path: '/employer/candidates' },
         { icon: Award, label: 'Hired Users', path: '/employer/hired' },
       ]},
       { category: 'ASSESSMENT', items: [
