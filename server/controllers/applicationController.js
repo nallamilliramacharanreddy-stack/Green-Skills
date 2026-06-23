@@ -108,11 +108,9 @@ const applyForJob = async (req, res) => {
           <p><strong>Green Skills Recruitment Portal</strong></p>
         </div>
       `;
-      try {
-        await sendEmail({ to: employer.email, subject, html });
-      } catch (emailErr) {
-        console.error('Failed to send application email notification to recruiter:', emailErr);
-      }
+      sendEmail({ to: employer.email, subject, html }).catch((emailErr) => {
+        console.error('Failed to send application email notification to recruiter (handled asynchronously):', emailErr);
+      });
 
       // If auto-shortlisted, also notify the student
       if (autoShortlisted) {
@@ -339,15 +337,13 @@ const updateApplicationStatus = async (req, res) => {
 
     if (generated_subject && generated_email_body && candidate.email) {
       const { sendEmail } = require('../utils/emailService');
-      try {
-        await sendEmail({
-          to: candidate.email,
-          subject: generated_subject,
-          html: generated_email_body
-        });
-      } catch (emailErr) {
-        console.error('Failed to send status update email:', emailErr);
-      }
+      sendEmail({
+        to: candidate.email,
+        subject: generated_subject,
+        html: generated_email_body
+      }).catch((emailErr) => {
+        console.error('Failed to send status update email (handled asynchronously):', emailErr);
+      });
 
       return res.json({
         to: candidate.email,

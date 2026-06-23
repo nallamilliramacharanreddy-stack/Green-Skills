@@ -62,17 +62,13 @@ exports.createTicket = async (req, res) => {
     // Fetch user details for email notification
     const user = await User.findById(userId);
 
-    // Send email to nallamilliramacharanreddy@gmail.com
-    try {
-      await sendEmail({
-        to: 'nallamilliramacharanreddy@gmail.com',
-        subject: `[Support Ticket] ${ticket.subject}`,
-        html: generateTicketEmail(ticket, user)
-      });
-    } catch (emailError) {
-      // Log email failure but don't fail the API request
-      console.error('Failed to send support ticket email notification:', emailError);
-    }
+    sendEmail({
+      to: 'nallamilliramacharanreddy@gmail.com',
+      subject: `[Support Ticket] ${ticket.subject}`,
+      html: generateTicketEmail(ticket, user)
+    }).catch((emailError) => {
+      console.error('Failed to send support ticket email notification (handled asynchronously):', emailError);
+    });
 
     // Emit real-time notification to admins
     try {
