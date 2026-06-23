@@ -376,13 +376,19 @@ Match Result: ${isCorrect ? 'SUCCESS (CORRECT)' : 'FAIL (INCORRECT)'}
       try {
         const Application = require('../models/Application');
         const Job = require('../models/Job');
+        const Notification = require('../models/Notification');
+        const { sendEmail } = require('../utils/emailService');
+
         // Find jobs linked to this quiz
         const jobs = await Job.find({ examId: activeQuizId });
         const jobIds = jobs.map(j => j._id);
+
         if (jobIds.length > 0) {
-          await Application.updateMany(
-            { studentId: userId, jobId: { $in: jobIds } },
+          // Update existing applications to shortlisted
+          const updateResult = await Application.updateMany(
+            { studentId: userId, jobId: { $in: jobIds }, status: { $ne: 'hired' } },
             {
+              status: 'shortlisted',
               examResult: {
                 score: finalScore,
                 totalQuestions,
@@ -390,9 +396,92 @@ Match Result: ${isCorrect ? 'SUCCESS (CORRECT)' : 'FAIL (INCORRECT)'}
               }
             }
           );
+
+          // If any applications were updated, send notifications and email
+          if (updateResult.modifiedCount > 0) {
+            const student = await User.findById(userId);
+            const scorePercent = Math.round((finalScore / totalQuestions) * 100);
+
+            for (const job of jobs) {
+              // In-app notification for the student
+              try {
+                await new Notification({
+                  user: userId,
+                  title: '🎉 You Are Shortlisted!',
+                  message: `Great news! You scored ${scorePercent}% and have been shortlisted for "${job.title}" at ${job.companyName}. Watch for an interview invitation!`,
+                  type: 'success',
+                  link: '/dashboard/hiring'
+                }).save();
+              } catch (notifErr) {
+                console.error('Failed to save shortlist notification for student:', notifErr);
+              }
+
+              // In-app notification for the employer
+              try {
+                await new Notification({
+                  user: job.postedBy,
+                  title: `🏆 Exam Cleared: ${student?.name || 'A candidate'}`,
+                  message: `${student?.name || 'A candidate'} has passed your screening exam for "${job.title}" with a score of ${scorePercent}%. They are now shortlisted. Schedule their interview!`,
+                  type: 'success',
+                  link: '/employer/applications'
+                }).save();
+              } catch (notifErr) {
+                console.error('Failed to save shortlist notification for employer:', notifErr);
+              }
+
+              // Email notification to the student
+              if (student?.email) {
+                try {
+                  await sendEmail({
+                    to: student.email,
+                    subject: `🎉 Exam Passed & Shortlisted: ${job.title} at ${job.companyName}`,
+                    html: `
+                      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e0e0e0; border-radius: 12px;">
+                        <div style="background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%); border-radius: 8px; padding: 24px; text-align: center; margin-bottom: 24px;">
+                          <h2 style="color: #fff; margin: 0; font-size: 24px;">🎉 You Passed & You're Shortlisted!</h2>
+                        </div>
+                        <p>Dear ${student.name},</p>
+                        <p>Congratulations! You have successfully passed the screening exam for <strong>${job.title}</strong> at <strong>${job.companyName}</strong>!</p>
+                        <div style="background-color: #f0f7ff; border-left: 4px solid #1a73e8; padding: 16px 20px; margin: 20px 0; border-radius: 6px;">
+                          <h4 style="margin: 0 0 10px 0; color: #1a73e8;">📊 Your Exam Results</h4>
+                          <table style="width: 100%; border-collapse: collapse;">
+                            <tr>
+                              <td style="padding: 5px 0; font-weight: bold; color: #555; width: 150px;">Score:</td>
+                              <td style="padding: 5px 0; color: #222;"><strong>${finalScore}/${totalQuestions} (${scorePercent}%)</strong></td>
+                            </tr>
+                            <tr>
+                              <td style="padding: 5px 0; font-weight: bold; color: #555;">Status:</td>
+                              <td style="padding: 5px 0; color: #28a745;"><strong>✅ PASSED</strong></td>
+                            </tr>
+                            <tr>
+                              <td style="padding: 5px 0; font-weight: bold; color: #555;">Position:</td>
+                              <td style="padding: 5px 0; color: #222;">${job.title}</td>
+                            </tr>
+                            <tr>
+                              <td style="padding: 5px 0; font-weight: bold; color: #555;">Company:</td>
+                              <td style="padding: 5px 0; color: #222;">${job.companyName}</td>
+                            </tr>
+                          </table>
+                        </div>
+                        <div style="background-color: #d4edda; border-radius: 6px; padding: 14px 20px; margin: 16px 0;">
+                          <p style="margin: 0; color: #155724;"><strong>🏆 You are now shortlisted!</strong> The hiring team will review your profile and reach out to schedule a virtual interview. Keep an eye on your email and dashboard notifications.</p>
+                        </div>
+                        <p>Best of luck in your interview. The Green Skills team is rooting for you!</p>
+                        <br>
+                        <p>Best regards,</p>
+                        <p><strong>Green Skills Recruitment Portal</strong></p>
+                      </div>
+                    `
+                  });
+                } catch (emailErr) {
+                  console.error('Failed to send exam-pass shortlist email to student:', emailErr);
+                }
+              }
+            }
+          }
         }
       } catch (appErr) {
-        console.error('Error updating Application examResult on quiz pass:', appErr);
+        console.error('Error updating Application status and examResult on quiz pass:', appErr);
       }
     }
 

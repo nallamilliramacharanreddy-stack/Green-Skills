@@ -24,20 +24,25 @@ const Hiring = () => {
     }
     setApplying(job._id);
     try {
-      await axios.post(`${API_URL}/applications/apply`, {
+      const response = await axios.post(`${API_URL}/applications/apply`, {
         jobId: job._id,
         studentId: user._id,
         employerId: job.postedBy,
         resume: user.profilePicture || '',
         coverLetter: 'I am interested in this green energy role.'
       });
-      toast.success(`Application transmitted to ${job.companyName}`);
+      if (response.data?.autoShortlisted) {
+        toast.success(`🎉 Auto-Shortlisted! You passed the exam — you're directly shortlisted at ${job.companyName}!`, { duration: 6000 });
+      } else {
+        toast.success(`Application transmitted to ${job.companyName}`);
+      }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Application transfer failed');
     } finally {
       setApplying(null);
     }
   };
+
 
   useEffect(() => {
     const fetchJobs = async () => {
