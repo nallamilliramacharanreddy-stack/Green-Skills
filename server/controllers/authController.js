@@ -64,7 +64,7 @@ const generatePremiumEmail = (otp) => `
   <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
     <div style="background: linear-gradient(135deg, #064e3b 0%, #047857 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
       <h1 style="margin: 0; font-size: 28px; letter-spacing: 2px; text-transform: uppercase; font-weight: 900;">
-        <span style="color: #34d399;">🌱 GREEN SKILL</span> <span style="color: #ffffff;">RURAL</span>
+        <span style="color: #34d399;">GREEN SKILL</span> <span style="color: #ffffff;">RURAL</span>
       </h1>
       <p style="color: #a7f3d0; font-size: 12px; letter-spacing: 4px; margin-top: 8px; text-transform: uppercase;">Admin Portal</p>
     </div>
