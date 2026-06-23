@@ -13,7 +13,7 @@ import { API_URL, API_BASE_URL } from '../../utils/api';
 
 const SupportDashboard = () => {
   const { user } = useAuth();
-  const [activeSubTab, setActiveSubTab] = useState('clearance'); // 'clearance' or 'tickets'
+  const [activeSubTab, setActiveSubTab] = useState('tickets'); // 'clearance' or 'tickets'
   const [companies, setCompanies] = useState([]);
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
