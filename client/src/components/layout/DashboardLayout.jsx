@@ -8,6 +8,7 @@ import {
   Menu, X, User, Users, Shield, Trophy, Sparkles, Crown, ShieldAlert, FileText, Headphones
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
+import { useRealTime } from '../../context/RealTimeContext';
 
 const DashboardLayout = ({ children, role: propRole }) => {
   const { user, logout } = useAuth();
@@ -20,6 +21,100 @@ const DashboardLayout = ({ children, role: propRole }) => {
   const { language, setLanguage } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
+  const [notifications, setNotifications] = React.useState([]);
+  const [showNotifications, setShowNotifications] = React.useState(false);
+  const dropdownRef = React.useRef(null);
+  const { socket } = useRealTime();
+
+  // Load notifications from localStorage
+  React.useEffect(() => {
+    if (user?._id || user?.id) {
+      const uId = user._id || user.id;
+      const stored = localStorage.getItem(`notifications_${uId}`);
+      if (stored) {
+        try {
+          setNotifications(JSON.parse(stored));
+        } catch (e) {
+          console.error("Failed to parse notifications:", e);
+        }
+      } else {
+        setNotifications([]);
+      }
+    }
+  }, [user]);
+
+  // Save notifications to localStorage
+  const saveNotifications = (updated) => {
+    setNotifications(updated);
+    if (user?._id || user?.id) {
+      const uId = user._id || user.id;
+      localStorage.setItem(`notifications_${uId}`, JSON.stringify(updated));
+    }
+  };
+
+  // Close dropdown on click outside
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowNotifications(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Listen to socket alerts
+  React.useEffect(() => {
+    if (socket) {
+      const handleNewMessage = (data) => {
+        if (data.message && data.message.includes('New Support Ticket raised')) {
+          const newNotif = {
+            id: Date.now(),
+            title: 'New Support Ticket',
+            message: data.message,
+            read: false,
+            link: '/support',
+            createdAt: new Date().toISOString()
+          };
+          const uId = user?._id || user?.id;
+          let currentList = [];
+          if (uId) {
+            const stored = localStorage.getItem(`notifications_${uId}`);
+            if (stored) {
+              try { currentList = JSON.parse(stored); } catch (e) {}
+            }
+          }
+          saveNotifications([newNotif, ...currentList]);
+        }
+      };
+      socket.on('receive_message', handleNewMessage);
+      return () => {
+        socket.off('receive_message', handleNewMessage);
+      };
+    }
+  }, [socket, user]);
+
+  const handleNotificationClick = (notif) => {
+    const updated = notifications.map(n => n.id === notif.id ? { ...n, read: true } : n);
+    saveNotifications(updated);
+    setShowNotifications(false);
+    if (notif.link) {
+      navigate(notif.link);
+    }
+  };
+
+  const handleClearAll = () => {
+    saveNotifications([]);
+    setShowNotifications(false);
+  };
+
+  const handleMarkAllRead = () => {
+    const updated = notifications.map(n => ({ ...n, read: true }));
+    saveNotifications(updated);
+  };
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
   const [isSidebarOpen, setSidebarOpen] = React.useState(typeof window !== 'undefined' ? window.innerWidth > 768 : false);
   const [currentLang, setCurrentLang] = React.useState('en');
 
@@ -294,10 +389,100 @@ const DashboardLayout = ({ children, role: propRole }) => {
               </optgroup>
             </select>
 
-            <button className="relative p-3 rounded-full bg-slate-50 border border-slate-200 text-slate-500 hover:text-primary hover:border-primary/30 transition-all hover:shadow-[0_0_20px_rgba(16,185,129,0.15)] group">
-              <Bell size={22} className="group-hover:animate-wiggle" />
-              <span className="absolute top-2.5 right-3 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
-            </button>
+            <div className="relative" ref={dropdownRef}>
+              <button 
+                onClick={() => setShowNotifications(!showNotifications)}
+                className={`relative p-3 rounded-full border transition-all hover:shadow-[0_0_20px_rgba(16,185,129,0.15)] group ${
+                  showNotifications 
+                    ? 'bg-primary/10 border-primary text-primary' 
+                    : 'bg-slate-50 border-slate-200 text-slate-500 hover:text-primary hover:border-primary/30'
+                }`}
+              >
+                <Bell size={22} className="group-hover:animate-wiggle" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-2.5 right-3 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
+                )}
+              </button>
+
+              <AnimatePresence>
+                {showNotifications && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 15, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 15, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 mt-3 w-80 sm:w-96 bg-white rounded-3xl border border-slate-100 shadow-2xl z-50 overflow-hidden"
+                  >
+                    <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                      <div>
+                        <h4 className="font-black text-slate-900 uppercase tracking-tight text-sm">Notifications</h4>
+                        {unreadCount > 0 && (
+                          <p className="text-[10px] font-black text-rose-500 uppercase tracking-wider mt-0.5">{unreadCount} UNREAD ALERTS</p>
+                        )}
+                      </div>
+                      <div className="flex gap-3">
+                        {unreadCount > 0 && (
+                          <button 
+                            onClick={handleMarkAllRead}
+                            className="text-[9px] font-black text-slate-500 hover:text-primary uppercase tracking-widest transition-colors cursor-pointer"
+                          >
+                            Mark Read
+                          </button>
+                        )}
+                        {notifications.length > 0 && (
+                          <button 
+                            onClick={handleClearAll}
+                            className="text-[9px] font-black text-slate-400 hover:text-rose-500 uppercase tracking-widest transition-colors cursor-pointer"
+                          >
+                            Clear
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="max-h-[320px] overflow-y-auto divide-y divide-slate-50">
+                      {notifications.length > 0 ? (
+                        notifications.map((notif) => (
+                          <div 
+                            key={notif.id}
+                            onClick={() => handleNotificationClick(notif)}
+                            className={`p-4 hover:bg-slate-50 transition-colors cursor-pointer flex gap-3 relative ${
+                              !notif.read ? 'bg-primary/5' : ''
+                            }`}
+                          >
+                            {!notif.read && (
+                              <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+                            )}
+                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                              notif.type === 'error' ? 'bg-rose-50 text-rose-500' : 'bg-primary/10 text-primary'
+                            }`}>
+                              <Bell size={16} />
+                            </div>
+                            <div className="flex-1 space-y-1">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className={`text-xs uppercase tracking-wider ${!notif.read ? 'font-black text-slate-900' : 'font-bold text-slate-600'}`}>
+                                  {notif.title}
+                                </p>
+                                <span className="text-[9px] text-slate-400 font-bold">
+                                  {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+                              <p className="text-xs text-slate-500 font-medium leading-relaxed line-clamp-2">
+                                {notif.message}
+                              </p>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-8 text-center text-slate-400 text-xs italic">
+                          No notifications to display.
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
             <Link to={role === 'student' ? '/dashboard/profile' : `/${role}/profile`} className="flex items-center gap-4 pl-8 border-l border-slate-200 cursor-pointer hover:opacity-80 transition-opacity select-none group">
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-black text-slate-800 group-hover:text-primary transition-colors">{user?.name}</p>
