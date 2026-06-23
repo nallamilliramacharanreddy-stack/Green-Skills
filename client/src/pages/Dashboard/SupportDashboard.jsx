@@ -31,10 +31,52 @@ const SupportDashboard = () => {
     }
   }, [activeTicket?.responses]);
 
+  const playNotificationSound = () => {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      const ctx = new AudioContext();
+      
+      const playTone = (freq, time, duration) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        
+        gain.gain.setValueAtTime(0.1, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(time);
+        osc.stop(time + duration);
+      };
+      
+      playTone(523.25, ctx.currentTime, 0.15); // C5
+      playTone(659.25, ctx.currentTime + 0.1, 0.3); // E5
+    } catch (error) {
+      console.warn("Failed to play notification sound:", error);
+    }
+  };
+
   useEffect(() => {
     if (socket) {
       const handleNewMessage = (data) => {
         if (data.message && data.message.includes('New Support Ticket raised')) {
+          playNotificationSound();
+          toast.success(data.message, {
+            icon: '🎟️',
+            duration: 6000,
+            style: {
+              borderRadius: '16px',
+              background: '#0f172a',
+              color: '#fff',
+              border: '1px solid #1e293b',
+              padding: '16px',
+              fontWeight: 'bold',
+            }
+          });
+
           axios.get(`${API_URL}/tickets/admin/all`)
             .then(res => {
               const fetchedTickets = Array.isArray(res.data?.tickets) 

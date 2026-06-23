@@ -28,21 +28,24 @@ export const RealTimeProvider = ({ children }) => {
     newSocket.on('connect', () => {
       console.log('Connected to real-time server');
       newSocket.emit('join_room', `user_${user._id}`);
-      if (user.role === 'admin' || user.role === 'support') {
+      if (user.role && (user.role.startsWith('admin') || user.role === 'super-admin' || user.role === 'support')) {
         newSocket.emit('join_room', 'admin_alerts');
       }
     });
 
     newSocket.on('receive_message', (data) => {
       // Show real-time notification using existing toast system
-      toast(data.message, {
-        icon: '🔔',
-        style: {
-          borderRadius: '10px',
-          background: '#333',
-          color: '#fff',
-        },
-      });
+      // Only show if not on /support to avoid duplicate toasts
+      if (window.location.pathname !== '/support') {
+        toast(data.message, {
+          icon: '🔔',
+          style: {
+            borderRadius: '10px',
+            background: '#333',
+            color: '#fff',
+          },
+        });
+      }
     });
 
     newSocket.on('disconnect', () => {
