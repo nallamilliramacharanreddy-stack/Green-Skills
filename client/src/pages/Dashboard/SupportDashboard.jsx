@@ -315,6 +315,7 @@ const SupportDashboard = () => {
                 {/* 2. Tickets Roster */}
                 {activeSubTab === 'tickets' && (
                   filteredTickets.length > 0 ? (
+                    filteredTickets.map((ticket) => (
                       <div key={ticket._id} className="group p-6 bg-slate-50 rounded-[2rem] border border-slate-100 flex flex-col gap-4 hover:border-amber-200 hover:shadow-md transition-all">
                         {/* Header: Status, Category, Date/Time */}
                         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/60 pb-3">
@@ -371,6 +372,7 @@ const SupportDashboard = () => {
                           </div>
                         </div>
                       </div>
+                    ))
                   ) : (
                     <div className="text-center py-12 text-slate-400 italic">No tickets in database.</div>
                   )
