@@ -15,6 +15,7 @@ const JobManagement = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingJobId, setEditingJobId] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -57,19 +58,54 @@ const JobManagement = () => {
     }
   };
 
+  const handleEdit = (job) => {
+    setEditingJobId(job._id);
+    setFormData({
+      title: job.title || '',
+      description: job.description || '',
+      location: job.location || '',
+      salary: job.salary || '',
+      requirements: Array.isArray(job.requirements) ? job.requirements.join(', ') : (job.requirements || ''),
+      requiredSkills: Array.isArray(job.requiredSkills) ? job.requiredSkills.join(', ') : (job.requiredSkills || ''),
+      companyName: job.companyName || '',
+      image: job.image || ''
+    });
+    setShowForm(true);
+  };
+
+  const handleDelete = async (jobId) => {
+    if (!window.confirm('Are you sure you want to delete this job recruitment notice?')) return;
+    try {
+      await axios.delete(`${API_URL}/jobs/${jobId}`);
+      toast.success('Job deleted successfully');
+      fetchJobs();
+    } catch (error) {
+      toast.error('Failed to delete job');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const existingJob = editingJobId ? jobs.find(j => j._id === editingJobId) : null;
       const formattedData = {
         ...formData,
-        requirements: formData.requirements.split(',').map(r => r.trim()),
-        requiredSkills: formData.requiredSkills.split(',').map(s => s.trim()),
+        requirements: typeof formData.requirements === 'string' ? formData.requirements.split(',').map(r => r.trim()).filter(Boolean) : formData.requirements,
+        requiredSkills: typeof formData.requiredSkills === 'string' ? formData.requiredSkills.split(',').map(s => s.trim()).filter(Boolean) : formData.requiredSkills,
         postedBy: user._id,
-        status: 'pending' // Admin must approve jobs too
+        status: editingJobId && existingJob ? existingJob.status : 'pending'
       };
-      await axios.post(`${API_URL}/jobs`, formattedData);
-      toast.success('Job Recruitment Notice Sent for Admin Approval');
+
+      if (editingJobId) {
+        await axios.put(`${API_URL}/jobs/${editingJobId}`, formattedData);
+        toast.success('Job updated successfully');
+      } else {
+        await axios.post(`${API_URL}/jobs`, formattedData);
+        toast.success('Job Recruitment Notice Sent for Admin Approval');
+      }
+
       setShowForm(false);
+      setEditingJobId(null);
       fetchJobs();
       setFormData({
         title: '', description: '', location: '', 
@@ -78,7 +114,7 @@ const JobManagement = () => {
         image: ''
       });
     } catch (error) {
-      toast.error('Failed to create job');
+      toast.error(editingJobId ? 'Failed to update job' : 'Failed to create job');
     }
   };
 
@@ -90,7 +126,18 @@ const JobManagement = () => {
           <p className="text-slate-500 text-sm font-medium">Create and deploy recruitment notices to the Nexus.</p>
         </div>
         <button 
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => {
+            if (showForm) {
+              setEditingJobId(null);
+              setFormData({
+                title: '', description: '', location: '', 
+                salary: '', requirements: '', requiredSkills: '',
+                companyName: user?.companyName || user?.name || '',
+                image: ''
+              });
+            }
+            setShowForm(!showForm);
+          }}
           className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-transform"
         >
           {showForm ? <ChevronRight className="rotate-90" /> : <Plus />}
@@ -232,7 +279,7 @@ const JobManagement = () => {
                 type="submit"
                 className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-xl hover:bg-primary transition-all shadow-xl shadow-slate-900/20 uppercase tracking-tighter"
               >
-                Deploy Recruitment Notice
+                {editingJobId ? 'Update Job Details' : 'Deploy Recruitment Notice'}
               </button>
             </form>
           </motion.div>
@@ -276,10 +323,16 @@ const JobManagement = () => {
               </div>
 
               <div className="flex items-center gap-3">
-                <button className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:bg-primary/10 hover:text-primary transition-all">
+                <button 
+                  onClick={() => handleEdit(job)}
+                  className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:bg-primary/10 hover:text-primary transition-all"
+                >
                   <Edit2 size={20} />
                 </button>
-                <button className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:bg-red-50 text-red-500 transition-all">
+                <button 
+                  onClick={() => handleDelete(job._id)}
+                  className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:bg-red-50 text-red-500 transition-all"
+                >
                   <Trash2 size={20} />
                 </button>
               </div>
