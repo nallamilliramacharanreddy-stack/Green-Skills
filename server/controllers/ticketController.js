@@ -73,6 +73,18 @@ exports.createTicket = async (req, res) => {
       console.error('Failed to send support ticket email notification:', emailError);
     }
 
+    // Emit real-time notification to admins
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        io.to('admin_alerts').emit('receive_message', {
+          message: `New Support Ticket raised: "${ticket.subject}" by ${user ? user.name : 'Unknown User'}`
+        });
+      }
+    } catch (socketError) {
+      console.error('Failed to emit real-time support ticket notification:', socketError);
+    }
+
     res.status(201).json({ success: true, ticket });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
