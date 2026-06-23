@@ -5,7 +5,8 @@ import {
   Plus, Users, Briefcase, 
   CheckCircle, ShieldAlert, BarChart, Clock,
   Trophy, Medal, Star, Target, ArrowUpRight,
-  Search, Filter, Flame, X, Mail, Phone, MapPin, Award, BookOpen
+  Search, Filter, Flame, X, Mail, Phone, MapPin, Award, BookOpen,
+  Sparkles, Cpu, TrendingUp, Zap, Activity, Crown
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -101,6 +102,23 @@ const EmployerDashboard = () => {
       return 0;
     });
 
+  // Dynamic calculations for Leaderboard console
+  const poolSize = topTalent.length;
+  const peakSkill = topTalent.length > 0 ? Math.max(...topTalent.map(t => t.score || 0), 0) : 0;
+  const avgCompetency = topTalent.length > 0 ? Math.round(topTalent.reduce((acc, t) => acc + (t.score || 0), 0) / topTalent.length) : 0;
+  const totalBadges = topTalent.reduce((acc, t) => acc + (t.badges || 0), 0);
+
+  const top3 = filteredTalent.slice(0, 3);
+  const restTalent = filteredTalent.slice(3);
+
+  // Reorder top 3 for Podium: [Rank 2, Rank 1, Rank 3]
+  const podiumOrder = React.useMemo(() => {
+    if (top3.length === 0) return [];
+    if (top3.length === 1) return [null, top3[0], null];
+    if (top3.length === 2) return [top3[1], top3[0], null];
+    return [top3[1], top3[0], top3[2]];
+  }, [top3]);
+
   if (user && !user.isAdminApproved) {
     return (
       <DashboardLayout role="employer">
@@ -131,60 +149,54 @@ const EmployerDashboard = () => {
     <DashboardLayout role="employer">
       {activeTab === 'leaderboard' && (
         <>
-          <div className="mb-10 relative">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-6">
+          <div className="mb-8 relative">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                  <span className="text-[9px] font-black tracking-[0.3em] text-emerald-600 uppercase">Live Nexus Sync Active</span>
+                  <span className="relative flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                  </span>
+                  <span className="text-[10px] font-black tracking-[0.4em] text-emerald-600 uppercase">Live Ecosystem Nexus Active</span>
                 </div>
-                <h2 className="text-6xl font-black text-slate-900 uppercase tracking-tighter italic">
-                  TALENT <span className="text-primary">LEADERBOARD</span>
+                <h2 className="text-5xl md:text-6xl font-black text-slate-900 uppercase tracking-tighter italic leading-none">
+                  Talent <span className="bg-gradient-to-r from-emerald-500 to-teal-600 bg-clip-text text-transparent">Console</span>
                 </h2>
-                <p className="text-slate-500 text-lg font-medium max-w-2xl leading-relaxed mt-2">
-                  Analyzing performance metrics across the rural nexus. Identifying top-tier green expertise.
+                <p className="text-slate-500 text-sm md:text-base font-semibold max-w-2xl leading-relaxed mt-3">
+                  Dynamic visual mapping of top-tier green energy talent. Filter, rank, and inspect high-impact candidate profiles in real-time.
                 </p>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="px-8 py-4 bg-slate-900 text-white rounded-[24px] shadow-2xl flex items-center gap-4 border border-white/5">
-                  <Trophy className="text-amber-400 animate-bounce" size={32} />
-                  <div>
-                    <p className="text-2xl font-black italic tracking-tighter">{filteredTalent.length}</p>
-                    <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Matching Talent</p>
-                  </div>
-                </div>
               </div>
             </div>
 
             {/* Search & Sort Panel */}
-            <div className="flex flex-col sm:flex-row items-center gap-4 bg-white p-5 rounded-[32px] border border-slate-100 shadow-sm mb-8">
+            <div className="flex flex-col md:flex-row items-center gap-4 bg-white/80 backdrop-blur-md p-4 rounded-[28px] border border-slate-100 shadow-lg mb-8">
               <div className="relative flex-1 w-full">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                 <input 
                   type="text" 
-                  placeholder="Search by name, skills, or education..." 
+                  placeholder="Search candidate by name, key skills, or education..." 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary/20 transition-all uppercase tracking-wider placeholder:text-slate-400"
+                  className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-primary/20 transition-all uppercase tracking-wider placeholder:text-slate-400"
                 />
               </div>
               
-              <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 overflow-x-auto py-1">
+              <div className="flex items-center gap-2 w-full md:w-auto shrink-0 overflow-x-auto py-1">
                 {[
-                  { id: 'xp', label: 'XP Points', icon: Trophy },
-                  { id: 'skill', label: 'Skill Index', icon: Target },
-                  { id: 'streak', label: 'Active Streak', icon: Flame }
+                  { id: 'xp', label: 'XP Points', icon: Trophy, color: 'text-amber-500' },
+                  { id: 'skill', label: 'Skill Index', icon: Target, color: 'text-emerald-500' },
+                  { id: 'streak', label: 'Active Streak', icon: Flame, color: 'text-orange-500' }
                 ].map(tab => (
                   <button
                     key={tab.id}
                     onClick={() => setSortBy(tab.id)}
-                    className={`px-5 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all shrink-0 ${
+                    className={`px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all shrink-0 ${
                       sortBy === tab.id 
-                        ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20' 
-                        : 'bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-900'
+                        ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/30 scale-105' 
+                        : 'bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                   >
-                    <tab.icon size={12} />
+                    <tab.icon size={12} className={sortBy === tab.id ? 'text-white' : tab.color} />
                     {tab.label}
                   </button>
                 ))}
@@ -192,113 +204,321 @@ const EmployerDashboard = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-            {/* Main Leaderboard Table */}
-            <div className="lg:col-span-2 space-y-6">
-              {loading ? (
-                <div className="bg-white p-20 rounded-[40px] flex items-center justify-center border border-slate-50 shadow-sm">
-                  <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                </div>
-              ) : (
-                filteredTalent.map((talent, i) => (
-                  <motion.div
-                    key={talent._id}
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                    className="group bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm hover:shadow-xl transition-all flex items-center justify-between gap-6"
-                  >
-                    <div className="flex items-center gap-8">
-                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl italic shrink-0 ${
-                        i === 0 ? 'bg-gradient-to-br from-amber-300 to-yellow-500 text-slate-900 shadow-lg shadow-yellow-500/20' :
-                        i === 1 ? 'bg-gradient-to-br from-slate-200 to-slate-400 text-slate-800 shadow-md shadow-slate-400/10' :
-                        i === 2 ? 'bg-gradient-to-br from-orange-200 to-amber-600 text-white shadow-md shadow-orange-600/10' :
-                        'bg-slate-50 text-slate-400 border border-slate-100'
-                      }`}>
-                        #{i + 1}
+          {/* Podium Showcase */}
+          {podiumOrder.length > 0 && !loading && (
+            <div className="mb-12">
+              <div className="flex items-center gap-3 mb-6">
+                <Crown size={22} className="text-amber-400 animate-pulse" />
+                <h3 className="text-lg font-black text-slate-800 uppercase tracking-wider italic">Ecosystem Leaders</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-end max-w-5xl mx-auto px-4 py-8 bg-slate-50/50 rounded-[40px] border border-slate-100 relative overflow-hidden backdrop-blur-sm">
+                <div className="absolute inset-0 bg-gradient-to-tr from-emerald-100/10 via-transparent to-yellow-100/10 pointer-events-none"></div>
+                {podiumOrder.map((talent, index) => {
+                  if (!talent) return <div key={index} className="hidden md:block"></div>;
+                  
+                  const isRank1 = index === 1 || (podiumOrder.length < 3 && talent._id === top3[0]?._id);
+                  const isRank2 = index === 0 && talent._id === top3[1]?._id;
+                  const isRank3 = index === 2 && talent._id === top3[2]?._id;
+                  
+                  const rank = isRank1 ? 1 : isRank2 ? 2 : 3;
+                  
+                  // Styles depending on rank
+                  const cardBg = isRank1 
+                    ? 'bg-white border-yellow-300 shadow-[0_15px_40px_rgba(234,179,8,0.15)] ring-2 ring-yellow-400/20' 
+                    : isRank2 
+                      ? 'bg-white/90 border-slate-200 shadow-xl' 
+                      : 'bg-white/80 border-slate-200 shadow-lg';
+                      
+                  const headerGlow = isRank1 
+                    ? 'from-amber-400 to-yellow-500 text-white' 
+                    : isRank2 
+                      ? 'from-slate-300 to-slate-400 text-slate-800' 
+                      : 'from-orange-300 to-amber-600 text-white';
+
+                  const badgeBorder = isRank1 
+                    ? 'border-yellow-400' 
+                    : isRank2 
+                      ? 'border-slate-300' 
+                      : 'border-orange-400';
+
+                  return (
+                    <motion.div
+                      key={talent._id}
+                      initial={{ opacity: 0, y: 30 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: rank * 0.1, type: 'spring', stiffness: 80 }}
+                      whileHover={{ y: -8, scale: 1.02 }}
+                      className={`relative flex flex-col items-center p-6 rounded-[32px] border ${cardBg} transition-all duration-300 ${isRank1 ? 'md:py-10 md:-translate-y-4 z-10' : 'md:py-8 z-0'}`}
+                    >
+                      {/* Floating crown/trophy indicator */}
+                      {isRank1 && (
+                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 drop-shadow-lg z-20">
+                          <motion.div
+                            animate={{ y: [-3, 3, -3] }}
+                            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                          >
+                            <Crown className="w-10 h-10 text-yellow-400 drop-shadow-[0_4px_10px_rgba(234,179,8,0.4)]" fill="currentColor" />
+                          </motion.div>
+                        </div>
+                      )}
+
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-sm uppercase tracking-wider absolute -top-5 left-6 shadow-md bg-gradient-to-r ${headerGlow}`}>
+                        #{rank}
                       </div>
-                      <div className="flex items-center gap-5">
-                        <div className="w-16 h-16 bg-slate-50 rounded-[20px] flex items-center justify-center border border-slate-100 overflow-hidden shrink-0 shadow-inner">
-                          {talent.profilePicture ? (
-                            <img 
-                              src={talent.profilePicture.startsWith('http') ? talent.profilePicture : `${API_BASE_URL}${talent.profilePicture}`} 
-                              alt={talent.name}
-                              className="w-full h-full object-cover" 
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-lg uppercase">
-                              {talent.name.substring(0, 2)}
-                            </div>
+
+                      {/* Floating Trophy on Top-Right */}
+                      <div className="absolute top-4 right-4">
+                        {isRank1 ? (
+                          <Trophy className="w-6 h-6 text-yellow-400" />
+                        ) : (
+                          <Medal className={`w-5 h-5 ${isRank2 ? 'text-slate-400' : 'text-orange-500'}`} />
+                        )}
+                      </div>
+
+                      {/* Avatar */}
+                      <div className={`w-24 h-24 rounded-full p-1.5 border-4 ${badgeBorder} shadow-inner overflow-hidden mb-4 shrink-0 relative bg-slate-50`}>
+                        {talent.profilePicture ? (
+                          <img 
+                            src={talent.profilePicture.startsWith('http') ? talent.profilePicture : `${API_BASE_URL}${talent.profilePicture}`} 
+                            alt={talent.name}
+                            className="w-full h-full object-cover rounded-full" 
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-2xl rounded-full uppercase">
+                            {talent.name.substring(0, 2)}
+                          </div>
+                        )}
+                        <span className="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center shadow" title="Online">
+                          <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+                        </span>
+                      </div>
+
+                      {/* Name & Title */}
+                      <div className="text-center w-full">
+                        <h4 className="text-xl font-black text-slate-900 uppercase tracking-tight italic leading-tight truncate px-2">{talent.name}</h4>
+                        <div className="flex flex-wrap items-center justify-center gap-1.5 mt-2">
+                          <span className="text-[9px] font-black text-primary bg-primary/5 px-2 py-0.5 rounded border border-primary/10 uppercase tracking-widest italic">
+                            {talent.skillsInterested?.[0] || 'Renewable Energy'}
+                          </span>
+                          {talent.education && (
+                            <span className="text-[8px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100 uppercase tracking-widest truncate max-w-[120px]">
+                              {talent.education}
+                            </span>
                           )}
                         </div>
-                        <div>
-                          <h4 className="text-2xl font-black text-slate-900 uppercase tracking-tighter italic leading-none">{talent.name}</h4>
-                          <div className="flex items-center gap-2 mt-2">
-                            <span className="text-[10px] font-black text-primary uppercase tracking-widest bg-primary/5 px-2 py-0.5 rounded border border-primary/10 italic">
-                              {talent.skillsInterested?.[0] || 'Renewable Energy'}
-                            </span>
-                            {talent.education && (
-                              <span className="text-[9px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100 uppercase tracking-wider">
-                                {talent.education}
-                              </span>
-                            )}
-                          </div>
-                        </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center gap-8 md:gap-12 shrink-0">
-                      <div className="text-right">
-                        <p className="text-2xl font-black text-slate-900 italic tracking-tighter leading-none">
-                          {sortBy === 'xp' ? `${talent.ultraStreak?.leaderboardPoints || 0} XP` :
-                           sortBy === 'streak' ? `${talent.ultraStreak?.currentStreak || 0} Days` :
+                      {/* High-tech divider */}
+                      <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent my-5"></div>
+
+                      {/* Main Stat display */}
+                      <div className="text-center mb-5">
+                        <p className="text-4xl font-black bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent italic tracking-tighter leading-none">
+                          {sortBy === 'xp' ? `${talent.ultraStreak?.leaderboardPoints || 0}` :
+                           sortBy === 'streak' ? `${talent.ultraStreak?.currentStreak || 0}` :
                            `${talent.score}%`}
                         </p>
-                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">
+                        <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-1">
                           {sortBy === 'xp' ? 'Learning XP' :
-                           sortBy === 'streak' ? 'Active Streak' :
+                           sortBy === 'streak' ? 'Streak Days' :
                            'Skill Index'}
                         </p>
                       </div>
-                      <div className="h-12 w-px bg-slate-100 hidden sm:block"></div>
-                      <div className="flex-col items-end shrink-0 hidden sm:flex">
-                        {talent.ultraStreak?.badgeInventory && talent.ultraStreak.badgeInventory.length > 0 ? (
-                          <div className="flex gap-1 max-w-[140px] overflow-hidden justify-end">
-                            {talent.ultraStreak.badgeInventory.slice(0, 2).map((badge, j) => (
-                              <span 
-                                key={j}
-                                className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border shrink-0 ${
-                                  badge.rarity === 'COSMIC' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' :
-                                  badge.rarity === 'GOLD' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                                  'bg-slate-50 text-slate-500 border-slate-200'
-                                }`}
-                              >
-                                {badge.badgeName.split(' ')[0]}
-                              </span>
-                            ))}
-                            {talent.ultraStreak.badgeInventory.length > 2 && (
-                              <span className="text-[8px] font-black text-slate-400 bg-slate-50 border border-slate-200 px-1 py-0.5 rounded shrink-0">
-                                +{talent.ultraStreak.badgeInventory.length - 2}
-                              </span>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">No Badges</span>
-                        )}
-                        <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-1 text-right">Badges</p>
+
+                      {/* Detailed Stats Panel */}
+                      <div className="grid grid-cols-2 gap-2 w-full mb-6">
+                        <div className="p-2.5 bg-slate-50 rounded-xl text-center border border-slate-100">
+                          <p className="text-xs font-black text-slate-800 leading-none">
+                            {talent.ultraStreak?.leaderboardPoints || 0}
+                          </p>
+                          <p className="text-[7px] text-slate-400 font-bold uppercase tracking-wider mt-1">Total XP</p>
+                        </div>
+                        <div className="p-2.5 bg-slate-50 rounded-xl text-center border border-slate-100">
+                          <p className="text-xs font-black text-slate-800 leading-none">
+                            {talent.badges || 0}
+                          </p>
+                          <p className="text-[7px] text-slate-400 font-bold uppercase tracking-wider mt-1">Badges</p>
+                        </div>
                       </div>
+
+                      {/* Action Inspect Button */}
                       <button 
                         onClick={() => { setSelectedCandidate(talent); setShowInspectModal(true); }}
-                        className="w-12 h-12 bg-slate-50 border border-slate-100 text-slate-400 rounded-2xl flex items-center justify-center hover:bg-primary hover:text-white transition-all group-hover:scale-110 shadow-sm"
+                        className={`w-full py-3.5 rounded-2xl font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-1.5 transition-all shadow-md ${
+                          isRank1 
+                            ? 'bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700 text-white shadow-yellow-500/20' 
+                            : 'bg-slate-900 hover:bg-primary text-white shadow-slate-900/10'
+                        }`}
                       >
-                        <ArrowUpRight size={20} />
+                        Inspect Candidate <ArrowUpRight size={12} />
                       </button>
-                    </div>
-                  </motion.div>
-                ))
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Ecosystem Metrics Grid */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            {[
+              { label: 'Talent Volume', value: poolSize, sub: 'Matching candidates', icon: Users, color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' },
+              { label: 'Peak Skill Index', value: `${peakSkill}%`, sub: 'Highest user score', icon: Target, color: 'bg-blue-500/10 text-blue-600 border-blue-500/20' },
+              { label: 'Avg Competency', value: `${avgCompetency}%`, sub: 'Ecosystem standard', icon: Award, color: 'bg-purple-500/10 text-purple-600 border-purple-500/20' },
+              { label: 'Network Accolades', value: totalBadges, sub: 'Certifications unlocked', icon: Sparkles, color: 'bg-amber-500/10 text-amber-600 border-amber-500/20' }
+            ].map((stat, i) => (
+              <div key={i} className="bg-white/70 backdrop-blur-md p-6 rounded-[28px] border border-slate-100 shadow-sm hover:shadow-md transition-all flex items-center gap-5">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border ${stat.color} shrink-0`}>
+                  <stat.icon size={22} />
+                </div>
+                <div>
+                  <p className="text-2xl font-black text-slate-800 tracking-tight italic">{stat.value}</p>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{stat.label}</p>
+                  <p className="text-[8px] text-slate-400 font-medium">{stat.sub}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+            {/* Remaining Talent Grid */}
+            <div className="lg:col-span-2 space-y-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-black text-slate-800 uppercase tracking-wider italic">Network Candidates</h3>
+                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest bg-slate-100 px-3 py-1 rounded-full">{restTalent.length} Profiles</span>
+              </div>
+
+              {loading ? (
+                <div className="bg-white p-20 rounded-[40px] flex items-center justify-center border border-slate-100 shadow-sm">
+                  <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {restTalent.map((talent, i) => {
+                    const rank = i + 4; // Ranks start from 4 for rest
+                    
+                    // Circular progress bar calculations for skill index
+                    const radius = 24;
+                    const stroke = 3;
+                    const normalizedRadius = radius - stroke * 2;
+                    const circumference = normalizedRadius * 2 * Math.PI;
+                    const strokeDashoffset = circumference - ((talent.score || 0) / 100) * circumference;
+
+                    return (
+                      <motion.div
+                        key={talent._id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.04 }}
+                        whileHover={{ y: -4, scale: 1.01 }}
+                        className="group bg-white p-6 rounded-[28px] border border-slate-100 hover:border-primary/20 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden"
+                      >
+                        {/* Upper Details */}
+                        <div>
+                          <div className="flex justify-between items-start gap-4 mb-4">
+                            <span className="w-8 h-8 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center font-black text-slate-400 text-xs italic">
+                              #{rank}
+                            </span>
+                            
+                            {/* Radial Skill Index Progress Bar */}
+                            <div className="relative flex items-center justify-center w-12 h-12 shrink-0">
+                              <svg className="w-full h-full -rotate-90">
+                                <circle
+                                  className="text-slate-100"
+                                  strokeWidth={stroke}
+                                  stroke="currentColor"
+                                  fill="transparent"
+                                  r={normalizedRadius}
+                                  cx={radius}
+                                  cy={radius}
+                                />
+                                <circle
+                                  className="text-emerald-500 transition-all duration-500"
+                                  strokeWidth={stroke}
+                                  strokeDasharray={circumference + ' ' + circumference}
+                                  style={{ strokeDashoffset }}
+                                  strokeLinecap="round"
+                                  stroke="currentColor"
+                                  fill="transparent"
+                                  r={normalizedRadius}
+                                  cx={radius}
+                                  cy={radius}
+                                />
+                              </svg>
+                              <span className="absolute text-[8px] font-black text-slate-800">{talent.score}%</span>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-4 items-center mb-4">
+                            <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100 overflow-hidden shrink-0 shadow-inner">
+                              {talent.profilePicture ? (
+                                <img 
+                                  src={talent.profilePicture.startsWith('http') ? talent.profilePicture : `${API_BASE_URL}${talent.profilePicture}`} 
+                                  alt={talent.name}
+                                  className="w-full h-full object-cover" 
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm uppercase">
+                                  {talent.name.substring(0, 2)}
+                                </div>
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <h4 className="text-lg font-black text-slate-900 uppercase tracking-tight italic truncate leading-none">{talent.name}</h4>
+                              <div className="flex flex-col gap-1 mt-1">
+                                <span className="text-[8px] font-black text-primary uppercase tracking-widest bg-primary/5 px-2 py-0.5 rounded border border-primary/10 italic w-fit">
+                                  {talent.skillsInterested?.[0] || 'Renewable Energy'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Mid Details / Metrics */}
+                        <div className="w-full bg-slate-50 p-3 rounded-2xl border border-slate-100 mb-4 grid grid-cols-2 gap-2 text-center">
+                          <div>
+                            <p className="text-xs font-black text-slate-800 tracking-tighter">
+                              {sortBy === 'xp' ? `${talent.ultraStreak?.leaderboardPoints || 0} XP` :
+                               sortBy === 'streak' ? `${talent.ultraStreak?.currentStreak || 0} Days` :
+                               `${talent.score}%`}
+                            </p>
+                            <p className="text-[7px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
+                              {sortBy === 'xp' ? 'Learning XP' :
+                               sortBy === 'streak' ? 'Active Streak' :
+                               'Skill Index'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-black text-slate-800 tracking-tighter">
+                              {talent.badges || 0}
+                            </p>
+                            <p className="text-[7px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Badges Earned</p>
+                          </div>
+                        </div>
+
+                        {/* Footer Actions */}
+                        <div className="flex items-center justify-between gap-3 pt-2">
+                          {talent.education ? (
+                            <span className="text-[8px] font-semibold text-slate-400 truncate max-w-[110px] uppercase tracking-wider bg-slate-50 border border-slate-100 px-2 py-1 rounded-lg">
+                              {talent.education}
+                            </span>
+                          ) : (
+                            <span className="text-[8px] font-semibold text-slate-300">Grad Candidate</span>
+                          )}
+                          <button 
+                            onClick={() => { setSelectedCandidate(talent); setShowInspectModal(true); }}
+                            className="px-4 py-2 bg-slate-50 border border-slate-200 text-slate-500 rounded-xl hover:bg-primary hover:text-white transition-all text-[8px] font-black uppercase tracking-wider flex items-center gap-1 group-hover:scale-105"
+                          >
+                            Inspect <ArrowUpRight size={10} />
+                          </button>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
               )}
 
-              {!loading && filteredTalent.length === 0 && (
+              {!loading && restTalent.length === 0 && top3.length === 0 && (
                 <div className="bg-white p-20 rounded-[40px] border border-dashed border-slate-200 flex flex-col items-center justify-center text-center">
                   <Trophy className="text-slate-200 w-16 h-16 mb-4" />
                   <h3 className="text-xl font-black text-slate-400 uppercase tracking-tighter">No Talent Found</h3>
@@ -309,39 +529,102 @@ const EmployerDashboard = () => {
 
             {/* Sidebar Stats */}
             <div className="space-y-8">
-              <div className="bg-slate-900 p-10 rounded-[40px] shadow-2xl text-white relative overflow-hidden border border-slate-800">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-[60px]"></div>
-                <Target className="mb-6 text-primary" size={40} />
-                <h3 className="text-3xl font-black uppercase tracking-tighter italic leading-tight mb-4">Hiring <span className="text-primary">Intelligence</span></h3>
-                <p className="text-slate-400 text-sm font-medium leading-relaxed mb-8">
-                  Your recruitment efficiency has increased by 24% this month due to optimized matching.
-                </p>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center p-4 bg-white/5 border border-white/10 rounded-2xl">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Match Accuracy</span>
-                    <span className="text-xl font-black italic text-primary">94.2%</span>
+              {/* Sci-Fi Hiring Intelligence */}
+              <div className="bg-slate-950 p-8 rounded-[40px] shadow-2xl text-slate-100 border border-slate-800 relative overflow-hidden group">
+                {/* Glowing Sci-Fi Grid lines background */}
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#022c22_1px,transparent_1px),linear-gradient(to_bottom,#022c22_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-30 pointer-events-none"></div>
+                <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-500/10 rounded-full blur-[80px] pointer-events-none animate-pulse"></div>
+                
+                <div className="flex items-center justify-between mb-6 relative z-10">
+                  <div className="w-10 h-10 bg-emerald-950 border border-emerald-500/30 rounded-xl flex items-center justify-center text-emerald-400 shadow-lg shadow-emerald-500/10">
+                    <Cpu size={20} className="animate-spin-slow" />
                   </div>
-                  <div className="flex justify-between items-center p-4 bg-white/5 border border-white/10 rounded-2xl">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Clearance Level</span>
-                    <span className="text-xl font-black italic text-primary">TIER 1</span>
+                  <span className="text-[8px] font-black uppercase tracking-[0.3em] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full">System Diagnostics</span>
+                </div>
+
+                <h3 className="text-2xl md:text-3xl font-black uppercase tracking-tighter italic leading-tight mb-3 relative z-10">
+                  Hiring <span className="text-emerald-400">Intelligence</span>
+                </h3>
+                <p className="text-slate-400 text-xs font-semibold leading-relaxed mb-6 relative z-10">
+                  Real-time cognitive matching algorithms have optimized your recruitment flow. 
+                </p>
+
+                {/* Diagnostics Gauges */}
+                <div className="space-y-4 relative z-10">
+                  <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-2xl hover:border-emerald-500/20 transition-all flex justify-between items-center">
+                    <div>
+                      <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Matching Fidelity</span>
+                      <p className="text-sm font-bold text-slate-300 mt-0.5">Algorithm Accuracy</p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-lg font-black italic text-emerald-400">94.2%</span>
+                      <p className="text-[7px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">Optimum Range</p>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-2xl hover:border-emerald-500/20 transition-all flex justify-between items-center">
+                    <div>
+                      <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Security Index</span>
+                      <p className="text-sm font-bold text-slate-300 mt-0.5">Clearance Level</p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-lg font-black italic text-emerald-400">Tier 1</span>
+                      <p className="text-[7px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">Full Clearance</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pulsing Scan bar */}
+                <div className="w-full h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent my-6 relative z-10"></div>
+
+                {/* System Stats progress meters */}
+                <div className="space-y-3 relative z-10">
+                  <div>
+                    <div className="flex justify-between text-[8px] font-black uppercase tracking-wider text-slate-400 mb-1">
+                      <span>Network Velocity</span>
+                      <span className="text-emerald-400">+8.5%</span>
+                    </div>
+                    <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
+                      <div className="h-full bg-emerald-500 rounded-full" style={{ width: '85%' }}></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-[8px] font-black uppercase tracking-wider text-slate-400 mb-1">
+                      <span>Rural Engagement</span>
+                      <span className="text-emerald-400">+12.4%</span>
+                    </div>
+                    <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
+                      <div className="h-full bg-emerald-500 rounded-full" style={{ width: '74%' }}></div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white p-10 rounded-[40px] border border-slate-100 shadow-sm">
-                <div className="flex items-center gap-3 mb-8">
-                  <Star className="text-amber-400" fill="currentColor" size={24} />
-                  <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter italic">Market Trends</h3>
+              {/* Market Trends Panel */}
+              <div className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-md">
+                <div className="flex items-center justify-between mb-8">
+                  <div className="flex items-center gap-3">
+                    <TrendingUp className="text-amber-500" size={20} />
+                    <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter italic">Market Trends</h3>
+                  </div>
+                  <span className="text-[8px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded">Real-Time</span>
                 </div>
-                <div className="space-y-6">
-                  {['Solar Grid Management', 'EV Infrastructure', 'Organic Supply Chain'].map((trend, i) => (
-                    <div key={i} className="flex items-center justify-between">
-                      <span className="text-sm font-bold text-slate-600">{trend}</span>
-                      <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-50 px-2 py-1 rounded">+ {12 - i}%</span>
+                <div className="space-y-5">
+                  {[
+                    { trend: 'Solar Grid Management', val: 12, col: 'bg-emerald-500' },
+                    { trend: 'EV Infrastructure', val: 11, col: 'bg-emerald-500' },
+                    { trend: 'Organic Supply Chain', val: 9, col: 'bg-emerald-500' }
+                  ].map((item, i) => (
+                    <div key={i} className="p-4 bg-slate-50 border border-slate-100 rounded-2xl hover:bg-slate-100/50 transition-all flex items-center justify-between">
+                      <div>
+                        <span className="text-xs font-black text-slate-700 uppercase tracking-wide">{item.trend}</span>
+                        <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">High Demand Skill</p>
+                      </div>
+                      <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-2.5 py-1 rounded border border-emerald-100">+ {item.val}%</span>
                     </div>
                   ))}
                 </div>
-                <button className="w-full mt-10 py-5 bg-slate-50 text-slate-400 border border-slate-200 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-100 transition-all">
+                <button className="w-full mt-6 py-4 bg-slate-50 hover:bg-slate-100 text-slate-500 border border-slate-200 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all">
                   Analyze Full Nexus
                 </button>
               </div>
