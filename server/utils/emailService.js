@@ -8,6 +8,9 @@ try {
   console.warn('Failed to set DNS result order:', e.message);
 }
 
+const https = require('https');
+const url = require('url');
+
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 465,
@@ -22,26 +25,82 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-const sendEmail = async ({ to, subject, html }) => {
-  // 1. Try Google Apps Script Web App HTTPS API (if configured)
-  if (process.env.EMAIL_API_URL) {
-    console.log(`[EMAIL] Attempting to send email via Google Apps Script HTTPS API to ${to}...`);
+// Helper for sending POST request via native https module
+const sendViaHttps = (targetUrl, data) => {
+  return new Promise((resolve, reject) => {
     try {
-      const response = await fetch(process.env.EMAIL_API_URL, {
+      const parsedUrl = url.parse(targetUrl);
+      const postData = JSON.stringify(data);
+
+      const options = {
+        hostname: parsedUrl.hostname,
+        path: parsedUrl.path,
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ to, subject, html })
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(postData)
+        }
+      };
+
+      const req = https.request(options, (res) => {
+        let body = '';
+        res.on('data', (chunk) => body += chunk);
+        res.on('end', () => {
+          try {
+            resolve(JSON.parse(body));
+          } catch (e) {
+            resolve({ success: false, error: 'Failed to parse JSON response', body });
+          }
+        });
       });
-      const data = await response.json();
+
+      req.on('error', (e) => reject(e));
+      req.write(postData);
+      req.end();
+    } catch (err) {
+      reject(err);
+    }
+  });
+};
+
+const sendEmail = async ({ to, subject, html }) => {
+  // 1. Try Google Apps Script Web App HTTPS API (if configured or use fallback URL)
+  const emailApiUrl = process.env.EMAIL_API_URL || 'https://script.google.com/macros/s/AKfycbwuGzz7bBX8URr4jpSkeZJM080TE5Ue3rc-UVDJykaEBGdRkHg9kzTxkFHpA5O9QKll/exec';
+  if (emailApiUrl) {
+    console.log(`[EMAIL] Attempting to send email via Google Apps Script HTTPS API to ${to}...`);
+    try {
+      let data;
+      if (typeof fetch === 'function') {
+        const response = await fetch(emailApiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ to, subject, html })
+        });
+        data = await response.json();
+      } else {
+        console.log('[EMAIL] global.fetch is not defined. Falling back to native https module.');
+        data = await sendViaHttps(emailApiUrl, { to, subject, html });
+      }
+
       if (data && data.success) {
         console.log(`[EMAIL] Email sent successfully via Google Apps Script HTTPS API to ${to}`);
         return { success: true, method: 'google_apps_script' };
       }
       throw new Error(data?.message || data?.error || 'Unsuccessful response from Google Apps Script Web App');
     } catch (err) {
-      console.error('[EMAIL] Google Apps Script HTTPS API sending failed:', err.message);
+      console.warn('[EMAIL] Google Apps Script HTTPS API sending failed, trying HTTPS fallback:', err.message);
+      try {
+        const data = await sendViaHttps(emailApiUrl, { to, subject, html });
+        if (data && data.success) {
+          console.log(`[EMAIL] Email sent successfully via Google Apps Script HTTPS fallback to ${to}`);
+          return { success: true, method: 'google_apps_script_fallback' };
+        }
+        throw new Error(data?.message || data?.error || 'Unsuccessful response from Google Apps Script Web App (fallback)');
+      } catch (fallbackErr) {
+        console.error('[EMAIL] Google Apps Script HTTPS fallback sending failed:', fallbackErr.message);
+      }
     }
   }
 
