@@ -14,6 +14,7 @@ const applicationRoutes = require('./routes/applicationRoutes');
 const streakRoutes = require('./routes/streakRoutes');
 const roadmapRoutes = require('./routes/roadmapRoutes');
 const ticketRoutes = require('./routes/ticketRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 const contestRoutes = require('./routes/contestRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 
@@ -136,6 +137,7 @@ app.use('/api/streak', streakRoutes);
 // Advanced Module Routes
 app.use('/api/roadmap', roadmapRoutes);
 app.use('/api/tickets', ticketRoutes);
+app.use('/api/notifications', notificationRoutes);
 app.use('/api/contests', contestRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/videos', require('./routes/video'));

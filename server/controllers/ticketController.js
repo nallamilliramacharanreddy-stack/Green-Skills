@@ -1,5 +1,6 @@
 const Ticket = require('../models/Ticket');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 const { sendEmail } = require('../utils/emailService');
 
 const generateTicketEmail = (ticket, user) => `
@@ -83,6 +84,24 @@ exports.createTicket = async (req, res) => {
       }
     } catch (socketError) {
       console.error('Failed to emit real-time support ticket notification:', socketError);
+    }
+
+    // Save persistent notifications in the database for all admin & support users
+    try {
+      const admins = await User.find({ 
+        role: { $in: ['admin', 'super-admin', 'support', 'admin_course', 'admin_hiring', 'admin_exam'] } 
+      });
+      for (const admin of admins) {
+        await new Notification({
+          user: admin._id,
+          title: 'New Support Ticket',
+          message: `New Support Ticket raised: "${ticket.subject}" by ${user ? user.name : 'Unknown User'}`,
+          type: 'info',
+          link: '/support'
+        }).save();
+      }
+    } catch (dbNotifError) {
+      console.error('Failed to save support ticket notification to database:', dbNotifError);
     }
 
     res.status(201).json({ success: true, ticket });

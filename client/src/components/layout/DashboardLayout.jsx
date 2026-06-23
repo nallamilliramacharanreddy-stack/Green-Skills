@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useRealTime } from '../../context/RealTimeContext';
+import axios from 'axios';
+import { API_URL } from '../../utils/api';
 
 const DashboardLayout = ({ children, role: propRole }) => {
   const { user, logout } = useAuth();
@@ -26,24 +28,42 @@ const DashboardLayout = ({ children, role: propRole }) => {
   const dropdownRef = React.useRef(null);
   const { socket } = useRealTime();
 
-  // Load notifications from localStorage
+  // Load notifications from API and fallback/sync with localStorage
   React.useEffect(() => {
-    if (user?._id || user?.id) {
-      const uId = user._id || user.id;
-      const stored = localStorage.getItem(`notifications_${uId}`);
-      if (stored) {
-        try {
-          setNotifications(JSON.parse(stored));
-        } catch (e) {
-          console.error("Failed to parse notifications:", e);
+    const fetchNotifications = async () => {
+      const uId = user?._id || user?.id;
+      if (!uId) return;
+
+      try {
+        const res = await axios.get(`${API_URL}/notifications/user/${uId}`);
+        if (res.data && res.data.success) {
+          const apiNotifications = res.data.notifications.map(n => ({
+            id: n._id,
+            title: n.title,
+            message: n.message,
+            read: n.read,
+            link: n.link,
+            createdAt: n.createdAt
+          }));
+          setNotifications(apiNotifications);
+          localStorage.setItem(`notifications_${uId}`, JSON.stringify(apiNotifications));
         }
-      } else {
-        setNotifications([]);
+      } catch (err) {
+        console.error("Failed to fetch notifications from API:", err);
+        // Fallback to localStorage
+        const stored = localStorage.getItem(`notifications_${uId}`);
+        if (stored) {
+          try {
+            setNotifications(JSON.parse(stored));
+          } catch (e) {}
+        }
       }
-    }
+    };
+
+    fetchNotifications();
   }, [user]);
 
-  // Save notifications to localStorage
+  // Save notifications to localStorage helper
   const saveNotifications = (updated) => {
     setNotifications(updated);
     if (user?._id || user?.id) {
@@ -63,28 +83,30 @@ const DashboardLayout = ({ children, role: propRole }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Listen to socket alerts
+  // Listen to socket alerts to fetch new notifications dynamically
   React.useEffect(() => {
     if (socket) {
       const handleNewMessage = (data) => {
         if (data.message && data.message.includes('New Support Ticket raised')) {
-          const newNotif = {
-            id: Date.now(),
-            title: 'New Support Ticket',
-            message: data.message,
-            read: false,
-            link: '/support',
-            createdAt: new Date().toISOString()
-          };
           const uId = user?._id || user?.id;
-          let currentList = [];
           if (uId) {
-            const stored = localStorage.getItem(`notifications_${uId}`);
-            if (stored) {
-              try { currentList = JSON.parse(stored); } catch (e) {}
-            }
+            axios.get(`${API_URL}/notifications/user/${uId}`)
+              .then(res => {
+                if (res.data && res.data.success) {
+                  const apiNotifications = res.data.notifications.map(n => ({
+                    id: n._id,
+                    title: n.title,
+                    message: n.message,
+                    read: n.read,
+                    link: n.link,
+                    createdAt: n.createdAt
+                  }));
+                  setNotifications(apiNotifications);
+                  localStorage.setItem(`notifications_${uId}`, JSON.stringify(apiNotifications));
+                }
+              })
+              .catch(e => console.error("Error updating notifications on socket event:", e));
           }
-          saveNotifications([newNotif, ...currentList]);
         }
       };
       socket.on('receive_message', handleNewMessage);
@@ -94,23 +116,48 @@ const DashboardLayout = ({ children, role: propRole }) => {
     }
   }, [socket, user]);
 
-  const handleNotificationClick = (notif) => {
+  const handleNotificationClick = async (notif) => {
     const updated = notifications.map(n => n.id === notif.id ? { ...n, read: true } : n);
     saveNotifications(updated);
     setShowNotifications(false);
+
+    try {
+      await axios.patch(`${API_URL}/notifications/${notif.id}/read`);
+    } catch (err) {
+      console.error("Failed to mark notification as read on server:", err);
+    }
+
     if (notif.link) {
       navigate(notif.link);
     }
   };
 
-  const handleClearAll = () => {
+  const handleClearAll = async () => {
     saveNotifications([]);
     setShowNotifications(false);
+
+    const uId = user?._id || user?.id;
+    if (uId) {
+      try {
+        await axios.delete(`${API_URL}/notifications/user/${uId}/clear-all`);
+      } catch (err) {
+        console.error("Failed to clear notifications on server:", err);
+      }
+    }
   };
 
-  const handleMarkAllRead = () => {
+  const handleMarkAllRead = async () => {
     const updated = notifications.map(n => ({ ...n, read: true }));
     saveNotifications(updated);
+
+    const uId = user?._id || user?.id;
+    if (uId) {
+      try {
+        await axios.patch(`${API_URL}/notifications/user/${uId}/read-all`);
+      } catch (err) {
+        console.error("Failed to mark all read on server:", err);
+      }
+    }
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
