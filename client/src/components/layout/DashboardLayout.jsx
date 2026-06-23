@@ -244,8 +244,6 @@ const DashboardLayout = ({ children, role: propRole }) => {
       { category: 'DATA & USERS', items: [
         { icon: Award, label: 'Leaderboard', path: '/admin/leaderboard' },
         { icon: User, label: 'User', path: '/admin/users' },
-        { icon: Briefcase, label: 'Hirer Data', path: '/admin/hirers' },
-        { icon: Shield, label: 'Admin Data', path: '/admin/admins' },
       ]},
       { category: 'ACCOUNT', items: [
         { icon: User, label: 'Profile', path: '/admin/profile' },
