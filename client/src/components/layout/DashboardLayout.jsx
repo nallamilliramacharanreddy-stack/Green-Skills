@@ -220,7 +220,7 @@ const DashboardLayout = ({ children, role: propRole }) => {
       { category: 'RECRUITMENT', items: [
         { icon: Briefcase, label: 'Job Details', path: '/employer/jobs' },
         { icon: MessageSquare, label: 'Applications', path: '/employer/applications' },
-        { icon: Users, label: 'User Data', path: '/employer/candidates' },
+        { icon: Users, label: 'User', path: '/employer/candidates' },
         { icon: Award, label: 'Hired Users', path: '/employer/hired' },
       ]},
       { category: 'ASSESSMENT', items: [
@@ -243,7 +243,7 @@ const DashboardLayout = ({ children, role: propRole }) => {
       ]},
       { category: 'DATA & USERS', items: [
         { icon: Award, label: 'Leaderboard', path: '/admin/leaderboard' },
-        { icon: User, label: 'User Data', path: '/admin/users' },
+        { icon: User, label: 'User', path: '/admin/users' },
         { icon: Briefcase, label: 'Hirer Data', path: '/admin/hirers' },
         { icon: Shield, label: 'Admin Data', path: '/admin/admins' },
       ]},
