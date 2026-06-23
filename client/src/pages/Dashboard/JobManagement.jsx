@@ -41,6 +41,22 @@ const JobManagement = () => {
     if (user?._id) fetchJobs();
   }, [user]);
 
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image size must be less than 5MB');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData({ ...formData, image: reader.result });
+        toast.success('Image loaded from gallery');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -136,14 +152,44 @@ const JobManagement = () => {
                   />
                 </div>
                 <div className="md:col-span-2 space-y-2">
-                  <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1">Banner Image URL (Cinematic Preview)</label>
-                  <input 
-                    type="text"
-                    className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-primary/50 transition-all font-medium"
-                    placeholder="https://images.unsplash.com/photo-..."
-                    value={formData.image}
-                    onChange={(e) => setFormData({...formData, image: e.target.value})}
-                  />
+                  <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1">Banner Image (Cinematic Preview)</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <span className="text-[9px] font-bold text-slate-400 block ml-1">Option A: Image URL</span>
+                      <input 
+                        type="text"
+                        className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-primary/50 transition-all font-medium text-sm"
+                        placeholder="https://images.unsplash.com/photo-..."
+                        value={formData.image.startsWith('data:') ? '' : formData.image}
+                        onChange={(e) => setFormData({...formData, image: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[9px] font-bold text-slate-400 block ml-1">Option B: Upload from Gallery</span>
+                      <label className="flex items-center justify-center gap-2 px-5 py-3.5 bg-slate-50 border border-dashed border-slate-300 hover:border-primary/50 rounded-2xl cursor-pointer hover:bg-slate-100/50 transition-all text-sm font-bold text-slate-600 h-[50px]">
+                        <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        {formData.image.startsWith('data:') ? 'Image Selected ✓' : 'Choose Image File'}
+                        <input 
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleImageUpload}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                  {formData.image && (
+                    <div className="mt-4 relative rounded-2xl overflow-hidden border border-slate-200 h-40 bg-slate-100 flex items-center justify-center">
+                      <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
+                      <button 
+                        type="button"
+                        onClick={() => setFormData({...formData, image: ''})}
+                        className="absolute top-2 right-2 p-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-lg transition-colors text-xs font-bold shadow-md"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
