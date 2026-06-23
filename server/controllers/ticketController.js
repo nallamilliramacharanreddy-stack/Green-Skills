@@ -169,3 +169,37 @@ exports.addTicketResponse = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+exports.deleteTicket = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ticket = await Ticket.findByIdAndDelete(id);
+    if (!ticket) {
+      return res.status(404).json({ success: false, message: 'Ticket not found' });
+    }
+    
+    // Clean up notifications for this ticket from the database
+    try {
+      const Notification = require('../models/Notification');
+      await Notification.deleteMany({ message: { $regex: ticket.subject, $options: 'i' } });
+    } catch (notifErr) {
+      console.error('Failed to clean up notifications for deleted ticket:', notifErr);
+    }
+
+    // Emit real-time socket event to admins
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        io.to('admin_alerts').emit('receive_message', {
+          message: `Ticket unsent: "${ticket.subject}"`
+        });
+      }
+    } catch (socketError) {
+      console.error('Failed to emit real-time support ticket unsend notification:', socketError);
+    }
+
+    res.status(200).json({ success: true, message: 'Ticket unsent successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

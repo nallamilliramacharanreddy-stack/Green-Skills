@@ -62,20 +62,35 @@ const SupportDashboard = () => {
   useEffect(() => {
     if (socket) {
       const handleNewMessage = (data) => {
-        if (data.message && data.message.includes('New Support Ticket raised')) {
-          playNotificationSound();
-          toast.success(data.message, {
-            icon: '🎟️',
-            duration: 6000,
-            style: {
-              borderRadius: '16px',
-              background: '#0f172a',
-              color: '#fff',
-              border: '1px solid #1e293b',
-              padding: '16px',
-              fontWeight: 'bold',
-            }
-          });
+        if (data.message && (data.message.includes('New Support Ticket raised') || data.message.includes('Ticket unsent'))) {
+          if (data.message.includes('Ticket unsent')) {
+            toast.error(data.message, {
+              icon: '🗑️',
+              duration: 5000,
+              style: {
+                borderRadius: '16px',
+                background: '#451a1a',
+                color: '#fff',
+                border: '1px solid #7f1d1d',
+                padding: '16px',
+                fontWeight: 'bold',
+              }
+            });
+          } else {
+            playNotificationSound();
+            toast.success(data.message, {
+              icon: '🎟️',
+              duration: 6000,
+              style: {
+                borderRadius: '16px',
+                background: '#0f172a',
+                color: '#fff',
+                border: '1px solid #1e293b',
+                padding: '16px',
+                fontWeight: 'bold',
+              }
+            });
+          }
 
           axios.get(`${API_URL}/tickets/admin/all`)
             .then(res => {
@@ -87,6 +102,8 @@ const SupportDashboard = () => {
                 const freshActive = fetchedTickets.find(t => t._id === activeTicket._id);
                 if (freshActive) {
                   setActiveTicket(freshActive);
+                } else {
+                  setActiveTicket(null);
                 }
               }
             })

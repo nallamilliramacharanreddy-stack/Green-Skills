@@ -352,6 +352,18 @@ const QuickToolsModule = () => {
     }
   };
 
+  const handleUnsendTicket = async (ticketId) => {
+    if (!window.confirm("Are you sure you want to unsend this support ticket?")) return;
+    try {
+      await axios.delete(`${API_URL}/tickets/${ticketId}`);
+      toast.success('Ticket unsent successfully!');
+      fetchUserTickets();
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to unsend ticket. Please check connection.');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -504,14 +516,24 @@ const QuickToolsModule = () => {
                         <div key={ticket._id} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-sm space-y-2">
                           <div className="flex justify-between items-center">
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{ticket.category}</span>
-                            <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border ${
-                              ticket.status === 'resolved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                              ticket.status === 'closed' ? 'bg-slate-200 text-slate-600 border-slate-300' :
-                              ticket.status === 'in-progress' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                              'bg-indigo-50 text-indigo-600 border-indigo-100'
-                            }`}>
-                              {ticket.status}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border ${
+                                ticket.status === 'resolved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                ticket.status === 'closed' ? 'bg-slate-200 text-slate-600 border-slate-300' :
+                                ticket.status === 'in-progress' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                'bg-indigo-50 text-indigo-600 border-indigo-100'
+                              }`}>
+                                {ticket.status}
+                              </span>
+                              {ticket.status !== 'resolved' && ticket.status !== 'closed' && (
+                                <button 
+                                  onClick={() => handleUnsendTicket(ticket._id)}
+                                  className="text-[9px] font-black text-rose-500 hover:text-rose-700 uppercase tracking-widest hover:underline cursor-pointer transition-colors bg-white px-2 py-1 rounded border border-rose-200/40 hover:border-rose-300 hover:bg-rose-50/50"
+                                >
+                                  Unsend
+                                </button>
+                              )}
+                            </div>
                           </div>
                           <h4 className="font-bold text-slate-900 text-sm leading-snug">{ticket.subject}</h4>
                           <p className="text-xs text-slate-600 line-clamp-2">{ticket.description}</p>
