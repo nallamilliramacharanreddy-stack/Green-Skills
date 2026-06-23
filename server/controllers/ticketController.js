@@ -181,7 +181,8 @@ exports.deleteTicket = async (req, res) => {
     // Clean up notifications for this ticket from the database
     try {
       const Notification = require('../models/Notification');
-      await Notification.deleteMany({ message: { $regex: ticket.subject, $options: 'i' } });
+      const escapedSubject = ticket.subject.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+      await Notification.deleteMany({ message: { $regex: escapedSubject, $options: 'i' } });
     } catch (notifErr) {
       console.error('Failed to clean up notifications for deleted ticket:', notifErr);
     }

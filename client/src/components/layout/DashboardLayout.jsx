@@ -87,7 +87,7 @@ const DashboardLayout = ({ children, role: propRole }) => {
   React.useEffect(() => {
     if (socket) {
       const handleNewMessage = (data) => {
-        if (data.message && data.message.includes('New Support Ticket raised')) {
+        if (data.message && (data.message.includes('New Support Ticket raised') || data.message.includes('Ticket unsent'))) {
           const uId = user?._id || user?.id;
           if (uId) {
             axios.get(`${API_URL}/notifications/user/${uId}`)
