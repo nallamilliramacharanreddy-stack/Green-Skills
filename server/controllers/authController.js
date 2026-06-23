@@ -264,37 +264,17 @@ const login = async (req, res) => {
         return res.status(400).json({ message: 'Invalid credentials' });
       }
 
-      // Generate secure OTP for Employer Login
-      let otp = user.employerOtp;
-      const now = Date.now();
-      const threeMinutesInMs = 3 * 60 * 1000;
-      const isOtpRecent = user.employerOtpExpires && (new Date(user.employerOtpExpires).getTime() - now > (15 * 60 * 1000 - threeMinutesInMs));
-      
-      if (!otp || !isOtpRecent) {
-        otp = Math.floor(100000 + Math.random() * 900000).toString();
-        user.employerOtp = otp;
-        user.employerOtpExpires = new Date(now + 15 * 60 * 1000); // 15 minutes
-        await user.save();
-      }
+      const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
 
-      const mailOptions = {
-        from: '"Green Skill Rural Security" <nallamilliramacharanreddy@gmail.com>',
-        to: user.email,
-        subject: 'Green Skill Rural Recruiter - Security OTP',
-        html: generatePremiumEmail(otp)
-      };
+      const userResponse = user.toObject();
+      delete userResponse.password;
+      delete userResponse.facialEmbedding;
 
-      console.log(`[SECURITY] Employer Login OTP generated for ${user.email}: ${otp}`);
-      // Send email asynchronously
-      sendEmail({
-        to: user.email,
-        subject: 'Green Skill Rural Recruiter - Security OTP',
-        html: mailOptions.html
-      }).catch((err) => {
-        console.error('Error sending Employer OTP email (handled asynchronously):', err);
+      return res.json({
+        token,
+        user: userResponse,
+        message: 'Authentication Successful'
       });
-
-      return res.json({ requiresOtp: true, email: user.email, message: 'Security OTP sent to your email.' });
     }
 
     const isMatch = await user.comparePassword(password);
