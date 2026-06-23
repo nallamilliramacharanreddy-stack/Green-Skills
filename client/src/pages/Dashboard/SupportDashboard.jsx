@@ -375,6 +375,10 @@ const SupportDashboard = () => {
                           {ticket.subject}
                         </h4>
 
+                        <p className="text-[10px] text-slate-500 font-medium leading-relaxed line-clamp-2 bg-white/50 p-2 rounded-xl border border-slate-200/40 shadow-inner">
+                          {ticket.description}
+                        </p>
+
                         <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold">
                           <div className="flex items-center gap-1.5">
                             <div className="w-5 h-5 rounded-lg bg-slate-200 text-slate-600 flex items-center justify-center font-black text-[9px]">
