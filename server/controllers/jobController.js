@@ -2,7 +2,7 @@ const Job = require('../models/Job');
 
 const getAllJobs = async (req, res) => {
   try {
-    const jobs = await Job.find().sort({ createdAt: -1 });
+    const jobs = await Job.find().populate('postedBy', 'name email profilePicture').sort({ createdAt: -1 });
     res.json(jobs);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching jobs' });

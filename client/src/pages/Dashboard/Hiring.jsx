@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
-import { API_URL } from '../../utils/api';
+import { API_URL, API_BASE_URL } from '../../utils/api';
 
 const Hiring = () => {
   const { user } = useAuth();
@@ -121,7 +121,15 @@ const Hiring = () => {
                     
                     <div className="absolute bottom-6 left-8 flex items-center gap-4">
                       <div className="w-16 h-16 bg-white rounded-[1.2rem] flex items-center justify-center shadow-2xl overflow-hidden border-2 border-white">
-                         <Building2 className="text-slate-900" size={28} />
+                        {job.postedBy?.profilePicture ? (
+                          <img 
+                            src={job.postedBy.profilePicture.startsWith('http') ? job.postedBy.profilePicture : `${API_BASE_URL}${job.postedBy.profilePicture}`} 
+                            alt={job.companyName} 
+                            className="w-full h-full object-cover" 
+                          />
+                        ) : (
+                          <Building2 className="text-slate-900" size={28} />
+                        )}
                       </div>
                       <div>
                         <h4 className="text-2xl font-black text-white uppercase tracking-tighter leading-none">{job.companyName}</h4>
@@ -170,9 +178,9 @@ const Hiring = () => {
                           className="flex-1 py-5 bg-slate-900 text-white rounded-[1.5rem] font-black uppercase text-[10px] tracking-widest hover:bg-primary transition-all shadow-xl shadow-slate-900/20 flex items-center justify-center gap-2 disabled:opacity-50"
                         >
                           {applying === job._id ? (
-                            <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Transmitting...</>
+                            <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Applying...</>
                           ) : (
-                            <>Initialize Protocol <ArrowRight size={14} /></>
+                            <>APPLY <ArrowRight size={14} /></>
                           )}
                         </button>
                         <button className="w-14 h-14 bg-slate-50 border border-slate-200 text-slate-400 rounded-[1.5rem] flex items-center justify-center hover:bg-slate-100 hover:text-slate-900 transition-all">
