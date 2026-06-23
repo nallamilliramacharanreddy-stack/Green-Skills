@@ -29,9 +29,15 @@ const SupportDashboard = () => {
           axios.get(`${API_URL}/auth/hirers`),
           axios.get(`${API_URL}/tickets/admin/all`)
         ]);
-        setCompanies(hirersRes.data || []);
-        // Backend returns `{ success: true, tickets: [...] }` or just array
-        const fetchedTickets = ticketsRes.data?.tickets || ticketsRes.data || [];
+        
+        const fetchedCompanies = Array.isArray(hirersRes.data) 
+          ? hirersRes.data 
+          : [];
+        setCompanies(fetchedCompanies);
+
+        const fetchedTickets = Array.isArray(ticketsRes.data?.tickets) 
+          ? ticketsRes.data.tickets 
+          : (Array.isArray(ticketsRes.data) ? ticketsRes.data : []);
         setTickets(fetchedTickets);
       } catch (err) {
         console.error("Error loading support dashboard data:", err);
