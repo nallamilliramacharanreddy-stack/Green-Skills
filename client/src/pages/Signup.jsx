@@ -3,7 +3,7 @@ import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { 
+import {
   User, Mail, Lock, Phone, BookOpen, Users, Building,
   Briefcase, Globe, Calendar, Target, GraduationCap,
   Zap, ArrowRight, Cpu, ShieldCheck,
@@ -15,8 +15,8 @@ const Signup = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '', email: '', password: '', role: 'student',
-    age: '', education: '', mobile: '', 
-    skillsInterested: '', preferredLanguage: '', 
+    age: '', education: '', mobile: '',
+    skillsInterested: '', preferredLanguage: '',
     currentWork: '', careerGoal: ''
   });
   const [profilePicture, setProfilePicture] = useState(null);
@@ -117,7 +117,7 @@ const Signup = () => {
     }
     isInitializingRef.current = true;
     setStepState('loading');
-    
+
     try {
       console.log("[FaceAPI] startEnrollment: initiated");
       if (!window.faceapi) {
@@ -125,7 +125,7 @@ const Signup = () => {
       }
       console.log("[FaceAPI] startEnrollment: faceapi found in window");
       const MODEL_URL = '/models';
-      
+
       const withTimeout = (promise, ms, description) => {
         return Promise.race([
           promise,
@@ -141,7 +141,7 @@ const Signup = () => {
       } else {
         console.log("[FaceAPI] startEnrollment: ssdMobilenetv1 already cached/loaded");
       }
-      
+
       console.log("[FaceAPI] startEnrollment: checking faceLandmark68Net...");
       if (!window.faceapi.nets.faceLandmark68Net.params) {
         console.log("[FaceAPI] startEnrollment: loading faceLandmark68Net weights from", MODEL_URL);
@@ -150,7 +150,7 @@ const Signup = () => {
       } else {
         console.log("[FaceAPI] startEnrollment: faceLandmark68Net already cached/loaded");
       }
-      
+
       console.log("[FaceAPI] startEnrollment: checking faceRecognitionNet...");
       if (!window.faceapi.nets.faceRecognitionNet.params) {
         console.log("[FaceAPI] startEnrollment: loading faceRecognitionNet weights from", MODEL_URL);
@@ -159,7 +159,7 @@ const Signup = () => {
       } else {
         console.log("[FaceAPI] startEnrollment: faceRecognitionNet already cached/loaded");
       }
-      
+
       if (webcamStream) {
         console.log("[FaceAPI] startEnrollment: stopping existing stream");
         webcamStream.getTracks().forEach(track => track.stop());
@@ -189,7 +189,7 @@ const Signup = () => {
   const completeEnrollmentAndSubmit = async (avgEmbed) => {
     setFacialEmbedding(avgEmbed);
     setIsEnrolling(false);
-    
+
     if (webcamStream) {
       webcamStream.getTracks().forEach(track => track.stop());
       setWebcamStream(null);
@@ -203,7 +203,7 @@ const Signup = () => {
         data.append(key, formData[key]);
       }
     });
-    
+
     if (profilePicture) {
       data.append('profilePicture', profilePicture);
     }
@@ -225,7 +225,7 @@ const Signup = () => {
     const samples = [firstDescriptor];
     let count = 1;
     setEnrollmentSamples([...samples]);
-    
+
     const captureInterval = setInterval(async () => {
       if (!videoRef.current || stepRef.current !== 'capturing') {
         clearInterval(captureInterval);
@@ -275,8 +275,8 @@ const Signup = () => {
         videoRef.current,
         new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 })
       )
-      .withFaceLandmarks()
-      .withFaceDescriptor();
+        .withFaceLandmarks()
+        .withFaceDescriptor();
 
       if (detection) {
         const landmarks = detection.landmarks.positions;
@@ -323,7 +323,7 @@ const Signup = () => {
           }
         } else if (currentChallenge && currentStep === currentChallenge.type) {
           let passed = false;
-          
+
           if (currentStep === 'blink') {
             if (averageEAR < 0.23 && !eyeClosedRef.current) {
               eyeClosedRef.current = true;
@@ -442,7 +442,7 @@ const Signup = () => {
         data.append(key, formData[key]);
       }
     });
-    
+
     if (profilePicture) {
       data.append('profilePicture', profilePicture);
     }
@@ -483,19 +483,19 @@ const Signup = () => {
   return (
     <div className="w-full overflow-x-hidden bg-white">
       <div className="min-h-screen bg-white flex justify-center items-start p-6 relative font-sans py-24 w-full" onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
-        
+
         {/* Cinematic 3D Background */}
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-tr from-blue-50 via-white to-emerald-50 opacity-80"></div>
-          <motion.div 
-            animate={{ y: [0, -50, 0], opacity: [0.1, 0.2, 0.1] }} 
+          <motion.div
+            animate={{ y: [0, -50, 0], opacity: [0.1, 0.2, 0.1] }}
             transition={{ duration: 12, repeat: Infinity }}
             className="absolute -top-20 -right-20 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px]"
           ></motion.div>
         </div>
 
         <div className="max-w-7xl w-full flex flex-col lg:flex-row items-start justify-between gap-16 relative z-10">
-          
+
           {/* Left Side: Identity Selection */}
           <div className="flex-1 lg:sticky lg:top-12">
             <div className="space-y-8">
@@ -518,56 +518,53 @@ const Signup = () => {
                   <motion.div
                     key={r.id}
                     onClick={() => {
-                    if (r.id === 'employer') {
-                      navigate('/hirer/signup');
-                    } else {
-                      setFormData({ ...formData, role: r.id });
-                    }
-                  }}
+                      if (r.id === 'employer') {
+                        navigate('/hirer/signup');
+                      } else {
+                        setFormData({ ...formData, role: r.id });
+                      }
+                    }}
                     whileHover={{ y: -5, scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     className="relative p-6 rounded-[32px] border-2 cursor-pointer transition-all duration-500 overflow-hidden group bg-white"
-                    style={{ 
+                    style={{
                       borderColor: formData.role === r.id ? r.color : '#F1F5F9',
                       boxShadow: formData.role === r.id ? `0 20px 40px ${r.color}20` : 'none'
                     }}
                   >
                     {/* Background Pattern */}
-                    <div className={`absolute inset-0 opacity-[0.03] pointer-events-none ${
-                      formData.role === r.id ? 'opacity-[0.08]' : ''
-                    }`}>
+                    <div className={`absolute inset-0 opacity-[0.03] pointer-events-none ${formData.role === r.id ? 'opacity-[0.08]' : ''
+                      }`}>
                       <div className="absolute inset-0" style={{ backgroundImage: `radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)`, backgroundSize: '12px 12px' }}></div>
                     </div>
 
                     {/* Active Indicator */}
                     {formData.role === r.id && (
-                      <motion.div 
+                      <motion.div
                         layoutId="bento-signup-accent"
-                        className={`absolute top-0 right-0 w-12 h-12 rounded-bl-[32px] ${
-                          r.color === 'emerald' ? 'bg-emerald-500/10' :
+                        className={`absolute top-0 right-0 w-12 h-12 rounded-bl-[32px] ${r.color === 'emerald' ? 'bg-emerald-500/10' :
                           r.color === 'blue' ? 'bg-blue-500/10' :
-                          r.color === 'purple' ? 'bg-purple-500/10' :
-                          r.color === 'orange' ? 'bg-orange-500/10' :
-                          'bg-red-500/10'
-                        }`}
+                            r.color === 'purple' ? 'bg-purple-500/10' :
+                              r.color === 'orange' ? 'bg-orange-500/10' :
+                                'bg-red-500/10'
+                          }`}
                       />
                     )}
 
                     <div className="relative z-10 flex flex-col gap-4">
-                      <div 
+                      <div
                         className="w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm"
-                        style={{ 
+                        style={{
                           backgroundColor: formData.role === r.id ? r.color : '#FFFFFF',
                           color: formData.role === r.id ? '#FFFFFF' : '#94A3B8'
                         }}
                       >
                         <r.icon size={20} strokeWidth={2.5} />
                       </div>
-                      
+
                       <div className="space-y-1">
-                        <span className={`text-[10px] font-black uppercase tracking-[0.3em] block transition-colors ${
-                          formData.role === r.id ? 'text-slate-900' : 'text-slate-500'
-                        }`}>
+                        <span className={`text-[10px] font-black uppercase tracking-[0.3em] block transition-colors ${formData.role === r.id ? 'text-slate-900' : 'text-slate-500'
+                          }`}>
                           {r.title}
                         </span>
                       </div>
@@ -579,7 +576,7 @@ const Signup = () => {
           </div>
 
           {/* Right Side: Registration Form Card */}
-          <motion.div 
+          <motion.div
             style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -592,7 +589,7 @@ const Signup = () => {
 
             <div className="relative group p-[2px] rounded-[40px] bg-slate-100 overflow-hidden shadow-2xl">
               <div className="bg-white/95 backdrop-blur-3xl p-10 md:p-16 rounded-[38px] relative overflow-hidden border border-slate-200">
-                
+
                 <div className="relative z-10">
                   <div className="flex items-center justify-between mb-12">
                     <div>
@@ -607,7 +604,7 @@ const Signup = () => {
                   <form onSubmit={handleSubmit} className="space-y-10">
                     {/* Profile Picture Upload */}
                     <div className="flex flex-col items-center gap-4 mb-8">
-                      <div 
+                      <div
                         onClick={() => fileInputRef.current.click()}
                         className="w-24 h-24 bg-slate-50 border-2 border-dashed border-slate-200 rounded-[32px] flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-all overflow-hidden group relative"
                       >
@@ -619,10 +616,10 @@ const Signup = () => {
                             <span className="text-[8px] font-black text-slate-400 uppercase mt-1">Add Photo</span>
                           </div>
                         )}
-                        <input 
+                        <input
                           ref={fileInputRef}
-                          type="file" 
-                          className="hidden" 
+                          type="file"
+                          className="hidden"
                           onChange={handleFileChange}
                           accept="image/*"
                         />
@@ -704,7 +701,8 @@ const Signup = () => {
           </motion.div>
         </div>
 
-        <style dangerouslySetInnerHTML={{ __html: `
+        <style dangerouslySetInnerHTML={{
+          __html: `
           @keyframes border-travel {
             0% { transform: translateX(-100%); }
             100% { transform: translateX(100%); }
@@ -726,7 +724,7 @@ const Signup = () => {
         {isEnrolling && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4">
             <div className="w-full max-w-xl bg-white border border-slate-200 rounded-[32px] overflow-hidden shadow-2xl p-8 relative flex flex-col items-center">
-              
+
               <div className="text-center mb-6">
                 <h3 className="text-2xl font-black text-slate-950 uppercase tracking-tight italic">Biometric Face Enrollment</h3>
                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">LIVENESS CHECKS REQUIREMENT</p>
@@ -734,22 +732,22 @@ const Signup = () => {
 
               {/* Webcam viewport */}
               <div className="w-full max-w-sm aspect-video bg-slate-950 rounded-2xl relative overflow-hidden border border-slate-200 shadow-inner flex items-center justify-center mb-6">
-                <video 
-                  ref={videoRef} 
-                  autoPlay 
-                  playsInline 
-                  muted 
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
                   onPlay={handleVideoPlay}
                   className="w-full h-full object-cover scale-x-[-1]"
                 />
-                
+
                 {/* Neon scanner animation overlay */}
                 <div className="absolute inset-0 border-2 border-primary/20 rounded-2xl pointer-events-none">
                   <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-primary"></div>
                   <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-primary"></div>
                   <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-primary"></div>
                   <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-primary"></div>
-                  
+
                   {/* Scanner line */}
                   <div className="w-full h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent absolute top-0 animate-scanner"></div>
                 </div>
@@ -762,11 +760,11 @@ const Signup = () => {
                     {enrollmentStep === 'loading' ? '⏳ Loading Face Recognition Engine...' : (enrollmentStep !== 'position' ? '✓ Initial Face Position' : `▶ Position Face in Center (Nose Ratio: ${currentNoseRatio} / Target: 0.7 - 1.4)`)}
                   </span>
                 </div>
-                
+
                 {challenges.map((c, idx) => {
                   const isActive = enrollmentStep === c.type;
                   const isCompleted = currentChallengeIndex > idx || ['capturing', 'success'].includes(enrollmentStep);
-                  
+
                   let readout = '';
                   if (isActive) {
                     if (c.type === 'blink') readout = ` (${blinkCount}/2) (EAR: ${currentEAR} / Target: < 0.23)`;
@@ -793,8 +791,8 @@ const Signup = () => {
               {/* Progress bar */}
               {enrollmentStep === 'capturing' && (
                 <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden mb-6">
-                  <div 
-                    className="bg-primary h-full transition-all duration-300" 
+                  <div
+                    className="bg-primary h-full transition-all duration-300"
                     style={{ width: `${enrollmentSamples.length * 10}%` }}
                   />
                 </div>
@@ -806,9 +804,9 @@ const Signup = () => {
                 </div>
               )}
 
-              <button 
-                type="button" 
-                onClick={() => setIsEnrolling(false)} 
+              <button
+                type="button"
+                onClick={() => setIsEnrolling(false)}
                 className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-sm uppercase tracking-wider hover:bg-red-600 transition-all shadow-md"
               >
                 Cancel Enrollment
@@ -822,12 +820,12 @@ const Signup = () => {
           {[...Array(20)].map((_, i) => (
             <motion.div
               key={i}
-              animate={{ 
+              animate={{
                 y: [0, -1000],
                 opacity: [0, 1, 0]
               }}
-              transition={{ 
-                duration: 5 + Math.random() * 10, 
+              transition={{
+                duration: 5 + Math.random() * 10,
                 repeat: Infinity,
                 delay: Math.random() * 5
               }}

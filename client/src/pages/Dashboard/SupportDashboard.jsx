@@ -315,49 +315,62 @@ const SupportDashboard = () => {
                 {/* 2. Tickets Roster */}
                 {activeSubTab === 'tickets' && (
                   filteredTickets.length > 0 ? (
-                    filteredTickets.map((ticket) => (
-                      <div key={ticket._id} className="group p-5 bg-slate-50 rounded-3xl border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:border-amber-200 hover:shadow-md transition-all">
-                        <div className="flex items-center gap-5">
-                          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner ${
-                            ticket.status === 'resolved' || ticket.status === 'closed'
-                              ? 'bg-emerald-100 text-emerald-600'
-                              : ticket.status === 'in-progress'
-                              ? 'bg-amber-100 text-amber-600 animate-pulse'
-                              : 'bg-indigo-100 text-indigo-600'
-                          }`}>
-                            <MessageSquare size={24} />
+                      <div key={ticket._id} className="group p-6 bg-slate-50 rounded-[2rem] border border-slate-100 flex flex-col gap-4 hover:border-amber-200 hover:shadow-md transition-all">
+                        {/* Header: Status, Category, Date/Time */}
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/60 pb-3">
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${
+                              ticket.status === 'resolved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                              ticket.status === 'closed' ? 'bg-slate-200 text-slate-600 border-slate-300' :
+                              ticket.status === 'in-progress' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                              'bg-indigo-50 text-indigo-600 border-indigo-100'
+                            }`}>
+                              {ticket.status}
+                            </span>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-white px-2 py-1 rounded border border-slate-200">
+                              {ticket.category}
+                            </span>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-white px-2 py-1 rounded border border-slate-200">
+                              {ticket.type || 'Support'}
+                            </span>
                           </div>
-                          <div>
-                            <h4 className="text-lg font-black text-slate-900 uppercase tracking-tighter">{ticket.subject}</h4>
-                            <div className="flex items-center gap-3 mt-1">
-                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{ticket.category}</span>
-                              <div className="w-1 h-1 rounded-full bg-slate-300"></div>
-                              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-white text-slate-600 border border-slate-200">
-                                User: {ticket.user?.name || 'Unknown Node'}
-                              </span>
+                          <span className="text-[10px] text-slate-400 font-bold">
+                            {new Date(ticket.createdAt).toLocaleString()}
+                          </span>
+                        </div>
+
+                        {/* Subject */}
+                        <h4 className="text-xl font-black text-slate-900 uppercase tracking-tighter leading-tight group-hover:text-amber-600 transition-colors">
+                          {ticket.subject}
+                        </h4>
+
+                        {/* Problem Description */}
+                        <div className="bg-white p-4 rounded-2xl border border-slate-100 text-xs text-slate-600 font-medium leading-relaxed whitespace-pre-wrap">
+                          {ticket.description}
+                        </div>
+
+                        {/* User Details & Action */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-3 border-t border-slate-200/60">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-xs">
+                              {ticket.user?.name?.[0] || 'U'}
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-slate-900 leading-none">{ticket.user?.name || 'Unknown Student'}</p>
+                              <p className="text-[10px] text-slate-400 font-medium mt-1">{ticket.user?.email || 'No email provided'}</p>
                             </div>
                           </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-3">
-                          <span className={`px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${
-                            ticket.status === 'resolved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                            ticket.status === 'closed' ? 'bg-slate-200 text-slate-600 border-slate-300' :
-                            ticket.status === 'in-progress' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                            'bg-indigo-50 text-indigo-600 border-indigo-100'
-                          }`}>
-                            {ticket.status}
-                          </span>
 
-                          <button 
-                            onClick={() => setActiveTicket(ticket)}
-                            className="px-6 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-500 transition-all"
-                          >
-                            Inspect
-                          </button>
+                          <div className="flex items-center gap-2 self-end sm:self-auto">
+                            <button 
+                              onClick={() => setActiveTicket(ticket)}
+                              className="px-6 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-500 transition-all shadow-md"
+                            >
+                              Inspect & Reply
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    ))
                   ) : (
                     <div className="text-center py-12 text-slate-400 italic">No tickets in database.</div>
                   )
