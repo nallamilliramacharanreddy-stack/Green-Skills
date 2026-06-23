@@ -7,6 +7,7 @@
     "start": "mkdir -p uploads && cp -r ../pre_deploy_backup/uploads_backup/* uploads/ 2>/dev/null || true && node index.js",
     "dev": "nodemon index.js",
     "seed": "node seed.js",
+    "postinstall": "node -e \"if (process.platform !== 'win32') { const fs = require('fs'); const { execSync } = require('child_process'); fs.mkdirSync('node_modules/youtube-dl-exec/bin', { recursive: true }); console.log('Downloading yt-dlp binary directly to bypass GitHub API rate limit...'); execSync('curl -L -o node_modules/youtube-dl-exec/bin/yt-dlp https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp'); execSync('chmod +x node_modules/youtube-dl-exec/bin/yt-dlp'); console.log('yt-dlp binary downloaded successfully.'); }\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
