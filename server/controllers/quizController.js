@@ -370,6 +370,32 @@ Match Result: ${isCorrect ? 'SUCCESS (CORRECT)' : 'FAIL (INCORRECT)'}
       }
     });
 
+    // If candidate passed the quiz, check if there's an application for a job with this quiz, and update its examResult
+    const activeQuizId = quizId || (attemptDoc ? attemptDoc.quiz : null);
+    if (activeQuizId && finalStatus === 'Pass') {
+      try {
+        const Application = require('../models/Application');
+        const Job = require('../models/Job');
+        // Find jobs linked to this quiz
+        const jobs = await Job.find({ examId: activeQuizId });
+        const jobIds = jobs.map(j => j._id);
+        if (jobIds.length > 0) {
+          await Application.updateMany(
+            { studentId: userId, jobId: { $in: jobIds } },
+            {
+              examResult: {
+                score: finalScore,
+                totalQuestions,
+                completedAt: new Date()
+              }
+            }
+          );
+        }
+      } catch (appErr) {
+        console.error('Error updating Application examResult on quiz pass:', appErr);
+      }
+    }
+
     // Mark attempt as completed
     if (attemptDoc) {
       attemptDoc.isCompleted = true;

@@ -1,5 +1,6 @@
 const Application = require('../models/Application');
 const Job = require('../models/Job');
+const User = require('../models/User');
 
 const applyForJob = async (req, res) => {
   try {
@@ -20,6 +21,63 @@ const applyForJob = async (req, res) => {
     });
 
     await application.save();
+
+    // Trigger recruiter notifications (database notification and email)
+    const student = await User.findById(studentId);
+    const employer = await User.findById(employerId);
+    const job = await Job.findById(jobId);
+
+    if (student && employer && job) {
+      const Notification = require('../models/Notification');
+      
+      // Save database notification for the recruiter
+      try {
+        await new Notification({
+          user: employerId,
+          title: 'New Application Received',
+          message: `${student.name} has applied for your job opening: "${job.title}"`,
+          type: 'info',
+          link: '/employer/applications'
+        }).save();
+      } catch (dbErr) {
+        console.error('Failed to save application notification to database:', dbErr);
+      }
+
+      // Send email notification to recruiter
+      const { sendEmail } = require('../utils/emailService');
+      const subject = `New Job Application: ${student.name} - ${job.title}`;
+      const html = `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+          <h2 style="color: #1a73e8; margin-bottom: 20px;">New Job Application</h2>
+          <p>Dear ${employer.name || 'Hiring Team'},</p>
+          <p>We are pleased to inform you that a candidate has applied for your job opening: <strong>${job.title}</strong>.</p>
+          <p><strong>Candidate Details:</strong></p>
+          <ul>
+            <li><strong>Name:</strong> ${student.name}</li>
+            <li><strong>Email:</strong> ${student.email}</li>
+            <li><strong>Education:</strong> ${student.education || 'N/A'}</li>
+          </ul>
+          <p>Please log in to your dashboard to review their resume and update their application status.</p>
+          <br>
+          <p>Best regards,</p>
+          <p><strong>Green Skills Recruitment Portal</strong></p>
+        </div>
+      `;
+      try {
+        await sendEmail({ to: employer.email, subject, html });
+      } catch (emailErr) {
+        console.error('Failed to send application email notification to recruiter:', emailErr);
+      }
+
+      // Emit real-time message via socket
+      const io = req.app.get('io');
+      if (io) {
+        io.to(`user_${employerId.toString()}`).emit('receive_message', {
+          message: `${student.name} has applied for your job posting: "${job.title}"`
+        });
+      }
+    }
+
     res.status(201).json({ message: 'Application submitted successfully!' });
   } catch (error) {
     res.status(500).json({ message: 'Error submitting application' });
@@ -50,6 +108,7 @@ const updateApplicationStatus = async (req, res) => {
     app.status = status;
     
     if (req.body.interviewDate) app.interviewDate = req.body.interviewDate;
+    if (req.body.interviewLink) app.interviewLink = req.body.interviewLink;
     if (req.body.joiningDate) app.joiningDate = req.body.joiningDate;
 
     await app.save();
@@ -76,6 +135,7 @@ const updateApplicationStatus = async (req, res) => {
     const applicationInfo = {
       status: app.status,
       interviewDate: app.interviewDate,
+      interviewLink: app.interviewLink,
       joiningDate: app.joiningDate
     };
 
@@ -83,20 +143,46 @@ const updateApplicationStatus = async (req, res) => {
     let generated_email_body = '';
 
     if (status.toUpperCase() === 'SHORTLISTED') {
+      const formattedInterviewDate = app.interviewDate 
+        ? new Date(app.interviewDate).toLocaleString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+        : 'to be announced';
+      const linkHtml = app.interviewLink 
+        ? `<p><strong>Virtual Interview Link:</strong> <a href="${app.interviewLink}" style="color: #1a73e8; font-weight: bold; text-decoration: underline;" target="_blank">${app.interviewLink}</a></p>`
+        : '<p>Our team will share the virtual meeting details shortly.</p>';
+
       generated_subject = `Congratulations! You Have Been Shortlisted - ${recruiter.companyName}`;
       generated_email_body = `
         <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
-          <h2 style="color: #1a73e8; margin-bottom: 20px;">Application Update</h2>
+          <h2 style="color: #1a73e8; margin-bottom: 20px;">Application Shortlisted</h2>
           <p>Dear ${candidate.name},</p>
-          <p>Congratulations! We are pleased to inform you that your profile has been <strong>shortlisted</strong> for the next stage of our competitive recruitment process for the <strong>${candidate.appliedRole}</strong> role at <strong>${recruiter.companyName}</strong>.</p>
-          <p>Our hiring team was highly impressed by your skills, qualifications, and interview performance. We will follow up shortly with details regarding the next steps, including scheduling your interview or assessment.</p>
-          <p>Thank you for choosing to pursue your career with ${recruiter.companyName}. We look forward to speaking with you soon.</p>
+          <p>Congratulations! We are pleased to inform you that your profile has been <strong>shortlisted</strong> for a virtual interview for the <strong>${candidate.appliedRole}</strong> role at <strong>${recruiter.companyName}</strong>.</p>
+          <div style="background-color: #f8f9fa; border-left: 4px solid #1a73e8; padding: 15px; margin: 20px 0; border-radius: 4px;">
+            <h4 style="margin: 0 0 10px 0; color: #1a73e8;">Virtual Interview Schedule</h4>
+            <p style="margin: 0 0 8px 0;"><strong>Date & Time:</strong> ${formattedInterviewDate}</p>
+            ${linkHtml}
+          </div>
+          <p>Please make sure you have a stable internet connection, a working webcam, and are in a quiet environment for the interview.</p>
+          <p>Thank you for choosing to pursue your career with ${recruiter.companyName}. We look forward to speaking with you soon!</p>
           <br>
           <p>Best regards,</p>
           <p><strong>${recruiter.name}</strong><br>
           ${recruiter.companyName}</p>
         </div>
       `;
+
+      // Create a DB notification for the candidate about being shortlisted
+      const Notification = require('../models/Notification');
+      try {
+        await new Notification({
+          user: app.studentId?._id,
+          title: 'Application Shortlisted',
+          message: `Congratulations! You have been shortlisted for ${candidate.appliedRole} at ${recruiter.companyName}. Your interview is scheduled on ${formattedInterviewDate}.`,
+          type: 'success',
+          link: '/dashboard/profile'
+        }).save();
+      } catch (notifErr) {
+        console.error('Failed to save shortlisted notification to database:', notifErr);
+      }
     } else if (status.toUpperCase() === 'HIRED') {
       const formattedJoiningDate = applicationInfo.joiningDate 
         ? new Date(applicationInfo.joiningDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
@@ -116,6 +202,20 @@ const updateApplicationStatus = async (req, res) => {
           ${recruiter.companyName}</p>
         </div>
       `;
+
+      // Create a DB notification for the candidate about being hired
+      const Notification = require('../models/Notification');
+      try {
+        await new Notification({
+          user: app.studentId?._id,
+          title: 'Hired Successfully!',
+          message: `Welcome to ${recruiter.companyName}! You have been selected for the role of ${candidate.appliedRole}. Joining Date: ${formattedJoiningDate}.`,
+          type: 'success',
+          link: '/dashboard/profile'
+        }).save();
+      } catch (notifErr) {
+        console.error('Failed to save hired notification to database:', notifErr);
+      }
     }
 
     if (generated_subject && generated_email_body && candidate.email) {

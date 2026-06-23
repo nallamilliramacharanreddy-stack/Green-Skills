@@ -12,6 +12,7 @@ const applicationSchema = new mongoose.Schema({
   resume: String,
   coverLetter: String,
   interviewDate: Date,
+  interviewLink: String,
   joiningDate: Date,
   examResult: {
     score: Number,

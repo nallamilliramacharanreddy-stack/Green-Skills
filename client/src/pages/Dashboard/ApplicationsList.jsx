@@ -16,6 +16,15 @@ const ApplicationsList = () => {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('all');
 
+  // Modals state
+  const [selectedApp, setSelectedApp] = useState(null);
+  const [showShortlistModal, setShowShortlistModal] = useState(false);
+  const [showHireModal, setShowHireModal] = useState(false);
+  
+  const [interviewDate, setInterviewDate] = useState('');
+  const [interviewLink, setInterviewLink] = useState('');
+  const [joiningDate, setJoiningDate] = useState('');
+
   const fetchApplications = async () => {
     try {
       const res = await axios.get(`${API_URL}/applications/employer/${user._id}`);
@@ -31,10 +40,66 @@ const ApplicationsList = () => {
     if (user?._id) fetchApplications();
   }, [user]);
 
-  const handleStatusUpdate = async (appId, status) => {
+  const handleShortlistClick = (app) => {
+    setSelectedApp(app);
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(10, 0, 0, 0);
+    const offset = tomorrow.getTimezoneOffset();
+    const localTomorrow = new Date(tomorrow.getTime() - offset * 60 * 1000);
+    setInterviewDate(localTomorrow.toISOString().slice(0, 16));
+    setInterviewLink('https://meet.google.com/');
+    setShowShortlistModal(true);
+  };
+
+  const handleHireClick = (app) => {
+    setSelectedApp(app);
+    const twoWeeks = new Date();
+    twoWeeks.setDate(twoWeeks.getDate() + 14);
+    setJoiningDate(twoWeeks.toISOString().split('T')[0]);
+    setShowHireModal(true);
+  };
+
+  const handleShortlistSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedApp) return;
     try {
-      await axios.patch(`${API_URL}/applications/${appId}/status`, { status });
-      toast.success(`Application marked as ${status}`);
+      await axios.patch(`${API_URL}/applications/${selectedApp._id}/status`, { 
+        status: 'shortlisted', 
+        interviewDate,
+        interviewLink
+      });
+      toast.success('Candidate shortlisted and virtual interview invitation sent.');
+      setShowShortlistModal(false);
+      setSelectedApp(null);
+      fetchApplications();
+    } catch (error) {
+      toast.error('Failed to shortlist candidate');
+    }
+  };
+
+  const handleHireSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedApp) return;
+    try {
+      await axios.patch(`${API_URL}/applications/${selectedApp._id}/status`, { 
+        status: 'hired', 
+        joiningDate 
+      });
+      toast.success('Candidate hired successfully and confirmation email sent.');
+      setShowHireModal(false);
+      setSelectedApp(null);
+      fetchApplications();
+    } catch (error) {
+      toast.error('Failed to hire candidate');
+    }
+  };
+
+  const handleRejectClick = async (appId) => {
+    if (!window.confirm('Are you sure you want to reject this candidate?')) return;
+    try {
+      await axios.patch(`${API_URL}/applications/${appId}/status`, { status: 'rejected' });
+      toast.success('Application rejected.');
       fetchApplications();
     } catch (error) {
       toast.error('Failed to update status');
@@ -89,11 +154,17 @@ const ApplicationsList = () => {
                       <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">{app.studentId?.name}</h3>
                       <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
                         app.status === 'hired' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                        app.status === 'shortlisted' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' :
                         app.status === 'pending' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
                         'bg-slate-50 text-slate-500 border border-slate-100'
                       }`}>
                         {app.status}
                       </span>
+                      {app.examResult && typeof app.examResult.score === 'number' && (
+                        <span className="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest bg-emerald-100 text-emerald-800 border border-emerald-200">
+                          Cleared Exam ({Math.round((app.examResult.score / app.examResult.totalQuestions) * 100)}%)
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 mb-4">
                       <Briefcase size={12} className="text-primary" />
@@ -110,17 +181,19 @@ const ApplicationsList = () => {
                   {app.status !== 'hired' && (
                     <>
                       <button 
-                        onClick={() => handleStatusUpdate(app._id, 'hired')}
+                        onClick={() => handleHireClick(app)}
                         className="flex items-center gap-2 px-6 py-3 bg-emerald-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-100"
                       >
                         <CheckCircle size={16} /> Hire Candidate
                       </button>
-                      <button 
-                        onClick={() => handleStatusUpdate(app._id, 'shortlisted')}
-                        className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-primary transition-all"
-                      >
-                        <Award size={16} /> Shortlist
-                      </button>
+                      {app.status !== 'shortlisted' && (
+                        <button 
+                          onClick={() => handleShortlistClick(app)}
+                          className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-primary transition-all"
+                        >
+                          <Award size={16} /> Shortlist
+                        </button>
+                      )}
                     </>
                   )}
                   {app.status === 'hired' && (
@@ -128,9 +201,14 @@ const ApplicationsList = () => {
                       <CheckCircle size={16} /> Employment Confirmed
                     </div>
                   )}
-                  <button className="p-3 bg-slate-50 text-slate-400 rounded-2xl hover:bg-red-50 hover:text-red-500 transition-all">
-                    <XCircle size={20} />
-                  </button>
+                  {app.status !== 'rejected' && app.status !== 'hired' && (
+                    <button 
+                      onClick={() => handleRejectClick(app._id)}
+                      className="p-3 bg-slate-50 text-slate-400 rounded-2xl hover:bg-red-50 hover:text-red-500 transition-all"
+                    >
+                      <XCircle size={20} />
+                    </button>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -144,6 +222,122 @@ const ApplicationsList = () => {
           </div>
         )}
       </div>
+
+      {/* Shortlist / Interview Scheduling Modal */}
+      <AnimatePresence>
+        {showShortlistModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-xl">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white rounded-[40px] p-10 border border-slate-100 shadow-2xl max-w-md w-full space-y-6"
+            >
+              <div className="text-center space-y-2">
+                <Award className="mx-auto text-primary w-12 h-12" />
+                <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter italic">Schedule Interview</h3>
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Shortlisting {selectedApp?.studentId?.name}</p>
+              </div>
+
+              <form onSubmit={handleShortlistSubmit} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black text-slate-550 uppercase tracking-widest ml-1">Interview Date & Time</label>
+                  <input 
+                    type="datetime-local" 
+                    required
+                    value={interviewDate}
+                    onChange={(e) => setInterviewDate(e.target.value)}
+                    className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-primary/50 transition-all font-bold text-xs uppercase"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black text-slate-555 uppercase tracking-widest ml-1">Virtual Meeting Link</label>
+                  <input 
+                    type="url" 
+                    required
+                    value={interviewLink}
+                    onChange={(e) => setInterviewLink(e.target.value)}
+                    className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-primary/50 transition-all font-bold text-xs"
+                    placeholder="https://meet.google.com/..."
+                  />
+                </div>
+
+                <div className="flex gap-4 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowShortlistModal(false);
+                      setSelectedApp(null);
+                    }}
+                    className="flex-1 py-4 bg-slate-50 text-slate-600 border border-slate-200 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-100 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-4 bg-slate-900 text-white hover:bg-primary rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl shadow-slate-900/20"
+                  >
+                    Send Invitation
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Hiring Modal (Joining Date Picker) */}
+      <AnimatePresence>
+        {showHireModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-xl">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white rounded-[40px] p-10 border border-slate-100 shadow-2xl max-w-md w-full space-y-6"
+            >
+              <div className="text-center space-y-2">
+                <CheckCircle className="mx-auto text-emerald-500 w-12 h-12" />
+                <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter italic">Confirm Hiring</h3>
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Hiring {selectedApp?.studentId?.name}</p>
+              </div>
+
+              <form onSubmit={handleHireSubmit} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Joining Date</label>
+                  <input 
+                    type="date" 
+                    required
+                    value={joiningDate}
+                    onChange={(e) => setJoiningDate(e.target.value)}
+                    className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-primary/50 transition-all font-bold text-xs uppercase"
+                  />
+                </div>
+
+                <div className="flex gap-4 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowHireModal(false);
+                      setSelectedApp(null);
+                    }}
+                    className="flex-1 py-4 bg-slate-50 text-slate-600 border border-slate-200 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-100 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-4 bg-emerald-500 text-white hover:bg-emerald-600 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl shadow-emerald-500/20"
+                  >
+                    Confirm Offer
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
