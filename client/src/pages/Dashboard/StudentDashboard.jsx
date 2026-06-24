@@ -164,7 +164,7 @@ const StudentDashboard = () => {
 
                 <div className="flex justify-between items-center mb-6">
                   <span className="text-[10px] font-black text-cyan-300 uppercase tracking-widest bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">
-                    Eco Passport
+                    PROGRESS
                   </span>
                   <div className="flex items-center gap-1.5 text-xs font-bold text-orange-400">
                     <Flame size={16} className="fill-orange-400 animate-bounce" />
