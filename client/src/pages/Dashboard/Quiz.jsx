@@ -666,8 +666,45 @@ const Quiz = () => {
       triggerViolation(18, "Screen Resolution Changed");
     };
 
-    // Webcam/Mic proctoring is deactivated
-    console.log("Proctoring webcam and mic are deactivated.");
+    // Activate Webcam and Microphone for Proctoring
+    const startProctoringStream = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: 640, height: 480 },
+          audio: true
+        });
+        mediaStreamRef.current = stream;
+        setProctorStream(stream);
+        setStreamActive(true);
+
+        try {
+          const options = { mimeType: 'video/webm;codecs=vp9' };
+          if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+            options.mimeType = 'video/webm;codecs=vp8';
+          }
+          if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+            options.mimeType = 'video/webm';
+          }
+          if (MediaRecorder.isTypeSupported(options.mimeType)) {
+            const mediaRecorder = new MediaRecorder(stream, options);
+            mediaRecorderRef.current = mediaRecorder;
+            chunksRef.current = [];
+            mediaRecorder.ondataavailable = (e) => {
+              if (e.data && e.data.size > 0) {
+                chunksRef.current.push(e.data);
+              }
+            };
+            mediaRecorder.start(1000);
+          }
+        } catch (recorderErr) {
+          console.error("MediaRecorder init failed (continuing with just stream):", recorderErr);
+        }
+      } catch (err) {
+        console.error("Error accessing camera/mic for proctoring:", err);
+        toast.error("Webcam and microphone access is required for proctoring.");
+      }
+    };
+    startProctoringStream();
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     document.addEventListener('fullscreenchange', handleFullscreenChange);
