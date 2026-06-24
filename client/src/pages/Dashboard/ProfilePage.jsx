@@ -1,7 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import DashboardLayout from '../../components/layout/DashboardLayout';
-import { Shield, Edit, CheckCircle, Upload, Image as ImageIcon, Check, Award, Lock } from 'lucide-react';
+import { Shield, Edit, CheckCircle, Upload, Image as ImageIcon, Check, Award, Lock, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
@@ -27,6 +27,29 @@ const ProfilePage = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const fileInputRef = useRef(null);
+
+  const [nameRequests, setNameRequests] = useState([]);
+  const [showNameChangeModal, setShowNameChangeModal] = useState(false);
+  const [newNameInput, setNewNameInput] = useState('');
+
+  const fetchNameRequests = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/auth/name-change/requests`, {
+        params: { userId: currentUser._id }
+      });
+      setNameRequests(res.data || []);
+    } catch (err) {
+      console.error('Error fetching name requests:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (currentUser?._id) {
+      fetchNameRequests();
+    }
+  }, [currentUser]);
+
+  const pendingRequest = nameRequests.find(r => r.status === 'pending');
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -127,6 +150,12 @@ const ProfilePage = () => {
                     <p className="text-primary font-bold uppercase tracking-widest text-xs mt-3 flex items-center gap-2 italic">
                       <CheckCircle size={14} /> Identity Authorized
                     </p>
+                    {pendingRequest && (
+                      <div className="mt-3 p-3 bg-amber-50 border border-amber-100 text-amber-800 rounded-xl text-xs font-semibold flex items-center gap-2">
+                        <AlertCircle size={14} className="text-amber-500" />
+                        Name change request to <strong className="uppercase">"{pendingRequest.newName}"</strong> is pending admin approval.
+                      </div>
+                    )}
                     <div className="flex flex-wrap gap-4 mt-6">
                       <button
                         onClick={() => setIsEditing(true)}
@@ -160,6 +189,7 @@ const ProfilePage = () => {
                       <p className={`text-base font-semibold text-slate-900 ${item.isEmail ? 'lowercase' : ''}`}>{item.value}</p>
                     </div>
                   ))}
+
                 </div>
               </div>
             ) : (
@@ -187,7 +217,7 @@ const ProfilePage = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {[
-                    { name: 'name', label: 'Full Legal Name', placeholder: 'Your Name' },
+                    { name: 'name', label: 'Full Legal Name (Requires Admin approval to edit)', placeholder: 'Your Name' },
                     { name: 'email', label: 'Email Address', placeholder: 'email@example.com' },
                     { name: 'mobile', label: 'Mobile Identification', placeholder: '+91 XXXXX XXXXX' },
                     { name: 'age', label: 'Age', placeholder: '24' },
@@ -211,6 +241,7 @@ const ProfilePage = () => {
                           {f.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                         </select>
                       ) : (
+                        <div className="relative">
                           <input
                             type={f.name === 'password' ? 'password' : 'text'}
                             name={f.name}
@@ -220,9 +251,23 @@ const ProfilePage = () => {
                               setFormData({ ...formData, [f.name]: val });
                             }}
                             placeholder={f.placeholder}
-                            className={`w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-primary/10 transition-all font-semibold text-sm ${f.name === 'email' ? 'lowercase' : ''}`}
+                            disabled={f.name === 'name'}
+                            className={`w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-primary/10 transition-all font-semibold text-sm ${f.name === 'email' ? 'lowercase' : ''} ${f.name === 'name' ? 'opacity-70 cursor-not-allowed' : ''}`}
                             required={f.name === 'name' || f.name === 'email'}
                           />
+                          {f.name === 'name' && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setNewNameInput('');
+                                setShowNameChangeModal(true);
+                              }}
+                              className="mt-3 px-6 py-2.5 bg-slate-900 hover:bg-primary text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                            >
+                              Request Name Change
+                            </button>
+                          )}
+                        </div>
                       )}
                     </div>
                   ))}
@@ -300,6 +345,75 @@ const ProfilePage = () => {
                     </button>
                   </div>
                 </form>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Name Change Request Modal */}
+        <AnimatePresence>
+          {showNameChangeModal && (
+            <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="bg-white w-full max-w-md rounded-[32px] p-8 border border-slate-100 shadow-2xl space-y-6"
+              >
+                <div className="space-y-1">
+                  <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter italic">Request Name Change</h3>
+                  <p className="text-xs text-slate-500 font-bold">Admin verification is required for security and certificate integrity.</p>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Current Name</p>
+                    <p className="text-sm font-bold text-slate-700 uppercase">{currentUser?.name}</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Requested New Name</label>
+                    <input
+                      type="text"
+                      value={newNameInput}
+                      onChange={(e) => setNewNameInput(e.target.value)}
+                      placeholder="ENTER NEW FULL NAME"
+                      className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:ring-4 focus:ring-primary/10 transition-all font-semibold text-sm uppercase"
+                      required
+                    />
+                  </div>
+
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!newNameInput.trim()) return toast.error('Name cannot be empty');
+                        try {
+                          await axios.post(`${API_URL}/auth/name-change`, {
+                            userId: currentUser._id,
+                            oldName: currentUser.name,
+                            newName: newNameInput.trim()
+                          });
+                          toast.success('Name change request submitted successfully');
+                          setShowNameChangeModal(false);
+                          fetchNameRequests();
+                        } catch (err) {
+                          toast.error(err.response?.data?.message || 'Failed to submit request');
+                        }
+                      }}
+                      className="flex-1 py-4 bg-slate-900 text-white rounded-xl font-black uppercase tracking-tighter text-xs hover:bg-primary transition-all shadow-lg flex items-center justify-center gap-2"
+                    >
+                      <Check size={16} /> Submit Request
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowNameChangeModal(false)}
+                      className="px-6 py-4 bg-slate-50 text-slate-400 rounded-xl font-black uppercase tracking-tighter text-xs hover:bg-slate-100 transition-all border border-slate-100"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
               </motion.div>
             </div>
           )}

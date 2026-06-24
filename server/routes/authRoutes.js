@@ -3,7 +3,8 @@ const {
   signup, login, getAllUsers, getAllHirers, getAllAdmins, 
   approveAdmin, approveHirer, rejectHirer, updateUserStatus, deleteUser, getLeaderboard,
   requestReactivation, handleSuspensionRequest, updateProfile, forgotPasswordRequest, verifyForgotPasswordOtp, resetPasswordWithOtp, verifyAdminOtp,
-  addNote, deleteNote, editNote, verifyFaceLogin, getFaceDescriptor
+  addNote, deleteNote, editNote, verifyFaceLogin, getFaceDescriptor,
+  submitNameChangeRequest, getNameChangeRequests, decideNameChangeRequest
 } = require('../controllers/authController');
 const router = express.Router();
 
@@ -47,6 +48,11 @@ router.delete('/users/:id', deleteUser);
 router.post('/request-reactivation', requestReactivation);
 router.post('/handle-suspension/:id', handleSuspensionRequest);
 router.get('/leaderboard', getLeaderboard);
+
+// Name Change Routes
+router.post('/name-change', submitNameChangeRequest);
+router.get('/name-change/requests', getNameChangeRequests);
+router.post('/name-change/requests/:id/decide', decideNameChangeRequest);
 
 // Profile Routes
 router.put('/profile/:id', upload.single('profilePicture'), updateProfile);

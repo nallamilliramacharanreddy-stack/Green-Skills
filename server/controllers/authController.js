@@ -781,9 +781,88 @@ const getFaceDescriptor = async (req, res) => {
   }
 };
 
+const NameChangeRequest = require('../models/NameChangeRequest');
+
+const submitNameChangeRequest = async (req, res) => {
+  try {
+    const { userId, oldName, newName } = req.body;
+    if (!userId || !oldName || !newName) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+
+    // Check if there is already a pending request
+    const existing = await NameChangeRequest.findOne({ user: userId, status: 'pending' });
+    if (existing) {
+      return res.status(400).json({ message: 'You already have a pending name change request.' });
+    }
+
+    const request = new NameChangeRequest({
+      user: userId,
+      oldName,
+      newName
+    });
+
+    await request.save();
+    res.status(201).json({ message: 'Name change request submitted successfully', request });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const getNameChangeRequests = async (req, res) => {
+  try {
+    const { userId } = req.query;
+    const filter = userId ? { user: userId } : {};
+    const requests = await NameChangeRequest.find(filter).populate('user', 'name email role').sort({ requestedAt: -1 });
+    res.json(requests);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const decideNameChangeRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { action, decidedBy } = req.body; // action: 'approve' or 'reject'
+
+    if (!action || !['approve', 'reject'].includes(action)) {
+      return res.status(400).json({ message: 'Invalid action. Must be approve or reject.' });
+    }
+
+    const request = await NameChangeRequest.findById(id);
+    if (!request) {
+      return res.status(404).json({ message: 'Request not found' });
+    }
+
+    if (request.status !== 'pending') {
+      return res.status(400).json({ message: 'Request has already been processed.' });
+    }
+
+    if (action === 'approve') {
+      request.status = 'approved';
+      // Update User name
+      await User.findByIdAndUpdate(request.user, { name: request.newName });
+    } else {
+      request.status = 'rejected';
+    }
+
+    request.decidedAt = new Date();
+    request.decidedBy = decidedBy;
+    await request.save();
+
+    res.json({ message: `Request successfully ${action}d`, request });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = { 
   signup, login, getAllUsers, getAllHirers, getAllAdmins, 
   approveAdmin, approveHirer, rejectHirer, updateUserStatus, deleteUser, getLeaderboard,
   requestReactivation, handleSuspensionRequest, updateProfile, forgotPasswordRequest, verifyForgotPasswordOtp, resetPasswordWithOtp, verifyAdminOtp,
-  addNote, deleteNote, editNote, verifyFaceLogin, getFaceDescriptor
+  addNote, deleteNote, editNote, verifyFaceLogin, getFaceDescriptor,
+  submitNameChangeRequest, getNameChangeRequests, decideNameChangeRequest
 };
