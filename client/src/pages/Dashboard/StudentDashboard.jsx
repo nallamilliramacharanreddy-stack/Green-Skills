@@ -14,8 +14,16 @@ import { API_URL } from '../../utils/api';
 const StudentDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { leaderboard, setShowHub } = useStreak() || {};
+  const { leaderboard, streakData, setShowHub } = useStreak() || {};
   const [lastAttempt, setLastAttempt] = useState(null);
+
+  const myRank = leaderboard && user 
+    ? leaderboard.findIndex(item => {
+        const id = item.userId?._id || item.userId;
+        const myId = user.id || user._id;
+        return id && myId && id.toString() === myId.toString();
+      }) + 1
+    : 0;
 
   useEffect(() => {
     const currentUserId = user?.id || user?._id;
@@ -28,7 +36,7 @@ const StudentDashboard = () => {
       if (cached) {
         setLastAttempt(JSON.parse(cached));
       }
-    } catch (_) {}
+    } catch (_) { }
 
     // 2. Fetch fresh data from the new fast endpoint in background
     const fetchLastAttempt = async () => {
@@ -40,7 +48,7 @@ const StudentDashboard = () => {
           setLastAttempt(res.data);
           try {
             localStorage.setItem(cacheKey, JSON.stringify(res.data));
-          } catch (_) {}
+          } catch (_) { }
         }
       } catch (err) {
         console.error("Failed to load last attempt:", err);
@@ -152,7 +160,11 @@ const StudentDashboard = () => {
               <div className="space-y-4 relative z-10">
                 <div className="flex justify-between items-center p-3 bg-white/[0.02] rounded-xl border border-white/5">
                   <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest flex items-center gap-2"><Trophy size={12} className="text-violet-400" /> Ranking</span>
-                  <span className="text-lg font-semibold text-white tracking-tight">#142</span>
+                  <span className="text-lg font-semibold text-white tracking-tight">{myRank > 0 ? `#${myRank}` : '--'}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-white/[0.02] rounded-xl border border-white/5">
+                  <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest flex items-center gap-2"><Flame size={12} className="text-orange-400 animate-pulse" /> Active Streak</span>
+                  <span className="text-lg font-semibold text-white tracking-tight">{streakData?.currentStreak || 0} Days</span>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-white/[0.02] rounded-xl border border-white/5">
                   <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest flex items-center gap-2"><CheckCircle size={12} className="text-cyan-400" /> Modules</span>
