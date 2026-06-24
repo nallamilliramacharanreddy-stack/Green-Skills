@@ -26,14 +26,14 @@ exports.createCertificate = async (req, res) => {
       fs.mkdirSync(uploadsDir, { recursive: true });
     }
 
-    // Save PDF
-    const pdfData = pdfBase64.replace(/^data:application\/pdf;base64,/, "");
+    // Save PDF (robustly strip the data URI prefix regardless of jsPDF formatting)
+    const pdfData = pdfBase64.includes(';base64,') ? pdfBase64.split(';base64,').pop() : pdfBase64;
     const pdfFilename = `cert-${certificateId}-${Date.now()}.pdf`;
     const pdfPath = path.join(uploadsDir, pdfFilename);
     fs.writeFileSync(pdfPath, Buffer.from(pdfData, 'base64'));
 
-    // Save Thumbnail Image
-    const imgData = thumbnailBase64.replace(/^data:image\/jpeg;base64,/, "").replace(/^data:image\/png;base64,/, "");
+    // Save Thumbnail Image (robustly strip the data URI prefix)
+    const imgData = thumbnailBase64.includes(';base64,') ? thumbnailBase64.split(';base64,').pop() : thumbnailBase64;
     const imgFilename = `thumb-${certificateId}-${Date.now()}.jpg`;
     const imgPath = path.join(uploadsDir, imgFilename);
     fs.writeFileSync(imgPath, Buffer.from(imgData, 'base64'));
