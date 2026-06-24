@@ -255,8 +255,8 @@ const CertificateGenerator = ({ course, isOpen, onClose, user, onGenerated }) =>
                     <input 
                       type="text" 
                       value={courseName}
-                      onChange={(e) => setCourseName(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 font-medium focus:ring-2 focus:ring-primary/50 outline-none transition-all"
+                      disabled
+                      className="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-slate-500 font-medium cursor-not-allowed outline-none transition-all"
                       required
                     />
                   </div>
@@ -265,8 +265,8 @@ const CertificateGenerator = ({ course, isOpen, onClose, user, onGenerated }) =>
                     <input 
                       type="date" 
                       value={completionDate}
-                      onChange={(e) => setCompletionDate(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 font-medium focus:ring-2 focus:ring-primary/50 outline-none transition-all"
+                      disabled
+                      className="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-slate-500 font-medium cursor-not-allowed outline-none transition-all"
                       required
                     />
                   </div>
