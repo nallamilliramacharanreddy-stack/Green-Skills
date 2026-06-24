@@ -17,6 +17,8 @@ const Hiring = () => {
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(null);
   const [appliedJobIds, setAppliedJobIds] = useState(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showOnlyApplied, setShowOnlyApplied] = useState(false);
 
   const currentUserId = user?._id || user?.id;
 
@@ -62,7 +64,6 @@ const Hiring = () => {
     }
   };
 
-
   useEffect(() => {
     const fetchJobs = async () => {
       try {
@@ -78,6 +79,17 @@ const Hiring = () => {
     fetchAppliedJobs();
   }, [currentUserId]);
 
+  const filteredJobs = jobs.filter(job => {
+    const matchesSearch = 
+      (job.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (job.companyName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (job.location || '').toLowerCase().includes(searchQuery.toLowerCase());
+      
+    const matchesApplied = !showOnlyApplied || appliedJobIds.has(job._id.toString());
+    
+    return matchesSearch && matchesApplied;
+  });
+
   return (
     <DashboardLayout role="student">
       <div className="max-w-[1400px] mx-auto py-8 lg:py-12 px-4 sm:px-8 space-y-10">
@@ -88,15 +100,31 @@ const Hiring = () => {
             <h1 className="text-5xl lg:text-7xl font-black text-slate-900 tracking-tighter uppercase leading-none mb-2">
               Job<br/><span className="text-primary">Portal.</span>
             </h1>
-            <p className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em]">Verified Green Career Hub</p>
+            <p className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em]">
+              {showOnlyApplied ? "Applied Jobs Matrix" : "Verified Green Career Hub"}
+            </p>
           </div>
           
           <div className="flex items-center gap-3 w-full md:w-auto">
             <div className="relative flex-1 md:w-80">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-              <input type="text" placeholder="Search verified roles..." className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-full text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary/20 transition-all uppercase tracking-wider placeholder:text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="Search verified roles..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-full text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary/20 transition-all uppercase tracking-wider placeholder:text-slate-400" 
+              />
             </div>
-            <button className="w-12 h-12 bg-slate-900 text-white rounded-full flex items-center justify-center hover:bg-primary transition-all shadow-xl shadow-slate-900/20">
+            <button 
+              onClick={() => setShowOnlyApplied(!showOnlyApplied)}
+              className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-xl ${
+                showOnlyApplied 
+                  ? 'bg-primary text-white shadow-primary/20 scale-105' 
+                  : 'bg-slate-900 text-white hover:bg-primary shadow-slate-900/20'
+              }`}
+              title={showOnlyApplied ? "Show All Jobs" : "Show Applied Jobs"}
+            >
               <Filter size={16} />
             </button>
           </div>
@@ -112,7 +140,7 @@ const Hiring = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {jobs.map((job, i) => (
+            {filteredJobs.map((job, i) => (
               <motion.div 
                 key={job._id}
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -215,14 +243,20 @@ const Hiring = () => {
               </motion.div>
             ))}
 
-            {jobs.length === 0 && (
+            {filteredJobs.length === 0 && (
               <div className="col-span-full">
                 <div className="bg-slate-50 rounded-[3rem] border border-dashed border-slate-200 p-20 flex flex-col items-center justify-center text-center">
                   <div className="w-20 h-20 bg-white rounded-[1.5rem] shadow-sm border border-slate-100 flex items-center justify-center mb-6 text-slate-300">
                     <Zap size={32} />
                   </div>
-                  <h3 className="text-3xl font-black text-slate-900 uppercase tracking-tighter mb-2">The Nexus is Silent</h3>
-                  <p className="text-sm font-medium text-slate-500 max-w-sm">Active opportunities are currently being synchronized by the administration. Check back shortly.</p>
+                  <h3 className="text-3xl font-black text-slate-900 uppercase tracking-tighter mb-2">
+                    {showOnlyApplied ? "No Applied Jobs" : "The Nexus is Silent"}
+                  </h3>
+                  <p className="text-sm font-medium text-slate-500 max-w-sm">
+                    {showOnlyApplied 
+                      ? "You haven't applied to any job openings yet. Explore the portal and apply to start your green career trajectory!" 
+                      : "Active opportunities are currently being synchronized by the administration. Check back shortly."}
+                  </p>
                 </div>
               </div>
             )}
