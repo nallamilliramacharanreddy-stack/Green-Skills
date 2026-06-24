@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { 
   FileText, Clock, HelpCircle, Building2, 
-  Award, Shield, Search, Filter, Play, CheckCircle, AlertTriangle
+  Award, Shield, Search, Play, CheckCircle, AlertTriangle,
+  ShieldAlert, X, TrendingUp, Eye
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
@@ -21,6 +22,7 @@ const HiringExams = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [showConsentModal, setShowConsentModal] = useState(false);
   const [selectedExam, setSelectedExam] = useState(null);
+  const [selectedAttempt, setSelectedAttempt] = useState(null);
 
   const fetchData = async () => {
     try {
@@ -285,6 +287,78 @@ const HiringExams = () => {
           </div>
         )}
 
+        {/* Attempt History & Reports Section */}
+        {(() => {
+          // Filter only hiring-exam attempts (quiz-based, no course)
+          const hiringAttempts = attempts.filter(att => !att.course && att.quiz);
+          if (hiringAttempts.length === 0) return null;
+          return (
+            <div className="mt-10 space-y-6">
+              <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest">Attempt History &amp; Reports</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {hiringAttempts.map((attempt) => {
+                  const attemptTrust = attempt.trustScore !== undefined ? attempt.trustScore : 100;
+                  const scorePercent = attempt.totalQuestions
+                    ? Math.round((attempt.score / attempt.totalQuestions) * 100)
+                    : 0;
+                  return (
+                    <motion.div
+                      key={attempt._id}
+                      whileHover={{ scale: 1.02 }}
+                      className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-md flex flex-col justify-between transition-all"
+                    >
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-start">
+                          <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
+                            attempt.isInvalidated
+                              ? 'bg-red-50 text-red-600 border border-red-100'
+                              : attempt.status === 'Pass'
+                              ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
+                              : 'bg-red-50 text-red-600 border border-red-100'
+                          }`}>
+                            {attempt.isInvalidated ? 'Invalidated' : (attempt.status || 'Fail')}
+                          </span>
+                          <span className="text-[9px] text-slate-400 font-mono font-medium">
+                            {new Date(attempt.completedAt).toLocaleDateString()}
+                          </span>
+                        </div>
+
+                        <h4 className="font-black text-slate-900 text-sm uppercase tracking-tight">
+                          {attempt.quiz?.title || 'Hiring Assessment'}
+                        </h4>
+
+                        <div className="grid grid-cols-2 gap-2 py-2 border-t border-slate-100 text-[10px] uppercase font-bold text-slate-500">
+                          <div>
+                            <span className="block text-slate-400 text-[8px] font-black">Score</span>
+                            <span className={`font-black text-sm ${
+                              attempt.isInvalidated ? 'text-red-600 line-through' : 'text-slate-800'
+                            }`}>
+                              {attempt.isInvalidated ? '0%' : `${scorePercent}%`}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="block text-slate-400 text-[8px] font-black">Trust Score</span>
+                            <span className={`font-black text-sm ${
+                              attemptTrust > 75 ? 'text-emerald-500' : attemptTrust > 40 ? 'text-amber-500' : 'text-red-500'
+                            }`}>{attemptTrust}%</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => setSelectedAttempt(attempt)}
+                        className="mt-4 w-full py-2.5 bg-slate-900 hover:bg-primary text-white rounded-xl font-black text-[10px] uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Eye size={12} /> View Integrity Report
+                      </button>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
       </div>
 
       {/* AI Face Recognition and Consent Alert Modal */}
@@ -334,6 +408,127 @@ const HiringExams = () => {
                 >
                   Start Proctored Exam
                 </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Attempt Detail / Integrity Report Modal */}
+      <AnimatePresence>
+        {selectedAttempt && (
+          <div className="fixed inset-0 z-[200] bg-slate-950/55 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-slate-50 w-full max-w-2xl max-h-[85vh] rounded-[2.5rem] shadow-2xl border border-slate-200 overflow-hidden flex flex-col"
+            >
+              {/* Modal Header */}
+              <div className="bg-white p-6 px-8 border-b border-slate-200 flex justify-between items-center shrink-0">
+                <div>
+                  <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight italic">Assessment Audit Report</h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+                    {selectedAttempt.quiz?.title || 'Hiring Assessment'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedAttempt(null)}
+                  className="w-10 h-10 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl flex items-center justify-center transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="flex-1 overflow-y-auto p-8 space-y-6">
+
+                {/* Auto-submit warning */}
+                {selectedAttempt.autoSubmitReason && (
+                  <div className="bg-red-50 border border-red-200 p-5 rounded-2xl flex items-center gap-3">
+                    <ShieldAlert className="text-red-500 shrink-0" size={20} />
+                    <p className="text-xs text-red-900 font-medium leading-relaxed">
+                      <strong>Auto-Submitted:</strong> {selectedAttempt.autoSubmitReason}
+                    </p>
+                  </div>
+                )}
+
+                {/* Invalidated warning */}
+                {selectedAttempt.isInvalidated && (
+                  <div className="bg-red-50 border border-red-200 p-5 rounded-2xl flex items-center gap-3">
+                    <AlertTriangle className="text-red-500 shrink-0" size={20} />
+                    <div>
+                      <p className="text-xs font-black text-red-900 uppercase">Attempt Invalidated</p>
+                      <p className="text-[10px] text-red-700 mt-1">{selectedAttempt.invalidationReason || 'This attempt was flagged and invalidated by the AI proctoring system.'}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Score Summary */}
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="bg-white p-5 rounded-2xl border border-slate-100 text-center">
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Score</p>
+                    <p className={`text-3xl font-black ${
+                      selectedAttempt.isInvalidated ? 'text-red-500 line-through' : 'text-slate-900'
+                    }`}>
+                      {selectedAttempt.isInvalidated ? '0%' : `${selectedAttempt.totalQuestions ? Math.round((selectedAttempt.score / selectedAttempt.totalQuestions) * 100) : 0}%`}
+                    </p>
+                    <p className="text-[9px] text-slate-400 mt-1">{selectedAttempt.score} / {selectedAttempt.totalQuestions} correct</p>
+                  </div>
+                  <div className="bg-white p-5 rounded-2xl border border-slate-100 text-center">
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Trust Score</p>
+                    <p className={`text-3xl font-black ${
+                      (selectedAttempt.trustScore ?? 100) > 75 ? 'text-emerald-500' :
+                      (selectedAttempt.trustScore ?? 100) > 40 ? 'text-amber-500' : 'text-red-500'
+                    }`}>{selectedAttempt.trustScore ?? 100}%</p>
+                    <p className="text-[9px] text-slate-400 mt-1">AI integrity index</p>
+                  </div>
+                  <div className="bg-white p-5 rounded-2xl border border-slate-100 text-center">
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Verdict</p>
+                    <p className={`text-xl font-black uppercase mt-1 ${
+                      selectedAttempt.isInvalidated ? 'text-red-500' :
+                      selectedAttempt.status === 'Pass' ? 'text-emerald-500' : 'text-red-500'
+                    }`}>
+                      {selectedAttempt.isInvalidated ? 'INVALID' : (selectedAttempt.status || 'Fail')}
+                    </p>
+                    <p className="text-[9px] text-slate-400 mt-1">{new Date(selectedAttempt.completedAt).toLocaleDateString()}</p>
+                  </div>
+                </div>
+
+                {/* Proctor Events */}
+                {selectedAttempt.proctorEvents && selectedAttempt.proctorEvents.length > 0 && (
+                  <div className="bg-white p-6 rounded-2xl border border-slate-100 space-y-3">
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                      <TrendingUp size={12} className="text-primary" /> AI Proctor Events
+                    </h4>
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {selectedAttempt.proctorEvents.map((ev, i) => (
+                        <div key={i} className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                          <div className={`w-2 h-2 rounded-full mt-1 shrink-0 ${
+                            ev.type === 'warning' ? 'bg-amber-400' :
+                            ev.type === 'violation' ? 'bg-red-500' : 'bg-blue-400'
+                          }`} />
+                          <div>
+                            <p className="text-[10px] font-black text-slate-700 uppercase">{ev.type || 'Event'}</p>
+                            <p className="text-[9px] text-slate-500 mt-0.5">{ev.message || ev.description || ''}</p>
+                            {ev.timestamp && (
+                              <p className="text-[8px] text-slate-400 mt-0.5 font-mono">{new Date(ev.timestamp).toLocaleTimeString()}</p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* No events */}
+                {(!selectedAttempt.proctorEvents || selectedAttempt.proctorEvents.length === 0) && (
+                  <div className="bg-white p-6 rounded-2xl border border-slate-100 text-center">
+                    <CheckCircle size={32} className="mx-auto text-emerald-400 mb-2" />
+                    <p className="text-xs font-black text-slate-700 uppercase tracking-tight">No Proctor Violations Detected</p>
+                    <p className="text-[10px] text-slate-400 mt-1">This session was completed without any AI integrity flags.</p>
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>
