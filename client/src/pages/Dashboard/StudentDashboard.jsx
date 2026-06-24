@@ -350,8 +350,8 @@ const StudentDashboard = () => {
 
                 <div className="flex justify-between items-center mb-8 relative z-10">
                   <div>
-                    <h3 className="text-xl font-medium text-white tracking-tight mb-1">Global Matrix</h3>
-                    <p className="text-[9px] font-medium text-slate-400 uppercase tracking-widest">Top Active Nodes</p>
+                    <h3 className="text-xl font-medium text-white tracking-tight mb-1">Leader Board</h3>
+                    <p className="text-[9px] font-medium text-slate-400 uppercase tracking-widest">Top Active Learners</p>
                   </div>
                   <button
                     onClick={() => setShowHub && setShowHub(true)}
