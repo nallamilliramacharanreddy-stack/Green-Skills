@@ -3,7 +3,10 @@ import axios from 'axios';
 // Central API configuration
 // In production (Vercel), VITE_API_URL is set via Vercel Environment Variables
 // In development, it falls back to localhost:5001
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 
+  (typeof window !== 'undefined' && (window.location.hostname.includes('vercel.app') || window.location.hostname.includes('client-alpha-jet-54'))
+    ? 'https://green-skills-api.onrender.com' 
+    : 'http://localhost:5001');
 export const API_URL = `${API_BASE_URL}/api`;
 
 // Add a request interceptor to attach JWT token automatically
