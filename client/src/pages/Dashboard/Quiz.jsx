@@ -110,14 +110,25 @@ const Quiz = () => {
         console.error("Failed to parse user in fetchUserAttempts:", e);
       }
       const currentUserId = (user?.id || user?._id || savedUser?.id || savedUser?._id)?.toString();
-      
-      const res = await axios.get(`${API_URL}/quizzes/results`, {
+
+      // 1. Render from localStorage cache instantly
+      const cacheKey = `quizAttempts_${currentUserId}`;
+      try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          setAttempts(JSON.parse(cached));
+        }
+      } catch (_) {}
+
+      // 2. Fetch from fast server endpoint (server-side filtered & sorted)
+      const res = await axios.get(`${API_URL}/quizzes/results/course`, {
         params: { userId: currentUserId }
       });
-      
-      const userResults = res.data.filter(r => r.course);
-      userResults.sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
-      setAttempts(userResults);
+
+      setAttempts(res.data);
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify(res.data));
+      } catch (_) {}
     } catch (err) {
       console.error("Failed to load user attempts:", err);
     }

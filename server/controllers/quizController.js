@@ -551,6 +551,25 @@ const getLatestCourseResult = async (req, res) => {
   }
 };
 
+// Fast endpoint: returns all course-based results for a user, sorted by completedAt desc
+const getCourseResults = async (req, res) => {
+  try {
+    const { userId } = req.query;
+    if (!userId) {
+      return res.status(400).json({ message: 'userId is required' });
+    }
+    const results = await Result.find({ user: userId, course: { $exists: true, $ne: null } })
+      .sort({ completedAt: -1 })
+      .populate('course', 'title category')
+      .select('course score totalQuestions correctCount wrongCount notAttemptedCount status duration trustScore completedAt submissionType')
+      .lean();
+    res.json(results);
+  } catch (error) {
+    console.error('[getCourseResults] Error:', error);
+    res.status(500).json({ message: 'Error fetching course results' });
+  }
+};
+
 const generateFromYoutube = async (req, res) => {
   try {
     const { youtubeUrl, courseId, lessonId, adminId } = req.body;
@@ -1058,6 +1077,7 @@ module.exports = {
   publishQuiz,
   getAllResults,
   getLatestCourseResult,
+  getCourseResults,
   startQuizAttempt,
   saveQuizProgress,
   getIntegrityReport,

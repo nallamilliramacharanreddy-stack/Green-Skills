@@ -8,6 +8,7 @@ const {
   publishQuiz, 
   getAllResults,
   getLatestCourseResult,
+  getCourseResults,
   startQuizAttempt,
   saveQuizProgress,
   getIntegrityReport,
@@ -17,6 +18,7 @@ const router = express.Router();
 
 router.get('/', getAllQuizzes);
 router.get('/results/latest', getLatestCourseResult);
+router.get('/results/course', getCourseResults);
 router.get('/results', getAllResults);
 router.get('/integrity-report', getIntegrityReport);
 router.get('/employer/:employerId', getQuizzesByEmployer);
