@@ -31,9 +31,14 @@ const MyJourney = () => {
     setIsLoadingCerts(true);
     try {
       const res = await axios.get(`${API_URL}/certificates?userId=${uId}`);
-      setCertificates(res.data);
+      if (res.data && Array.isArray(res.data)) {
+        setCertificates(res.data);
+      } else {
+        setCertificates([]);
+      }
     } catch (err) {
       console.error("Error loading certificates:", err);
+      setCertificates([]);
     } finally {
       setIsLoadingCerts(false);
     }
@@ -42,6 +47,42 @@ const MyJourney = () => {
   useEffect(() => {
     fetchCertificates();
   }, [user]);
+
+  // Dynamic verification check: Log warnings instead of throwing errors to avoid crashing the application.
+  useEffect(() => {
+    if (user && user.name && certificates && certificates.length > 0) {
+      const expectedName = "NALLAMILLI RAMA CHARAN REDDY";
+      const userNameUpper = user.name.trim().toUpperCase();
+      
+      certificates.forEach(cert => {
+        if (cert && cert.candidateName) {
+          const certNameUpper = cert.candidateName.trim().toUpperCase();
+          if (userNameUpper === expectedName) {
+            if (certNameUpper !== expectedName) {
+              console.warn(`Certificate data mismatch: Candidate name ${cert.candidateName} does not match expected name ${expectedName}`);
+            }
+          } else if (certNameUpper !== userNameUpper) {
+            console.warn(`Certificate data mismatch: Candidate name ${cert.candidateName} does not match user name ${user.name}`);
+          }
+        }
+      });
+    }
+  }, [certificates, user]);
+
+  const validCertificates = useMemo(() => {
+    if (!user || !user.name || !certificates) return [];
+    const expectedName = "NALLAMILLI RAMA CHARAN REDDY";
+    const userNameUpper = user.name.trim().toUpperCase();
+    
+    return certificates.filter(cert => {
+      if (!cert || !cert.candidateName) return false;
+      const certNameUpper = cert.candidateName.trim().toUpperCase();
+      if (userNameUpper === expectedName) {
+        return certNameUpper === expectedName;
+      }
+      return certNameUpper === userNameUpper;
+    });
+  }, [certificates, user]);
 
   const handlePrevMonth = () => {
     setCurrentMonthDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
@@ -369,24 +410,9 @@ const MyJourney = () => {
               View All
             </button>
           </div>
-          {certificates.length > 0 ? (
+          {validCertificates.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {certificates.slice(0, 4).map((cert, idx) => {
-                // Dynamic verification check during rendering:
-                if (user && user.name) {
-                  const expectedName = "NALLAMILLI RAMA CHARAN REDDY";
-                  const certNameUpper = cert.candidateName.trim().toUpperCase();
-                  const userNameUpper = user.name.trim().toUpperCase();
-                  
-                  if (userNameUpper === expectedName) {
-                    if (certNameUpper !== expectedName) {
-                      throw new Error(`Certificate data mismatch: Candidate name ${cert.candidateName} does not match expected name ${expectedName}`);
-                    }
-                  } else if (certNameUpper !== userNameUpper) {
-                    throw new Error(`Certificate data mismatch: Candidate name ${cert.candidateName} does not match user name ${user.name}`);
-                  }
-                }
-                
+              {validCertificates.slice(0, 4).map((cert, idx) => {
                 return (
                   <div key={idx} className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between group hover:border-indigo-100 hover:bg-indigo-50/30 transition-colors">
                     <div className="flex items-center gap-3">
