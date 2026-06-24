@@ -412,7 +412,7 @@ const StudentDashboard = () => {
                   onClick={() => navigate('/dashboard/certificates')}
                   className="relative z-10 w-full py-4 bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 rounded-xl text-[10px] font-bold text-white uppercase tracking-[0.2em] transition-all duration-300 flex items-center justify-center gap-2 backdrop-blur-md"
                 >
-                  Open Credentials Locker <ArrowRight size={14} />
+                  View Certificates <ArrowRight size={14} />
                 </button>
               </motion.div>
 
