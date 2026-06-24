@@ -84,6 +84,12 @@ const MyJourney = () => {
     });
   }, [certificates, user]);
 
+  const isAlreadyGenerated = (course) => {
+    if (!course || !certificates) return false;
+    const courseTitle = course.title || '';
+    return certificates.some(cert => cert && cert.courseName && cert.courseName.trim().toUpperCase() === courseTitle.trim().toUpperCase());
+  };
+
   const handlePrevMonth = () => {
     setCurrentMonthDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
   };
@@ -310,16 +316,25 @@ const MyJourney = () => {
                       <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">100% Synced</span>
                     </div>
                   </div>
-                  <button 
-                    onClick={() => {
-                      setSelectedCertCourse(course);
-                      setIsCertModalOpen(true);
-                    }}
-                    style={{ backgroundColor: '#10b981', color: '#ffffff' }}
-                    className="px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-lg"
-                  >
-                    <Award size={14} /> Generate Certificate
-                  </button>
+                  {isAlreadyGenerated(course) ? (
+                    <button 
+                      disabled
+                      className="px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest bg-slate-100 text-slate-400 cursor-not-allowed flex items-center justify-center gap-2 border border-slate-200"
+                    >
+                      <CheckCircle size={14} className="text-emerald-500" /> Already Generated
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={() => {
+                        setSelectedCertCourse(course);
+                        setIsCertModalOpen(true);
+                      }}
+                      style={{ backgroundColor: '#10b981', color: '#ffffff' }}
+                      className="px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-lg"
+                    >
+                      <Award size={14} /> Generate Certificate
+                    </button>
+                  )}
                 </div>
               </motion.div>
             )) : (
