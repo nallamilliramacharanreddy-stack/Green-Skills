@@ -30,16 +30,25 @@ exports.createCertificate = async (req, res) => {
     const pdfData = pdfBase64.includes(';base64,') ? pdfBase64.split(';base64,').pop() : pdfBase64;
     const pdfFilename = `cert-${certificateId}-${Date.now()}.pdf`;
     const pdfPath = path.join(uploadsDir, pdfFilename);
-    fs.writeFileSync(pdfPath, Buffer.from(pdfData, 'base64'));
+    try {
+      fs.writeFileSync(pdfPath, Buffer.from(pdfData, 'base64'));
+    } catch (fsErr) {
+      console.error("Local disk PDF write failed (will rely on MongoDB):", fsErr);
+    }
 
     // Save Thumbnail Image (robustly strip the data URI prefix)
     const imgData = thumbnailBase64.includes(';base64,') ? thumbnailBase64.split(';base64,').pop() : thumbnailBase64;
     const imgFilename = `thumb-${certificateId}-${Date.now()}.jpg`;
     const imgPath = path.join(uploadsDir, imgFilename);
-    fs.writeFileSync(imgPath, Buffer.from(imgData, 'base64'));
+    try {
+      fs.writeFileSync(imgPath, Buffer.from(imgData, 'base64'));
+    } catch (fsErr) {
+      console.error("Local disk thumbnail write failed (will rely on MongoDB):", fsErr);
+    }
 
-    const pdfUrl = `/uploads/${pdfFilename}`;
-    const thumbnailUrl = `/uploads/${imgFilename}`;
+    // Dynamic database-backed URL endpoints
+    const pdfUrl = `/api/certificates/pdf/${certificateId}`;
+    const thumbnailUrl = `/api/certificates/thumbnail/${certificateId}`;
 
     // Check if certificate already exists
     let certificate = await Certificate.findOne({ certificateId });
@@ -54,7 +63,9 @@ exports.createCertificate = async (req, res) => {
       courseName,
       issueDate,
       pdfUrl,
-      thumbnailUrl
+      thumbnailUrl,
+      pdfData: pdfData,
+      thumbnailData: imgData
     });
 
     await certificate.save();
@@ -78,5 +89,64 @@ exports.getUserCertificates = async (req, res) => {
   } catch (error) {
     console.error("Get certificates error:", error);
     return res.status(500).json({ message: "Failed to load certificates" });
+  }
+};
+
+exports.getCertificatePdf = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const cert = await Certificate.findOne({ certificateId: id });
+    if (!cert) {
+      return res.status(404).json({ message: "Certificate not found" });
+    }
+
+    if (cert.pdfData) {
+      const pdfBuffer = Buffer.from(cert.pdfData, 'base64');
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="${cert.certificateId}.pdf"`);
+      return res.send(pdfBuffer);
+    }
+
+    // Fallback to local file if base64 data is missing (for legacy certs)
+    const legacyPath = path.join(__dirname, '..', cert.pdfUrl);
+    if (fs.existsSync(legacyPath)) {
+      const fileStream = fs.createReadStream(legacyPath);
+      res.setHeader('Content-Type', 'application/pdf');
+      return fileStream.pipe(res);
+    }
+
+    return res.status(404).json({ message: "Certificate PDF file not found" });
+  } catch (error) {
+    console.error("Error serving certificate PDF:", error);
+    return res.status(500).json({ message: "Failed to serve PDF" });
+  }
+};
+
+exports.getCertificateThumbnail = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const cert = await Certificate.findOne({ certificateId: id });
+    if (!cert) {
+      return res.status(404).json({ message: "Certificate not found" });
+    }
+
+    if (cert.thumbnailData) {
+      const imgBuffer = Buffer.from(cert.thumbnailData, 'base64');
+      res.setHeader('Content-Type', 'image/jpeg');
+      return res.send(imgBuffer);
+    }
+
+    // Fallback to local file for legacy certs
+    const legacyPath = path.join(__dirname, '..', cert.thumbnailUrl);
+    if (fs.existsSync(legacyPath)) {
+      const fileStream = fs.createReadStream(legacyPath);
+      res.setHeader('Content-Type', 'image/jpeg');
+      return fileStream.pipe(res);
+    }
+
+    return res.status(404).json({ message: "Certificate thumbnail not found" });
+  } catch (error) {
+    console.error("Error serving certificate thumbnail:", error);
+    return res.status(500).json({ message: "Failed to serve thumbnail" });
   }
 };

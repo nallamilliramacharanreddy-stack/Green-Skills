@@ -1,16 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, ArrowLeft, BadgeCheck, FileCheck, Layers, Shield, Trophy } from 'lucide-react';
+import { Download, ArrowLeft, BadgeCheck, FileCheck, Layers, Shield, Trophy, CheckCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import CertificateGenerator from '../../components/certificate/CertificateGenerator';
+import axios from 'axios';
+import { API_URL, API_BASE_URL } from '../../utils/api';
 
 const Certificates = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [selectedCertCourse, setSelectedCertCourse] = useState(null);
   const [isCertModalOpen, setIsCertModalOpen] = useState(false);
+  const [downloadedCerts, setDownloadedCerts] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const fetchDownloadedCerts = async () => {
+    const uId = user?._id || user?.id;
+    if (!uId) return;
+    setIsLoading(true);
+    try {
+      const res = await axios.get(`${API_URL}/certificates?userId=${uId}`);
+      setDownloadedCerts(res.data || []);
+    } catch (err) {
+      console.error("Error loading certificates:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDownloadedCerts();
+  }, [user]);
 
   const generateCertificate = (course) => {
     setSelectedCertCourse(course);
@@ -40,7 +62,6 @@ const Certificates = () => {
       return isCompleted ? 100 : 0;
     }
 
-    // Filter unique completed items that actually exist in the current course
     const completedLessonsCount = [...new Set(prog.completedLessons || [])]
       .filter(idx => idx >= 0 && idx < totalLessons).length;
     const completedTasksCount = [...new Set(prog.completedTasks || [])]
@@ -52,6 +73,27 @@ const Certificates = () => {
   };
 
   const strictlyCompleted = completedCourses;
+
+  const validCertificates = React.useMemo(() => {
+    if (!user || !user.name || !downloadedCerts) return [];
+    const expectedName = "NALLAMILLI RAMA CHARAN REDDY";
+    const userNameUpper = user.name.trim().toUpperCase();
+    
+    return downloadedCerts.filter(cert => {
+      if (!cert || !cert.candidateName) return false;
+      const certNameUpper = cert.candidateName.trim().toUpperCase();
+      if (userNameUpper === expectedName) {
+        return certNameUpper === expectedName;
+      }
+      return certNameUpper === userNameUpper;
+    });
+  }, [downloadedCerts, user]);
+
+  const isAlreadyGenerated = (course) => {
+    if (!course || !validCertificates) return false;
+    const courseTitle = course.title || '';
+    return validCertificates.some(cert => cert && cert.courseName && cert.courseName.trim().toUpperCase() === courseTitle.trim().toUpperCase());
+  };
 
   const getBadgeStatus = (index) => {
     const earned = strictlyCompleted.length;
@@ -77,11 +119,10 @@ const Certificates = () => {
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-[30%] -left-[10%] w-[70%] h-[70%] bg-zinc-800/20 blur-[200px] rounded-full mix-blend-screen"></div>
           <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-amber-900/10 blur-[150px] rounded-full mix-blend-screen"></div>
-          {/* Subtle noise texture */}
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDIiLz4KPC9zdmc+')] opacity-20"></div>
         </div>
 
-        {/* Navigation & Header - Elite Minimalist Style */}
+        {/* Navigation & Header */}
         <div className="relative flex flex-col xl:flex-row xl:items-end justify-between mb-20 gap-12 z-10 border-b border-[#1f1f1f] pb-10">
           <div className="flex-1">
             <button
@@ -113,7 +154,6 @@ const Certificates = () => {
 
               return (
                 <div key={idx} className="relative group/badge">
-                  {/* Badge Tooltip */}
                   <div className="absolute -top-14 left-1/2 -translate-x-1/2 opacity-0 group-hover/badge:opacity-100 transition-opacity bg-white text-black text-[9px] font-black uppercase tracking-[0.2em] px-4 py-2 rounded-md whitespace-nowrap pointer-events-none z-20 shadow-xl">
                     {badge.name} Class
                   </div>
@@ -124,7 +164,6 @@ const Certificates = () => {
                       : 'bg-gradient-to-br ' + badge.colors.replace('cyan', 'zinc').replace('blue', 'neutral').replace('amber', 'yellow')
                       } ${isCurrent ? 'scale-110 z-10 border border-white/40 shadow-[0_0_30px_rgba(255,255,255,0.1)]' : ''} ${isEarned ? 'shadow-[0_10px_20px_rgba(0,0,0,0.4)]' : ''}`}
                   >
-                    {/* Metallic Shine Effect */}
                     {!isLocked && (
                       <>
                         <div className="absolute top-0 left-0 w-full h-[45%] bg-gradient-to-b from-white/30 to-transparent pointer-events-none"></div>
@@ -156,16 +195,11 @@ const Certificates = () => {
                   transition={{ delay: idx * 0.1, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
                   className="group relative h-full"
                 >
-                  {/* Holographic Container */}
                   <div className="relative h-full bg-white/[0.02] backdrop-blur-[40px] rounded-[2rem] p-8 border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] flex flex-col justify-between overflow-hidden hover:bg-white/[0.05] hover:border-white/20 transition-all duration-500">
-
-                    {/* Ambient light inside card based on category */}
                     <div className="absolute -top-20 -right-20 w-40 h-40 bg-cyan-500/10 rounded-full blur-[40px] pointer-events-none group-hover:bg-cyan-500/20 transition-all duration-500"></div>
 
                     <div className="relative z-10">
-                      {/* Certificate Graphic Representation */}
                       <div className="w-full aspect-video bg-gradient-to-br from-white/5 to-transparent rounded-xl border border-white/10 mb-8 flex items-center justify-center overflow-hidden relative shadow-inner">
-                        {/* Inner grid texture */}
                         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:20px_20px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_70%,transparent_100%)]"></div>
 
                         <div className="absolute inset-0 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-1000 flex items-center justify-center">
@@ -177,7 +211,6 @@ const Certificates = () => {
                         </div>
                       </div>
 
-                      {/* Text Content */}
                       <div className="flex gap-3 items-center mb-4">
                         <span className="px-3 py-1 rounded-full bg-white/[0.05] border border-white/10 text-[9px] font-semibold text-slate-300 uppercase tracking-widest flex items-center gap-1.5">
                           <Shield size={10} className="text-cyan-400" /> Official Record
@@ -193,19 +226,27 @@ const Certificates = () => {
                       </p>
                     </div>
 
-                    {/* Footer Actions */}
                     <div className="relative z-10 mt-auto pt-6 border-t border-white/10 flex items-center justify-between">
                       <div className="flex flex-col">
                         <span className="text-[8px] font-medium text-slate-500 uppercase tracking-[0.2em] mb-1">Issue Date</span>
                         <span className="text-xs font-semibold text-white tracking-wider">{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
                       </div>
 
-                      <button
-                        onClick={() => generateCertificate(course)}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-white text-slate-950 rounded-lg hover:bg-slate-200 transition-colors font-bold uppercase text-[9px] tracking-widest shadow-[0_0_20px_rgba(255,255,255,0.2)]"
-                      >
-                        <Download size={14} /> Render PDF
-                      </button>
+                      {isAlreadyGenerated(course) ? (
+                        <button 
+                          disabled
+                          className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 text-slate-500 rounded-lg cursor-not-allowed font-bold uppercase text-[9px] tracking-widest border border-slate-700"
+                        >
+                          <CheckCircle size={14} className="text-emerald-500" /> Already Generated
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => generateCertificate(course)}
+                          className="flex items-center gap-2 px-5 py-2.5 bg-white text-slate-950 rounded-lg hover:bg-slate-200 transition-colors font-bold uppercase text-[9px] tracking-widest shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+                        >
+                          <Download size={14} /> Render PDF
+                        </button>
+                      )}
                     </div>
                   </div>
                 </motion.div>
@@ -231,6 +272,54 @@ const Certificates = () => {
             </div>
           )}
         </div>
+
+        {/* Downloaded Certificates Grid */}
+        <div className="relative z-10 mt-20 pt-16 border-t border-[#1f1f1f]">
+          <h2 className="text-3xl font-medium text-white tracking-tight mb-8 uppercase italic flex items-center gap-3">
+            <Download className="text-indigo-500" size={24} /> Downloaded Certificates ({validCertificates.length})
+          </h2>
+          {validCertificates.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {validCertificates.map((cert, idx) => (
+                <div key={idx} className="bg-white/[0.02] backdrop-blur-[40px] rounded-[2rem] p-8 border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] flex flex-col justify-between hover:bg-white/[0.05] hover:border-white/20 transition-all duration-500">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-14 h-14 bg-white/5 rounded-2xl overflow-hidden flex items-center justify-center text-indigo-500 border border-white/10">
+                      {cert.thumbnailUrl ? (
+                        <img src={`${API_BASE_URL}${cert.thumbnailUrl}`} alt="Thumbnail" className="w-full h-full object-cover" />
+                      ) : (
+                        <Trophy size={24} />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">ID: {cert.certificateId}</p>
+                      <h4 className="text-base font-bold text-white leading-tight truncate">{cert.courseName}</h4>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      const link = document.createElement('a');
+                      link.href = `${API_BASE_URL}${cert.pdfUrl}`;
+                      link.download = `${cert.candidateName.replace(/\s+/g, '_')}_Certificate.pdf`;
+                      link.target = '_blank';
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }}
+                    className="w-full py-3 rounded-xl bg-[#10b981] hover:opacity-90 text-white font-bold uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg"
+                  >
+                    <Download size={14} /> Download PDF
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-12 px-4 text-center bg-white/[0.02] rounded-3xl border border-dashed border-white/10">
+              <Download size={32} className="mx-auto text-slate-500 mb-4" />
+              <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">No downloaded certificates found</p>
+            </div>
+          )}
+        </div>
+
       </div>
 
       <AnimatePresence>
@@ -240,6 +329,7 @@ const Certificates = () => {
             isOpen={isCertModalOpen}
             onClose={() => setIsCertModalOpen(false)}
             user={user}
+            onGenerated={fetchDownloadedCerts}
           />
         )}
       </AnimatePresence>

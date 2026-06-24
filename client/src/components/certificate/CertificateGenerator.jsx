@@ -244,9 +244,9 @@ const CertificateGenerator = ({ course, isOpen, onClose, user, onGenerated }) =>
                     <input 
                       type="text" 
                       value={studentName}
-                      onChange={(e) => setStudentName(e.target.value)}
-                      placeholder="Enter your full name exactly as you want it on the certificate"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 font-medium focus:ring-2 focus:ring-primary/50 outline-none transition-all"
+                      disabled
+                      placeholder="Your full name"
+                      className="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-slate-500 font-medium cursor-not-allowed outline-none transition-all"
                       required
                     />
                   </div>
