@@ -1225,7 +1225,7 @@ const Quiz = () => {
     setUserAnswers({});
     setWarnings(0);
     setSubmissionResult(null);
-    setPreVerified(false);
+    setPreVerified(true);
   };
 
   if (activeQuiz) {
@@ -1269,7 +1269,7 @@ const Quiz = () => {
               type="button" 
               onClick={() => {
                 setActiveQuiz(null);
-                setPreVerified(false);
+                setPreVerified(true);
               }} 
               className="w-full py-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-sm uppercase tracking-wider hover:bg-slate-200 transition-all"
             >
