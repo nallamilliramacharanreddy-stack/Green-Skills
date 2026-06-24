@@ -203,7 +203,7 @@ const StudentDashboard = () => {
                 <div className="w-12 h-12 bg-white/20 backdrop-blur-xl rounded-xl flex items-center justify-center mb-6 border border-white/30 shadow-lg">
                   <Hexagon size={20} className="text-white" />
                 </div>
-                <h3 className="text-xl font-medium text-white tracking-tight mb-2 drop-shadow-md">Nexus Prime Hub</h3>
+                <h3 className="text-xl font-medium text-white tracking-tight mb-2 drop-shadow-md">Your Performance</h3>
                 {lastAttempt ? (
                   <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 mb-4 space-y-2">
                     <p className="text-[10px] text-fuchsia-200 font-bold uppercase tracking-widest">Previous Quiz Performance</p>
