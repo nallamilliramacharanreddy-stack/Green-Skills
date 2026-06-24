@@ -173,55 +173,21 @@ const StudentDashboard = () => {
                 </div>
 
                 <div className="space-y-4">
-                  {/* Energy Score Dial / Bar */}
-                  <div>
-                    <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                      <span>Sustainability Score</span>
-                      <span className="text-emerald-400">{user?.sustainabilityScore || 0} XP</span>
-                    </div>
-                    <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden border border-white/5 p-[1px]">
-                      <div 
-                        className="h-full bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-full shadow-[0_0_10px_rgba(52,211,153,0.5)] transition-all duration-1000"
-                        style={{ width: `${Math.min(((user?.sustainabilityScore || 0) / 1000) * 100, 100)}%` }}
-                      ></div>
-                    </div>
-                  </div>
-
-                  {/* Dynamic Badge Showcase */}
-                  <div>
-                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-3">Earned Badges</p>
-                    <div className="flex gap-2 items-center min-h-[40px]">
-                      {user?.badges && user.badges.length > 0 ? (
-                        user.badges.slice(0, 3).map((badge, idx) => (
-                          <div 
-                            key={idx} 
-                            className="w-10 h-10 rounded-xl bg-gradient-to-br from-white/5 to-white/0 border border-white/10 flex items-center justify-center relative group/badge cursor-pointer hover:border-emerald-500/50 hover:bg-emerald-500/10 transition-all duration-300"
-                            title={badge.name}
-                          >
-                            <span className="text-xl">{badge.icon || '🏆'}</span>
-                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-900 border border-white/10 text-[9px] font-bold text-white rounded-md whitespace-nowrap opacity-0 group-hover/badge:opacity-100 transition-opacity pointer-events-none">
-                              {badge.name}
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="w-full py-2 bg-white/[0.01] border border-dashed border-white/5 rounded-xl flex items-center justify-center gap-2">
-                          <Shield size={14} className="text-slate-600" />
-                          <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">Next Badge: 100 XP</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
                   {/* Modules & Hours compact status */}
-                  <div className="grid grid-cols-2 gap-3 pt-2">
-                    <div className="p-3 bg-white/[0.02] border border-white/5 rounded-xl flex flex-col justify-between">
-                      <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Completed</span>
-                      <span className="text-sm font-bold text-white tracking-tight mt-1">{completedCount} Modules</span>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl flex flex-col justify-between min-h-[90px] hover:bg-white/[0.04] transition-all duration-300">
+                      <div className="flex items-center gap-2 text-cyan-400">
+                        <CheckCircle size={16} />
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Completed</span>
+                      </div>
+                      <span className="text-lg font-bold text-white tracking-tight mt-3">{completedCount} Modules</span>
                     </div>
-                    <div className="p-3 bg-white/[0.02] border border-white/5 rounded-xl flex flex-col justify-between">
-                      <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Time Spent</span>
-                      <span className="text-sm font-bold text-white tracking-tight mt-1">{completedCount * 2} Hours</span>
+                    <div className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl flex flex-col justify-between min-h-[90px] hover:bg-white/[0.04] transition-all duration-300">
+                      <div className="flex items-center gap-2 text-fuchsia-400">
+                        <Clock size={16} />
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Time Spent</span>
+                      </div>
+                      <span className="text-lg font-bold text-white tracking-tight mt-3">{completedCount * 2} Hours</span>
                     </div>
                   </div>
                 </div>
