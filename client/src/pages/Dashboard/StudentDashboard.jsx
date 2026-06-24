@@ -148,12 +148,8 @@ const StudentDashboard = () => {
                 </div>
                 <div>
                   <h2 className="text-2xl font-semibold text-white tracking-tight mb-1">
-                    {user?.name?.split(' ')[0] || 'User'}
+                    {user?.name || 'User'}
                   </h2>
-                  <div className="flex items-center gap-2 text-[10px] font-medium text-fuchsia-300 uppercase tracking-widest bg-fuchsia-500/10 px-3 py-1 rounded-full w-max border border-fuchsia-500/20">
-                    <span className="w-1.5 h-1.5 rounded-full bg-fuchsia-400 animate-pulse"></span>
-                    Neural Sync
-                  </div>
                 </div>
               </div>
 
