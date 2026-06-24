@@ -1364,21 +1364,14 @@ const HirerDataManagement = ({ data, onToggleStatus, onDelete, onApprove, onReje
    6. QUIZ MANAGEMENT
    ================================================== */
 const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
-  const [view, setView] = useState('dashboard'); // 'dashboard', 'create', 'generating', 'review'
+  const [view, setView] = useState('dashboard'); // 'dashboard', 'create', 'review'
   
   const [formData, setFormData] = useState({
-    title: '', courseId: '', module: '', transcript: '', numQuestions: '50',
-    difficulty: 'Medium', passingPercentage: '80', duration: '60',
-    generateCertificate: true, language: 'English',
+    title: '',
+    courseId: '',
+    duration: '60',
     bannerImage: ''
   });
-
-  const [progressStep, setProgressStep] = useState(0);
-  const [progressText, setProgressText] = useState('Initializing AI...');
-  const steps = [
-    'Fetching Transcript...', 'Analyzing Video...', 'Identifying Concepts...',
-    'Generating Questions...', 'Validating Questions...', 'Saving Assessment...', 'Complete'
-  ];
 
   const [questions, setQuestions] = useState([]);
   const [assessments, setAssessments] = useState([]);
@@ -1398,32 +1391,6 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
     setEditingQuestionId(newQ.id);
   };
 
-  const handleRegenerateSingleQuestion = async (qId) => {
-    if (!formData.transcript || formData.transcript.trim() === '') {
-      toast.error('Please provide transcript content in the form before regenerating.');
-      return;
-    }
-    try {
-      toast.loading("Regenerating question with Gemini AI...");
-      const otherQuestions = questions.filter(q => q.id !== qId).map(q => q.question || q.questionText);
-      const response = await axios.post(`${API_URL}/courses/regenerate-question`, {
-        transcript: formData.transcript,
-        existingQuestions: otherQuestions,
-        difficulty: formData.difficulty,
-        language: formData.language
-      });
-      toast.dismiss();
-      if (response.data) {
-        setQuestions(questions.map(q => q.id === qId ? { ...response.data, id: qId } : q));
-        toast.success("Question regenerated successfully!");
-      }
-    } catch (err) {
-      toast.dismiss();
-      console.error(err);
-      toast.error(err.response?.data?.message || "Failed to regenerate question.");
-    }
-  };
-
   useEffect(() => {
     // initialize from courses for published assessments
     const existingAssessments = courses.filter(c => c.quiz?.length > 0).map(c => ({
@@ -1438,97 +1405,6 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
     }));
     setAssessments(existingAssessments);
   }, [courses]);
-
-  const handleGenerate = async () => {
-    if (!formData.title || !formData.transcript || formData.transcript.trim() === '') {
-      toast.error('Please provide transcript content before generating assessment.');
-      return;
-    }
-    setView('generating');
-    setProgressStep(0);
-    setProgressText('Analyzing Transcript...');
-    
-    try {
-      // Simulate underlying progress bar advancing slowly
-      let currentStep = 0;
-      const progressInterval = setInterval(() => {
-        if (currentStep < steps.length - 2) {
-          currentStep++;
-          setProgressStep(currentStep);
-        }
-      }, 5000);
-
-      const response = await fetch(`${API_URL}/courses/generate-ai-assessment`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          transcript: formData.transcript,
-          numQuestions: formData.numQuestions,
-          difficulty: formData.difficulty,
-          language: formData.language
-        })
-      });
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder('utf-8');
-
-      let finalQuestions = [];
-      let buffer = '';
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        
-        // Save the last element (which might be an incomplete line) back to buffer
-        buffer = lines.pop();
-        
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (trimmed.startsWith('data: ')) {
-            const dataStr = trimmed.substring(6);
-            try {
-              const data = JSON.parse(dataStr);
-              if (data.error) {
-                clearInterval(progressInterval);
-                toast.error(data.error);
-                setView('create');
-                return;
-              }
-              if (data.progress) {
-                setProgressText(data.progress);
-              }
-              if (data.result) {
-                finalQuestions = data.result;
-              }
-            } catch (e) {
-              console.error('Error parsing SSE data', e, 'Data string was:', dataStr);
-            }
-          }
-        }
-      }
-      
-      clearInterval(progressInterval);
-      setProgressStep(steps.length - 1);
-      setProgressText('Assessment Ready');
-      
-      setTimeout(() => {
-        const qsWithIds = (finalQuestions || []).map((q, i) => ({
-          ...q,
-          id: Date.now() + i
-        }));
-        setQuestions(qsWithIds);
-        setView('review');
-      }, 1000);
-
-    } catch (error) {
-      console.error(error);
-      toast.error('AI generation temporarily unavailable. Please try again later.');
-      setView('create');
-    }
-  };
 
   const handlePublish = async () => {
     if (!formData.courseId) {
@@ -1561,9 +1437,7 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
       setView('dashboard');
       setQuestions([]);
       setFormData({
-        title: '', courseId: '', module: '', transcript: '', numQuestions: '50',
-        difficulty: 'Medium', passingPercentage: '80', duration: '60',
-        generateCertificate: true, language: 'English', bannerImage: ''
+        title: '', courseId: '', duration: '60', bannerImage: ''
       });
     } catch (e) {
       console.error('Publish error:', e);
@@ -1841,28 +1715,6 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
   );
 
 
-  const renderGenerating = () => (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-12">
-      <div className="relative w-48 h-48 flex items-center justify-center">
-        <div className="absolute inset-0 border-8 border-slate-100 rounded-full"></div>
-        <div className="absolute inset-0 border-8 border-primary rounded-full border-t-transparent animate-spin"></div>
-        <Zap size={64} className="text-primary animate-pulse" />
-      </div>
-      <div className="text-center space-y-4">
-        <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter italic">AI Nexus Processing</h2>
-        <p className="text-slate-500 font-bold uppercase tracking-widest animate-pulse">{progressText}</p>
-      </div>
-      <div className="w-full max-w-md h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
-        <div className="h-full bg-primary transition-all duration-500" style={{width: `${(progressStep / (steps.length - 1)) * 100}%`}}></div>
-      </div>
-      <div className="flex gap-2">
-        {steps.map((s, i) => (
-           <div key={i} className={`w-3 h-3 rounded-full ${i < progressStep ? 'bg-primary' : i === progressStep ? 'bg-primary animate-ping' : 'bg-slate-200'}`}></div>
-        ))}
-      </div>
-    </div>
-  );
-
   const renderReview = () => (
     <div className="space-y-10">
       <div className="bg-slate-900 p-10 rounded-[48px] text-white space-y-6">
@@ -1957,7 +1809,7 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs font-black uppercase tracking-widest text-slate-500 block mb-2">AI Explanation</label>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-500 block mb-2">Explanation</label>
                   <textarea 
                     value={q.explanation || ''} 
                     onChange={e => {
@@ -1980,7 +1832,6 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
             <div key={q.id} className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm relative group">
               <div className="absolute top-8 right-8 flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
                 <button onClick={() => setEditingQuestionId(q.id)} className="p-2 bg-slate-50 text-slate-600 rounded-lg hover:bg-primary hover:text-white transition-all" title="Edit Question"><Edit size={16}/></button>
-                <button onClick={() => handleRegenerateSingleQuestion(q.id)} className="p-2 bg-slate-50 text-slate-600 rounded-lg hover:bg-primary hover:text-white transition-all" title="Regenerate with AI"><Activity size={16}/></button>
                 <button onClick={() => setQuestions(questions.filter(qu => qu.id !== q.id))} className="p-2 bg-slate-50 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all" title="Delete Question"><Trash2 size={16}/></button>
               </div>
               
@@ -2004,7 +1855,7 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
               </div>
               
               <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
-                <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">AI Explanation</p>
+                <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">Explanation</p>
                 <p className="text-sm text-blue-900 font-medium">{q.explanation || "No explanation provided."}</p>
               </div>
             </div>
@@ -2025,7 +1876,6 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
       >
         {view === 'dashboard' && renderDashboard()}
         {view === 'create' && renderCreate()}
-        {view === 'generating' && renderGenerating()}
         {view === 'review' && renderReview()}
       </motion.div>
     </AnimatePresence>
