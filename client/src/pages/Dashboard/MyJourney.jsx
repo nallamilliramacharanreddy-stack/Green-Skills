@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  CheckCircle, ArrowRight, 
+import {
+  CheckCircle, ArrowRight,
   Award, BookOpen, Clock, Star, PlayCircle, Flame, Calendar, ChevronLeft, ChevronRight, Download
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -70,7 +70,7 @@ const MyJourney = () => {
     if (user && user.name && certificates && certificates.length > 0) {
       const expectedName = "NALLAMILLI RAMA CHARAN REDDY";
       const userNameUpper = user.name.trim().toUpperCase();
-      
+
       certificates.forEach(cert => {
         if (cert && cert.candidateName) {
           const certNameUpper = cert.candidateName.trim().toUpperCase();
@@ -90,7 +90,7 @@ const MyJourney = () => {
     if (!user || !user.name || !certificates) return [];
     const expectedName = "NALLAMILLI RAMA CHARAN REDDY";
     const userNameUpper = user.name.trim().toUpperCase();
-    
+
     return certificates.filter(cert => {
       if (!cert || !cert.candidateName) return false;
       const certNameUpper = cert.candidateName.trim().toUpperCase();
@@ -149,16 +149,16 @@ const MyJourney = () => {
     const month = currentMonthDate.getMonth();
     const firstDay = new Date(year, month, 1).getDay(); // 0 is Sunday
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    
+
     const days = [];
     // Pad with empty spaces for previous month
     for (let i = 0; i < firstDay; i++) {
       days.push(null);
     }
-    
+
     const today = new Date();
     const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
-    
+
     // Add days of current month
     for (let d = 1; d <= daysInMonth; d++) {
       const localDateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
@@ -209,7 +209,7 @@ const MyJourney = () => {
 
   const currentCourses = user?.progress?.currentCourses || [];
   const completedCourses = user?.progress?.completedCourses || [];
-  
+
   // Merge both for a "Permanent Enrollment" view
   const allEnrolled = [...currentCourses];
   completedCourses.forEach(c => {
@@ -228,159 +228,159 @@ const MyJourney = () => {
         <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.3em] mt-2">Synchronizing your path to green-tech mastery</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
         {/* Left Column */}
         <div className="space-y-12">
           {/* Active Nodes */}
           <section className="space-y-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
-              <PlayCircle size={20} />
-            </div>
-            <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight italic">Active Nodes ({allEnrolled.length})</h3>
-          </div>
-
-          <div className="space-y-6">
-            {allEnrolled.length > 0 ? allEnrolled.map((course, i) => (
-              <motion.div 
-                key={course._id || i}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                className="group bg-white p-8 rounded-[40px] border border-slate-100 shadow-xl shadow-slate-200/50 hover:border-primary/30 transition-all relative overflow-hidden"
-              >
-                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -z-10 translate-x-1/2 -translate-y-1/2"></div>
-                
-                <div className="flex justify-between items-start mb-6">
-                  <div>
-                    <span className="text-[10px] font-black text-primary uppercase tracking-widest italic">{course.category || 'Green Tech'}</span>
-                    <h4 className="text-xl font-black text-slate-900 uppercase tracking-tighter italic leading-none mt-1">{course.title}</h4>
-                  </div>
-                  <div className={`text-[10px] font-black px-4 py-2 rounded-full uppercase tracking-widest ${getCourseProgress(course) >= 100 ? 'bg-emerald-100 text-emerald-600' : 'bg-primary/10 text-primary'}`}>
-                    {getCourseProgress(course) >= 100 ? 'Completed' : 'In Progress'}
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex justify-between items-end">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Sync Status</span>
-                    <span className="text-xs font-black text-slate-900 italic">{getCourseProgress(course)}% Synced</span>
-                  </div>
-                  <div className="w-full h-2 bg-slate-50 rounded-full overflow-hidden">
-                    <div className="h-full bg-primary" style={{ width: `${getCourseProgress(course)}%` }}></div>
-                  </div>
-                </div>
-
-                <button 
-                  onClick={() => navigate('/dashboard/courses', { state: { openCourse: course._id } })}
-                  className="mt-8 w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 group-hover:bg-primary transition-all"
-                >
-                  Resume Learning <ArrowRight size={14} />
-                </button>
-              </motion.div>
-            )) : (
-              <div className="p-12 text-center bg-slate-50 rounded-[40px] border border-dashed border-slate-200">
-                <BookOpen size={40} className="mx-auto text-slate-300 mb-4" />
-                <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">No active course nodes detected</p>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+                <PlayCircle size={20} />
               </div>
-            )}
-          </div>
-        </section>
+              <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight italic">Active Nodes ({allEnrolled.length})</h3>
+            </div>
+
+            <div className="space-y-6">
+              {allEnrolled.length > 0 ? allEnrolled.map((course, i) => (
+                <motion.div
+                  key={course._id || i}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  className="group bg-white p-8 rounded-[40px] border border-slate-100 shadow-xl shadow-slate-200/50 hover:border-primary/30 transition-all relative overflow-hidden"
+                >
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -z-10 translate-x-1/2 -translate-y-1/2"></div>
+
+                  <div className="flex justify-between items-start mb-6">
+                    <div>
+                      <span className="text-[10px] font-black text-primary uppercase tracking-widest italic">{course.category || 'Green Tech'}</span>
+                      <h4 className="text-xl font-black text-slate-900 uppercase tracking-tighter italic leading-none mt-1">{course.title}</h4>
+                    </div>
+                    <div className={`text-[10px] font-black px-4 py-2 rounded-full uppercase tracking-widest ${getCourseProgress(course) >= 100 ? 'bg-emerald-100 text-emerald-600' : 'bg-primary/10 text-primary'}`}>
+                      {getCourseProgress(course) >= 100 ? 'Completed' : 'In Progress'}
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-end">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Sync Status</span>
+                      <span className="text-xs font-black text-slate-900 italic">{getCourseProgress(course)}% Synced</span>
+                    </div>
+                    <div className="w-full h-2 bg-slate-50 rounded-full overflow-hidden">
+                      <div className="h-full bg-primary" style={{ width: `${getCourseProgress(course)}%` }}></div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => navigate('/dashboard/courses', { state: { openCourse: course._id } })}
+                    className="mt-8 w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 group-hover:bg-primary transition-all"
+                  >
+                    Resume Learning <ArrowRight size={14} />
+                  </button>
+                </motion.div>
+              )) : (
+                <div className="p-12 text-center bg-slate-50 rounded-[40px] border border-dashed border-slate-200">
+                  <BookOpen size={40} className="mx-auto text-slate-300 mb-4" />
+                  <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">No active course nodes detected</p>
+                </div>
+              )}
+            </div>
+          </section>
 
         </div>
 
         {/* Right Column */}
         <div className="space-y-12">
-        {/* Completed Nodes */}
-        <section className="space-y-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-600">
-              <Award size={20} />
+          {/* Completed Nodes */}
+          <section className="space-y-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-600">
+                <Award size={20} />
+              </div>
+              <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight italic">Completed Nodes ({strictlyCompleted.length})</h3>
             </div>
-            <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight italic">Completed Nodes ({strictlyCompleted.length})</h3>
-          </div>
 
-          <div className="space-y-6">
-            {strictlyCompleted.length > 0 ? strictlyCompleted.map((course, i) => (
-              <motion.div 
-                key={course._id || i}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                className="bg-emerald-50/50 p-8 rounded-[40px] border border-emerald-100 shadow-xl shadow-emerald-200/20 relative overflow-hidden"
-              >
-                <div className="flex justify-between items-center">
-                  <div>
-                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest italic">Specialization Achieved</span>
-                    <h4 className="text-xl font-black text-slate-900 uppercase tracking-tighter italic leading-none mt-1">{course.title}</h4>
-                  </div>
-                  <div 
-                    style={{ backgroundColor: '#10b981', color: '#ffffff' }}
-                    className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg"
-                  >
-                    <CheckCircle size={24} />
-                  </div>
-                </div>
-                
-                <div className="mt-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex items-center gap-6">
-                    <div className="flex items-center gap-2">
-                      <Clock size={14} className="text-slate-400" />
-                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Completed</span>
+            <div className="space-y-6">
+              {strictlyCompleted.length > 0 ? strictlyCompleted.map((course, i) => (
+                <motion.div
+                  key={course._id || i}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  className="bg-emerald-50/50 p-8 rounded-[40px] border border-emerald-100 shadow-xl shadow-emerald-200/20 relative overflow-hidden"
+                >
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest italic">Specialization Achieved</span>
+                      <h4 className="text-xl font-black text-slate-900 uppercase tracking-tighter italic leading-none mt-1">{course.title}</h4>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Star size={14} className="text-emerald-500" />
-                      <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">100% Synced</span>
-                    </div>
-                  </div>
-                  {isAlreadyGenerated(course) ? (
-                    <button 
-                      disabled
-                      className="px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest bg-slate-100 text-slate-400 cursor-not-allowed flex items-center justify-center gap-2 border border-slate-200"
-                    >
-                      <CheckCircle size={14} className="text-emerald-500" /> Already Generated
-                    </button>
-                  ) : (
-                    <button 
-                      onClick={() => {
-                        setSelectedCertCourse(course);
-                        setIsCertModalOpen(true);
-                      }}
+                    <div
                       style={{ backgroundColor: '#10b981', color: '#ffffff' }}
-                      className="px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-lg"
+                      className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg"
                     >
-                      <Award size={14} /> Generate Certificate
-                    </button>
-                  )}
-                </div>
-              </motion.div>
-            )) : (
-              <div className="p-12 text-center bg-slate-50 rounded-[40px] border border-dashed border-slate-200">
-                <Award size={40} className="mx-auto text-slate-300 mb-4" />
-                <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">Graduate your first node to see it here</p>
-              </div>
-            )}
-          </div>
+                      <CheckCircle size={24} />
+                    </div>
+                  </div>
 
-          {/* Attractive Info Box */}
-          <div className="mt-8 bg-gradient-to-br from-emerald-950 to-slate-900 text-white p-8 rounded-[40px] border border-emerald-500/20 shadow-2xl relative overflow-hidden group hover:border-emerald-400/40 transition-all duration-300">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl -z-10 translate-x-1/2 -translate-y-1/2"></div>
-            <div className="absolute -bottom-10 -left-10 w-24 h-24 bg-cyan-500/10 blur-2xl -z-10"></div>
-            
-            <div className="flex items-start gap-5">
-              <div className="p-4 bg-emerald-500/20 rounded-2xl text-emerald-400 border border-emerald-500/30 shadow-lg group-hover:scale-105 transition-transform duration-300">
-                <Star className="w-6 h-6 animate-pulse" />
-              </div>
-              <div className="space-y-2">
-                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest italic">Verification Ledger</span>
-                <h4 className="text-xl font-black uppercase tracking-tighter italic leading-tight">Eco-Skill Badge Activated</h4>
-                <p className="text-slate-300 text-xs leading-relaxed font-medium">
-                  Your credentials are dynamically synced with the Green-Tech Ledger. These qualifications verify your skills for industry placements and certifications.
-                </p>
+                  <div className="mt-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-6">
+                      <div className="flex items-center gap-2">
+                        <Clock size={14} className="text-slate-400" />
+                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Completed</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Star size={14} className="text-emerald-500" />
+                        <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">100% Synced</span>
+                      </div>
+                    </div>
+                    {isAlreadyGenerated(course) ? (
+                      <button
+                        disabled
+                        className="px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest bg-slate-100 text-slate-400 cursor-not-allowed flex items-center justify-center gap-2 border border-slate-200"
+                      >
+                        <CheckCircle size={14} className="text-emerald-500" /> Already Generated
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setSelectedCertCourse(course);
+                          setIsCertModalOpen(true);
+                        }}
+                        style={{ backgroundColor: '#10b981', color: '#ffffff' }}
+                        className="px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-lg"
+                      >
+                        <Award size={14} /> Generate Certificate
+                      </button>
+                    )}
+                  </div>
+                </motion.div>
+              )) : (
+                <div className="p-12 text-center bg-slate-50 rounded-[40px] border border-dashed border-slate-200">
+                  <Award size={40} className="mx-auto text-slate-300 mb-4" />
+                  <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">Graduate your first node to see it here</p>
+                </div>
+              )}
+            </div>
+
+            {/* Attractive Info Box */}
+            <div className="mt-8 bg-gradient-to-br from-emerald-950 to-slate-900 text-white p-8 rounded-[40px] border border-emerald-500/20 shadow-2xl relative overflow-hidden group hover:border-emerald-400/40 transition-all duration-300">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl -z-10 translate-x-1/2 -translate-y-1/2"></div>
+              <div className="absolute -bottom-10 -left-10 w-24 h-24 bg-cyan-500/10 blur-2xl -z-10"></div>
+
+              <div className="flex items-start gap-5">
+                <div className="p-4 bg-emerald-500/20 rounded-2xl text-emerald-400 border border-emerald-500/30 shadow-lg group-hover:scale-105 transition-transform duration-300">
+                  <Star className="w-6 h-6 animate-pulse" />
+                </div>
+                <div className="space-y-2">
+                  <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest italic">Verification Ledger</span>
+                  <h4 className="text-xl font-black uppercase tracking-tighter italic leading-tight">Eco-Skill Badge Activated</h4>
+                  <p className="text-slate-300 text-xs leading-relaxed font-medium">
+                    Your credentials are dynamically synced with the Green-Tech Ledger. These qualifications verify your skills for industry placements and certifications.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
         </div>
 
         {/* Right Column: Certificate Regeneration */}
@@ -397,7 +397,7 @@ const MyJourney = () => {
               {validCertificates.length > 0 ? (
                 validCertificates.map((cert, idx) => {
                   const reqForCert = regenRequests.find(r => r.certificateId === cert.certificateId);
-                  
+
                   return (
                     <div key={idx} className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-xl relative overflow-hidden">
                       <div className="flex justify-between items-start mb-4">
@@ -412,10 +412,9 @@ const MyJourney = () => {
                         <div className="mt-4 p-3 rounded-xl border text-[11px] font-semibold flex flex-col gap-1.5 bg-slate-50 border-slate-100">
                           <div className="flex justify-between">
                             <span className="text-slate-500 uppercase tracking-wider text-[9px] font-bold">Request Status:</span>
-                            <span className={`uppercase font-black tracking-widest text-[9px] ${
-                              reqForCert.status === 'pending' ? 'text-amber-500' :
-                              reqForCert.status === 'approved' ? 'text-emerald-500' : 'text-red-500'
-                            }`}>
+                            <span className={`uppercase font-black tracking-widest text-[9px] ${reqForCert.status === 'pending' ? 'text-amber-500' :
+                                reqForCert.status === 'approved' ? 'text-emerald-500' : 'text-red-500'
+                              }`}>
                               {reqForCert.status}
                             </span>
                           </div>
@@ -486,9 +485,9 @@ const MyJourney = () => {
 
       <div className="flex flex-col lg:flex-row gap-12">
         {/* Streak Minimal Graph Section */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }} 
-          animate={{ opacity: 1, y: 0 }} 
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.5 }}
           className="w-full max-w-[400px] bg-white p-8 rounded-[32px] border border-slate-100 shadow-xl relative overflow-hidden"
         >
@@ -525,14 +524,13 @@ const MyJourney = () => {
             {calendarData.map((day, i) => (
               <div key={i} className="flex flex-col items-center justify-center h-10 relative">
                 {day ? (
-                  <div 
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center text-[12px] font-bold transition-all ${
-                      day.isActive 
-                        ? `${monthColors[day.monthIndex]} text-white` 
-                        : day.isToday 
-                          ? 'bg-slate-800 text-white shadow-lg' 
+                  <div
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center text-[12px] font-bold transition-all ${day.isActive
+                        ? `${monthColors[day.monthIndex]} text-white`
+                        : day.isToday
+                          ? 'bg-slate-800 text-white shadow-lg'
                           : 'text-slate-400 hover:bg-slate-100 bg-slate-50'
-                    }`}
+                      }`}
                   >
                     {day.dayNum}
                   </div>
@@ -545,9 +543,9 @@ const MyJourney = () => {
         </motion.div>
 
         {/* Downloaded Certificates Section */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }} 
-          animate={{ opacity: 1, y: 0 }} 
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.5 }}
           className="w-full lg:flex-1 max-w-[700px] bg-white p-8 rounded-[32px] border border-slate-100 shadow-xl relative overflow-hidden"
         >
@@ -579,7 +577,7 @@ const MyJourney = () => {
                         <h4 className="text-sm font-bold text-slate-900 leading-tight truncate max-w-[120px]">{cert.courseName}</h4>
                       </div>
                     </div>
-                    <button 
+                    <button
                       onClick={() => {
                         const link = document.createElement('a');
                         link.href = `${API_BASE_URL}${cert.pdfUrl}`;
@@ -606,10 +604,10 @@ const MyJourney = () => {
         </motion.div>
       </div>
 
-      <CertificateGenerator 
-        course={selectedCertCourse} 
-        isOpen={isCertModalOpen} 
-        onClose={() => setIsCertModalOpen(false)} 
+      <CertificateGenerator
+        course={selectedCertCourse}
+        isOpen={isCertModalOpen}
+        onClose={() => setIsCertModalOpen(false)}
         user={user}
         onGenerated={() => {
           fetchCertificates();
