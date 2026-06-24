@@ -369,33 +369,51 @@ const StudentDashboard = () => {
             {/* Bottom Row: Roadmap & Next Steps */}
             <div className="flex flex-col md:flex-row gap-6 flex-1">
 
-              {/* Trajectory Module */}
+              {/* Certifications Locker Module */}
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                className="md:w-1/2 bg-white/[0.02] backdrop-blur-[40px] rounded-[2rem] p-8 border border-white/10 flex flex-col relative overflow-hidden group hover:bg-white/[0.04] transition-colors shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
+                className="md:w-1/2 bg-white/[0.02] backdrop-blur-[40px] rounded-[2rem] p-8 border border-white/10 flex flex-col justify-between relative overflow-hidden group hover:bg-white/[0.04] transition-all shadow-[0_8px_32px_rgba(0,0,0,0.3)] min-h-[300px]"
               >
                 <div className="absolute -top-10 -right-10 w-40 h-40 bg-fuchsia-500/10 blur-[40px] rounded-full pointer-events-none"></div>
-                <div className="flex justify-between items-center mb-8 relative z-10">
-                  <h3 className="text-xl font-medium text-white tracking-tight">Course Roadmap</h3>
-                  <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center border border-white/10 backdrop-blur-md">
-                    <TrendingUp className="text-fuchsia-400" size={18} strokeWidth={1.5} />
+                <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-cyan-500/5 blur-[30px] rounded-full pointer-events-none"></div>
+
+                <div className="flex justify-between items-center mb-6 relative z-10">
+                  <div>
+                    <h3 className="text-xl font-medium text-white tracking-tight mb-1">Green Credentials</h3>
+                    <p className="text-[9px] font-medium text-slate-400 uppercase tracking-widest">Verified Certifications</p>
+                  </div>
+                  <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center border border-white/10 backdrop-blur-md shadow-lg">
+                    <Award className="text-fuchsia-400" size={20} strokeWidth={1.5} />
                   </div>
                 </div>
 
-                <div className="flex-1 flex flex-col justify-center space-y-6 relative z-10">
-                  {roadmapNodes.map((node, idx) => (
-                    <div key={idx} className="flex gap-4 relative">
-                      {idx !== roadmapNodes.length - 1 && <div className={`absolute top-6 left-1.5 w-[2px] h-10 ${node.line}`}></div>}
-                      <div className={`w-3.5 h-3.5 rounded-full mt-1 flex-shrink-0 relative z-10 ${node.dot}`}></div>
-                      <div className="min-w-0 flex-1">
-                        <h4 className={`text-sm font-semibold tracking-tight truncate ${node.status === 'Locked' ? 'text-slate-500' : 'text-white'}`}>{node.title}</h4>
-                        <p className={`text-[9px] font-medium uppercase tracking-[0.2em] mt-1 ${node.color}`}>{node.status}</p>
-                      </div>
+                <div className="flex-1 flex flex-col justify-center space-y-4 relative z-10 my-4">
+                  <div className="flex items-end gap-3">
+                    <span className="text-5xl font-light text-white tracking-tighter drop-shadow-md">{completedCount}</span>
+                    <span className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-2">Certificates Earned</span>
+                  </div>
+
+                  {activeCourse ? (
+                    <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3.5 space-y-1">
+                      <p className="text-[9px] font-bold text-fuchsia-300 uppercase tracking-widest">In Progress</p>
+                      <p className="text-xs font-semibold text-white truncate">{activeCourse.title}</p>
                     </div>
-                  ))}
+                  ) : (
+                    <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3.5 space-y-1">
+                      <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest font-black">Status</p>
+                      <p className="text-xs font-semibold text-slate-400">Ready to start new green skills modules.</p>
+                    </div>
+                  )}
                 </div>
+
+                <button 
+                  onClick={() => navigate('/dashboard/certificates')}
+                  className="relative z-10 w-full py-4 bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 rounded-xl text-[10px] font-bold text-white uppercase tracking-[0.2em] transition-all duration-300 flex items-center justify-center gap-2 backdrop-blur-md"
+                >
+                  Open Credentials Locker <ArrowRight size={14} />
+                </button>
               </motion.div>
 
               {/* Leaderboard Module */}
