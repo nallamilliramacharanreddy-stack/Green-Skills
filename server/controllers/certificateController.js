@@ -85,7 +85,22 @@ exports.getUserCertificates = async (req, res) => {
 
     // Fetch user certificates
     const certificates = await Certificate.find({ userId }).sort({ createdAt: -1 });
-    return res.status(200).json(certificates);
+    
+    // Self-healing: Clean up legacy records if the physical files got deleted from Render disk
+    const verifiedCertificates = [];
+    for (const cert of certificates) {
+      if (cert.pdfUrl && cert.pdfUrl.startsWith('/uploads/') && !cert.pdfData) {
+        const filePath = path.join(__dirname, '..', cert.pdfUrl);
+        if (!fs.existsSync(filePath)) {
+          // File is missing, delete the broken DB record to allow regeneration
+          await Certificate.deleteOne({ _id: cert._id });
+          continue;
+        }
+      }
+      verifiedCertificates.push(cert);
+    }
+
+    return res.status(200).json(verifiedCertificates);
   } catch (error) {
     console.error("Get certificates error:", error);
     return res.status(500).json({ message: "Failed to load certificates" });
