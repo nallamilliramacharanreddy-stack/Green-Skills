@@ -429,10 +429,7 @@ const Signup = () => {
       return toast.error('Password must contain uppercase, lowercase, number, and special character.');
     }
 
-    if (formData.role === 'student' && !facialEmbedding) {
-      setIsEnrolling(true);
-      return;
-    }
+    // Facial enrollment bypassed
 
     const data = new FormData();
     Object.keys(formData).forEach(key => {

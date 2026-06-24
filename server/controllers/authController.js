@@ -100,10 +100,7 @@ const signup = async (req, res) => {
       return res.status(400).json({ message: 'Password must contain uppercase, lowercase, number, and special character.' });
     }
 
-    // Facial Embedding validation for student users
-    if (role === 'student' && (!req.body.facialEmbedding && !profileData.facialEmbedding)) {
-      return res.status(400).json({ message: 'Facial enrollment is required to complete registration.' });
-    }
+    // Face validation disabled on signup
 
     let encryptedFace = undefined;
     const rawEmbedding = req.body.facialEmbedding || profileData.facialEmbedding;
@@ -282,14 +279,7 @@ const login = async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    if (user.role === 'student' && user.facialEmbedding) {
-      return res.json({
-        requiresFace: true,
-        userId: user._id,
-        email: user.email,
-        message: 'Password verified. Face verification required to proceed.'
-      });
-    }
+    // Face validation disabled on login
 
     const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
 

@@ -43,7 +43,7 @@ const Quiz = () => {
   const [selectedAttempt, setSelectedAttempt] = useState(null);
 
   // Pre-assessment Face Verification states
-  const [preVerified, setPreVerified] = useState(false);
+  const [preVerified, setPreVerified] = useState(true);
   const [preVerifyStep, setPreVerifyStep] = useState('loading');
   const preVerifyVideoRef = useRef(null);
   const preVerifyStreamRef = useRef(null);
@@ -850,38 +850,8 @@ const Quiz = () => {
       triggerViolation(18, "Screen Resolution Changed");
     };
 
-    // Initialize camera/mic
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-      .then((stream) => {
-        mediaStreamRef.current = stream;
-        setProctorStream(stream);
-        setStreamActive(true);
-
-        // Start video recording
-        try {
-          let options = {};
-          if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
-            options = { mimeType: 'video/webm;codecs=vp8' };
-          } else if (MediaRecorder.isTypeSupported('video/mp4')) {
-            options = { mimeType: 'video/mp4' };
-          }
-          const recorder = new MediaRecorder(stream, options);
-          mediaRecorderRef.current = recorder;
-          chunksRef.current = [];
-          recorder.ondataavailable = (e) => {
-            if (e.data && e.data.size > 0) {
-              chunksRef.current.push(e.data);
-            }
-          };
-          recorder.start(1000); // Record in 1s slices
-        } catch (recorderErr) {
-          console.error("Failed to start MediaRecorder:", recorderErr);
-        }
-      })
-      .catch((err) => {
-        console.error("Camera error:", err);
-        triggerViolation(34, "Camera Disabled: Permission Denied");
-      });
+    // Webcam/Mic proctoring is deactivated
+    console.log("Proctoring webcam and mic are deactivated.");
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     document.addEventListener('fullscreenchange', handleFullscreenChange);

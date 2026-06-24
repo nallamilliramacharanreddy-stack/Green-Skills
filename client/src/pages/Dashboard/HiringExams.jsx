@@ -91,8 +91,7 @@ const HiringExams = () => {
   });
 
   const handleStartExamClick = (exam) => {
-    setSelectedExam(exam);
-    setShowConsentModal(true);
+    navigate('/dashboard/quiz', { state: { activeQuiz: exam } });
   };
 
   const handleConfirmStart = () => {
