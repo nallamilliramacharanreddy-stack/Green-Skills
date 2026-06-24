@@ -77,7 +77,6 @@ const ExamCreator = () => {
 
   const handleGenerateAIQuiz = async () => {
     if (!youtubeUrl) return toast.error('Please paste a YouTube URL');
-    if (!selectedCourseId) return toast.error('Please select a Course to attach this to');
     
     setIsGenerating(true);
     const loadingToast = toast.loading('AI is extracting transcript and analyzing video...');
@@ -85,7 +84,7 @@ const ExamCreator = () => {
     try {
       const res = await axios.post(`${API_URL}/quizzes/generate-from-youtube`, {
         youtubeUrl,
-        courseId: selectedCourseId,
+        courseId: selectedCourseId || null,
         lessonId: selectedLessonId || null,
         adminId: user._id
       });
@@ -147,6 +146,9 @@ const ExamCreator = () => {
         await axios.post(`${API_URL}/quizzes/${examData.draftId}/publish`);
         toast.success('AI Exam Published and Attached to Course!');
       } else {
+        if (!selectedStudentId) {
+          return toast.error('Please select a target candidate user.');
+        }
         // Create manual exam
         const res = await axios.post(`${API_URL}/quizzes`, {
           ...examData,
@@ -154,8 +156,8 @@ const ExamCreator = () => {
             ...q,
             correctAnswer: typeof q.correctAnswer === 'number' ? q.options[q.correctAnswer] : q.correctAnswer
           })),
-          courseId: selectedCourseId || undefined,
-          lessonId: selectedLessonId || undefined,
+          courseId: undefined,
+          lessonId: undefined,
           assignedUser: selectedStudentId || undefined,
           createdBy: user._id
         });
@@ -163,7 +165,7 @@ const ExamCreator = () => {
         // Publish manual exam immediately to trigger backend course mapping logic
         const createdQuiz = res.data;
         await axios.post(`${API_URL}/quizzes/${createdQuiz._id}/publish`);
-        toast.success('Exam Published and Attached to Course!');
+        toast.success('Hiring Exam Published for Targeted Candidate!');
       }
       setShowForm(false);
       fetchExams();
@@ -241,55 +243,26 @@ const ExamCreator = () => {
                     </select>
                   </div>
                   
-                  {/* Link to Course */}
+                  {/* Target Candidate User Selection */}
                   <div className="space-y-3 col-span-2 pt-6 border-t border-slate-100 mt-2">
                     <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                      <BookOpen size={12} className="text-primary" /> Target Course & Lesson
-                    </h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <select 
-                        className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-primary/50 transition-all font-bold"
-                        value={selectedCourseId}
-                        onChange={(e) => setSelectedCourseId(e.target.value)}
-                      >
-                        <option value="">Select Course...</option>
-                        {courses.map(c => (
-                          <option key={c._id} value={c._id}>{c.title}</option>
-                        ))}
-                      </select>
-
-                      <select 
-                        className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-primary/50 transition-all font-bold"
-                        value={selectedLessonId}
-                        onChange={(e) => setSelectedLessonId(e.target.value)}
-                        disabled={!selectedCourseId}
-                      >
-                        <option value="">Select Video/Lesson (Optional)...</option>
-                        {selectedCourseId && courses.find(c => c._id === selectedCourseId)?.lessons?.map(l => (
-                          <option key={l._id} value={l._id}>{l.title}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Assign to Specific Student */}
-                  <div className="space-y-3 col-span-2 pt-6 border-t border-slate-100 mt-2">
-                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                      <Users size={12} className="text-primary" /> Target Candidate Assignment (Optional)
+                      <Users size={12} className="text-primary" /> Target Candidate User Selection
                     </h4>
                     <select 
                       className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-primary/50 transition-all font-bold"
                       value={selectedStudentId}
                       onChange={(e) => setSelectedStudentId(e.target.value)}
                     >
-                      <option value="">Open to All Students...</option>
+                      <option value="">Select Candidate...</option>
                       {students.map(s => (
                         <option key={s._id} value={s._id}>
                           {s.name} ({s.email})
                         </option>
                       ))}
                     </select>
-                    <p className="text-[10px] text-slate-400 font-semibold mt-1">If selected, only the assigned student will be allowed to view and attempt this hiring assessment.</p>
+                    <p className="text-[10px] text-slate-400 font-semibold mt-1">
+                      All registered student candidates are dynamically loaded here. Once selected, only that student will see and be allowed to write the exam.
+                    </p>
                   </div>
 
                   {/* AI Generation from YouTube */}
