@@ -381,8 +381,8 @@ const StudentDashboard = () => {
 
                 <div className="flex justify-between items-center mb-6 relative z-10">
                   <div>
-                    <h3 className="text-xl font-medium text-white tracking-tight mb-1">Green Credentials</h3>
-                    <p className="text-[9px] font-medium text-slate-400 uppercase tracking-widest">Verified Certifications</p>
+                    <h3 className="text-xl font-medium text-white tracking-tight mb-1">Earned Certificates</h3>
+                    <p className="text-[9px] font-medium text-slate-400 uppercase tracking-widest">Verified Credentials</p>
                   </div>
                   <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center border border-white/10 backdrop-blur-md shadow-lg">
                     <Award className="text-fuchsia-400" size={20} strokeWidth={1.5} />
