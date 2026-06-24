@@ -323,25 +323,74 @@ const MyJourney = () => {
                         <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">100% Synced</span>
                       </div>
                     </div>
-                    {isAlreadyGenerated(course) ? (
-                      <button
-                        disabled
-                        className="px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest bg-slate-100 text-slate-400 cursor-not-allowed flex items-center justify-center gap-2 border border-slate-200"
-                      >
-                        <CheckCircle size={14} className="text-emerald-500" /> Already Generated
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => {
-                          setSelectedCertCourse(course);
-                          setIsCertModalOpen(true);
-                        }}
-                        style={{ backgroundColor: '#10b981', color: '#ffffff' }}
-                        className="px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-lg"
-                      >
-                        <Award size={14} /> Generate Certificate
-                      </button>
-                    )}
+                    {(() => {
+                      const cert = certificates.find(c => c && c.courseName && c.courseName.trim().toUpperCase() === course.title.trim().toUpperCase());
+                      const hasCert = cert && (cert.pdfData || (cert.pdfUrl && cert.pdfUrl.startsWith('/uploads')));
+                      const reqForCert = cert ? regenRequests.find(r => r.certificateId === cert.certificateId) : null;
+
+                      if (!hasCert) {
+                        return (
+                          <button
+                            onClick={() => {
+                              setSelectedCertCourse(course);
+                              setIsCertModalOpen(true);
+                            }}
+                            style={{ backgroundColor: '#10b981', color: '#ffffff' }}
+                            className="px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-lg"
+                          >
+                            <Award size={14} /> Generate Certificate
+                          </button>
+                        );
+                      }
+
+                      if (reqForCert) {
+                        if (reqForCert.status === 'pending') {
+                          return (
+                            <button
+                              disabled
+                              className="px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest bg-amber-50 text-amber-500 flex items-center justify-center gap-2 border border-amber-200 cursor-not-allowed"
+                            >
+                              <Clock size={14} /> Name Change Pending
+                            </button>
+                          );
+                        }
+                        if (reqForCert.status === 'approved') {
+                          return (
+                            <button
+                              onClick={() => {
+                                setSelectedCertCourse(course);
+                                setIsCertModalOpen(true);
+                              }}
+                              style={{ backgroundColor: '#10b981', color: '#ffffff' }}
+                              className="px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-lg"
+                            >
+                              <Award size={14} /> Generate New PDF
+                            </button>
+                          );
+                        }
+                      }
+
+                      return (
+                        <div className="flex flex-col sm:flex-row items-center gap-2">
+                          <button
+                            disabled
+                            className="px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest bg-slate-100 text-slate-400 cursor-not-allowed flex items-center justify-center gap-2 border border-slate-200"
+                          >
+                            <CheckCircle size={14} className="text-emerald-500" /> Already Generated
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedRegenCert(cert);
+                              setNewNameRegenInput('');
+                              setShowRegenModal(true);
+                            }}
+                            className="px-4 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-xl font-black uppercase text-[10px] tracking-widest border border-indigo-100 transition-all"
+                          >
+                            Request Name Change
+                          </button>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </motion.div>
               )) : (
