@@ -60,4 +60,6 @@ const resultSchema = new mongoose.Schema({
   completedAt: { type: Date, default: Date.now }
 });
 
+resultSchema.index({ user: 1 });
+
 module.exports = mongoose.model('Result', resultSchema);

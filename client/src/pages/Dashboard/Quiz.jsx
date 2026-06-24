@@ -1603,7 +1603,7 @@ const Quiz = () => {
                           </span>
                         </div>
 
-                        <h4 className="font-black text-slate-900 text-sm uppercase tracking-tight">{attempt.course?.title || 'Solar PV Assessment'}</h4>
+                        <h4 className="font-black text-slate-900 text-sm uppercase tracking-tight">{attempt.course?.title || attempt.quiz?.title || 'Solar PV Assessment'}</h4>
                         
                         <div className="grid grid-cols-2 gap-2 py-2 text-[10px] uppercase font-bold text-slate-500">
                           <div>
@@ -1659,7 +1659,7 @@ const Quiz = () => {
                 <div>
                   <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight italic">Assessment Audit Report</h3>
                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
-                    {selectedAttempt.course?.title || 'Solar panel certification'}
+                    {selectedAttempt.course?.title || selectedAttempt.quiz?.title || 'Solar panel certification'}
                   </p>
                 </div>
                 <button 

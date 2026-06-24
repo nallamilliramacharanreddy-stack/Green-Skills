@@ -521,7 +521,10 @@ const getAllResults = async (req, res) => {
   try {
     const { userId } = req.query;
     const query = userId ? { user: userId } : {};
-    const results = await Result.find(query).populate('user course');
+    const results = await Result.find(query)
+      .populate('user', 'name email profilePicture')
+      .populate('course', 'title category')
+      .populate('quiz', 'title');
     res.json(results);
   } catch (error) {
     console.error('[getAllResults] Error:', error);

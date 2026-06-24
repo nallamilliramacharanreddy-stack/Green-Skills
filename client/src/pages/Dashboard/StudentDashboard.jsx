@@ -20,9 +20,11 @@ const StudentDashboard = () => {
   useEffect(() => {
     const fetchLastAttempt = async () => {
       try {
-        const res = await axios.get(`${API_URL}/quizzes/results`);
         const currentUserId = user?.id || user?._id;
-        const userResults = res.data.filter(r => (r.user?._id || r.user) === currentUserId);
+        const res = await axios.get(`${API_URL}/quizzes/results`, {
+          params: { userId: currentUserId }
+        });
+        const userResults = res.data;
         if (userResults && userResults.length > 0) {
           userResults.sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
           setLastAttempt(userResults[0]);
