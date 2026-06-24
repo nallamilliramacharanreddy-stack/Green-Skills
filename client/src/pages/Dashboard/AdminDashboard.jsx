@@ -1369,7 +1369,8 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
   const [formData, setFormData] = useState({
     title: '', courseId: '', module: '', transcript: '', numQuestions: '50',
     difficulty: 'Medium', passingPercentage: '80', duration: '60',
-    generateCertificate: true, language: 'English'
+    generateCertificate: true, language: 'English',
+    bannerImage: ''
   });
 
   const [progressStep, setProgressStep] = useState(0);
@@ -1534,18 +1535,39 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
       toast.error('Please select a course to attach this assessment to.');
       return;
     }
+    if (questions.length === 0) {
+      toast.error('Add at least one question before publishing.');
+      return;
+    }
     try {
-      await axios.put(`${API_URL}/courses/${formData.courseId}`, { quiz: questions });
+      // Clean questions: normalize to Course schema fields, strip client-only `id`
+      const cleanQuestions = questions.map(q => ({
+        question: (q.question || q.questionText || '').trim(),
+        options: q.options || [],
+        correctAnswer: q.correctAnswer,
+        explanation: q.explanation || '',
+        difficulty: q.difficulty || 'Medium',
+        questionType: q.questionType || 'single'
+      }));
+
+      const updatePayload = { quiz: cleanQuestions };
+      if (formData.bannerImage && formData.bannerImage.trim()) {
+        updatePayload.thumbnail = formData.bannerImage.trim();
+      }
+
+      await axios.put(`${API_URL}/courses/${formData.courseId}`, updatePayload);
       toast.success('Assessment Published Successfully!');
       if (refresh) await refresh();
       setView('dashboard');
+      setQuestions([]);
       setFormData({
         title: '', courseId: '', module: '', transcript: '', numQuestions: '50',
         difficulty: 'Medium', passingPercentage: '80', duration: '60',
-        generateCertificate: true, language: 'English'
+        generateCertificate: true, language: 'English', bannerImage: ''
       });
     } catch (e) {
-      toast.error('Failed to publish assessment. Please try again.');
+      console.error('Publish error:', e);
+      toast.error(e.response?.data?.message || 'Failed to publish assessment. Please try again.');
     }
   };
 
@@ -1560,11 +1582,19 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
   };
 
   const handleEditAssessment = (assessment) => {
-    setQuestions(assessment.fullQuestions || []);
+    // Add client-side id so the edit panel can match questions
+    const qsWithIds = (assessment.fullQuestions || []).map((q, i) => ({
+      ...q,
+      question: q.question || q.questionText || '',
+      id: Date.now() + i + Math.random()
+    }));
+    setQuestions(qsWithIds);
+    const targetCourse = courses.find(c => c.title === assessment.courseTitle);
     setFormData({
       ...formData,
       title: assessment.title.replace(' Final Assessment', ''),
-      courseId: courses.find(c => c.title === assessment.courseTitle)?._id || ''
+      courseId: targetCourse?._id || '',
+      bannerImage: targetCourse?.thumbnail || ''
     });
     setView('review');
   };
@@ -1665,6 +1695,27 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
                 <label className="text-xs font-black uppercase tracking-widest text-slate-500">Duration (Minutes)</label>
                 <input type="number" value={formData.duration} onChange={e => setFormData({...formData, duration: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-primary" />
               </div>
+            </div>
+            {/* Banner Image */}
+            <div className="space-y-3">
+              <label className="text-xs font-black uppercase tracking-widest text-slate-500">Banner / Cover Image URL</label>
+              <input
+                value={formData.bannerImage || ''}
+                onChange={e => setFormData({...formData, bannerImage: e.target.value})}
+                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-primary"
+                placeholder="https://example.com/banner.jpg"
+              />
+              {formData.bannerImage && formData.bannerImage.trim() && (
+                <div className="relative w-full h-36 rounded-2xl overflow-hidden border border-slate-200 bg-slate-100">
+                  <img
+                    src={formData.bannerImage}
+                    alt="Banner preview"
+                    className="w-full h-full object-cover"
+                    onError={e => { e.target.style.display = 'none'; }}
+                  />
+                  <div className="absolute bottom-2 right-2 px-3 py-1 bg-black/60 text-white text-[10px] font-bold rounded-lg uppercase tracking-widest">Preview</div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1814,26 +1865,46 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
 
   const renderReview = () => (
     <div className="space-y-10">
-      <div className="flex justify-between items-end bg-slate-900 p-10 rounded-[48px] text-white">
-        <div className="space-y-2">
-          <h2 className="text-4xl font-black uppercase tracking-tighter italic">Review & Refine</h2>
-          <p className="text-slate-400 font-medium">Verify AI-generated questions before deployment.</p>
+      <div className="bg-slate-900 p-10 rounded-[48px] text-white space-y-6">
+        <div className="flex justify-between items-start">
+          <div className="space-y-2">
+            <h2 className="text-4xl font-black uppercase tracking-tighter italic">Review &amp; Publish</h2>
+            <p className="text-slate-400 font-medium">Review questions, set banner, then publish to course.</p>
+          </div>
+          <div className="flex gap-4">
+            <button onClick={() => setView('create')} className="px-8 py-4 bg-white/10 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-white/20 transition-all">
+              ← Back to Builder
+            </button>
+            <button onClick={handlePublish} className="px-8 py-4 bg-primary text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 flex items-center gap-2">
+              <Check size={16} /> Publish Assessment
+            </button>
+          </div>
         </div>
-        <div className="flex gap-4">
-          <button onClick={() => setView('dashboard')} className="px-8 py-4 bg-white/10 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-white/20 transition-all">
-            Save as Draft
-          </button>
-          <button onClick={handlePublish} className="px-8 py-4 bg-primary text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 flex items-center gap-2">
-            <Check size={16} /> Publish Assessment
-          </button>
+        {/* Course select + banner on review screen */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-white/10">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Target Course</label>
+            <select value={formData.courseId} onChange={e => setFormData({...formData, courseId: e.target.value})} className="w-full p-3 bg-white/10 border border-white/20 rounded-2xl font-bold text-white outline-none focus:border-primary">
+              <option value="" className="text-slate-900">Select Course...</option>
+              {courses.map(c => <option key={c._id} value={c._id} className="text-slate-900">{c.title}</option>)}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Banner Image URL</label>
+            <input
+              value={formData.bannerImage || ''}
+              onChange={e => setFormData({...formData, bannerImage: e.target.value})}
+              className="w-full p-3 bg-white/10 border border-white/20 rounded-2xl font-bold text-white outline-none focus:border-primary placeholder:text-slate-500"
+              placeholder="https://example.com/banner.jpg"
+            />
+          </div>
         </div>
       </div>
 
       <div className="flex justify-between items-center px-4">
-        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter italic">{questions.length} Generated Questions</h3>
+        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter italic">{questions.length} Questions</h3>
         <div className="flex gap-4">
           <button onClick={handleAddQuestion} className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold uppercase hover:bg-slate-200 flex items-center gap-2"><Plus size={14}/> Add Question</button>
-          <button onClick={handleGenerate} className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold uppercase hover:bg-slate-200 flex items-center gap-2"><Activity size={14}/> Regenerate All</button>
         </div>
       </div>
 
