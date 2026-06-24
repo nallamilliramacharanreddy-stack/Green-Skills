@@ -157,22 +157,73 @@ const StudentDashboard = () => {
                 </div>
               </div>
 
-              <div className="space-y-4 relative z-10">
-                <div className="flex justify-between items-center p-3 bg-white/[0.02] rounded-xl border border-white/5">
-                  <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest flex items-center gap-2"><Trophy size={12} className="text-violet-400" /> Ranking</span>
-                  <span className="text-lg font-semibold text-white tracking-tight">{myRank > 0 ? `#${myRank}` : '--'}</span>
+              {/* Dynamic Eco-Sync HUD Card */}
+              <div className="relative z-10 bg-slate-950/60 border border-white/10 rounded-[1.5rem] p-6 shadow-2xl overflow-hidden group/hud">
+                {/* Micro background grid/glow */}
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-transparent to-cyan-500/10 opacity-60 pointer-events-none"></div>
+
+                <div className="flex justify-between items-center mb-6">
+                  <span className="text-[10px] font-black text-cyan-300 uppercase tracking-widest bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">
+                    Eco Passport
+                  </span>
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-orange-400">
+                    <Flame size={16} className="fill-orange-400 animate-bounce" />
+                    <span>{streakData?.currentStreak || 0} Day Streak</span>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center p-3 bg-white/[0.02] rounded-xl border border-white/5">
-                  <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest flex items-center gap-2"><Flame size={12} className="text-orange-400 animate-pulse" /> Active Streak</span>
-                  <span className="text-lg font-semibold text-white tracking-tight">{streakData?.currentStreak || 0} Days</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-white/[0.02] rounded-xl border border-white/5">
-                  <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest flex items-center gap-2"><CheckCircle size={12} className="text-cyan-400" /> Modules</span>
-                  <span className="text-lg font-semibold text-white tracking-tight">{completedCount}</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-white/[0.02] rounded-xl border border-white/5">
-                  <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest flex items-center gap-2"><Clock size={12} className="text-fuchsia-400" /> Hours</span>
-                  <span className="text-lg font-semibold text-white tracking-tight">{completedCount * 2}h</span>
+
+                <div className="space-y-4">
+                  {/* Energy Score Dial / Bar */}
+                  <div>
+                    <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                      <span>Sustainability Score</span>
+                      <span className="text-emerald-400">{user?.sustainabilityScore || 0} XP</span>
+                    </div>
+                    <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden border border-white/5 p-[1px]">
+                      <div 
+                        className="h-full bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-full shadow-[0_0_10px_rgba(52,211,153,0.5)] transition-all duration-1000"
+                        style={{ width: `${Math.min(((user?.sustainabilityScore || 0) / 1000) * 100, 100)}%` }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  {/* Dynamic Badge Showcase */}
+                  <div>
+                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-3">Earned Badges</p>
+                    <div className="flex gap-2 items-center min-h-[40px]">
+                      {user?.badges && user.badges.length > 0 ? (
+                        user.badges.slice(0, 3).map((badge, idx) => (
+                          <div 
+                            key={idx} 
+                            className="w-10 h-10 rounded-xl bg-gradient-to-br from-white/5 to-white/0 border border-white/10 flex items-center justify-center relative group/badge cursor-pointer hover:border-emerald-500/50 hover:bg-emerald-500/10 transition-all duration-300"
+                            title={badge.name}
+                          >
+                            <span className="text-xl">{badge.icon || '🏆'}</span>
+                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-900 border border-white/10 text-[9px] font-bold text-white rounded-md whitespace-nowrap opacity-0 group-hover/badge:opacity-100 transition-opacity pointer-events-none">
+                              {badge.name}
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="w-full py-2 bg-white/[0.01] border border-dashed border-white/5 rounded-xl flex items-center justify-center gap-2">
+                          <Shield size={14} className="text-slate-600" />
+                          <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">Next Badge: 100 XP</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Modules & Hours compact status */}
+                  <div className="grid grid-cols-2 gap-3 pt-2">
+                    <div className="p-3 bg-white/[0.02] border border-white/5 rounded-xl flex flex-col justify-between">
+                      <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Completed</span>
+                      <span className="text-sm font-bold text-white tracking-tight mt-1">{completedCount} Modules</span>
+                    </div>
+                    <div className="p-3 bg-white/[0.02] border border-white/5 rounded-xl flex flex-col justify-between">
+                      <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Time Spent</span>
+                      <span className="text-sm font-bold text-white tracking-tight mt-1">{completedCount * 2} Hours</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
