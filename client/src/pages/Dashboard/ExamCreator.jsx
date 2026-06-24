@@ -136,11 +136,17 @@ const ExamCreator = () => {
         toast.success('AI Exam Published and Attached to Course!');
       } else {
         // Create manual exam
-        await axios.post(`${API_URL}/quizzes`, {
+        const res = await axios.post(`${API_URL}/quizzes`, {
           ...examData,
+          courseId: selectedCourseId || undefined,
+          lessonId: selectedLessonId || undefined,
           createdBy: user._id
         });
-        toast.success('Exam Blueprint Saved Successfully');
+        
+        // Publish manual exam immediately to trigger backend course mapping logic
+        const createdQuiz = res.data;
+        await axios.post(`${API_URL}/quizzes/${createdQuiz._id}/publish`);
+        toast.success('Exam Published and Attached to Course!');
       }
       setShowForm(false);
       fetchExams();

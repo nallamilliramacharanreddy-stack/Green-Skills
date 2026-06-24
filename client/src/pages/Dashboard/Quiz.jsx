@@ -12,6 +12,7 @@ const Quiz = () => {
   const { user } = useAuth();
   const location = useLocation();
   const [courses, setCourses] = useState([]);
+  const [employerQuizzes, setEmployerQuizzes] = useState([]);
   const [activeQuiz, setActiveQuiz] = useState(() => {
     if (location.state?.activeQuiz) {
       localStorage.setItem('active_quiz_meta', JSON.stringify(location.state.activeQuiz));
@@ -319,12 +320,20 @@ const Quiz = () => {
 
   const fetchCoursesWithQuizzes = async () => {
     try {
-      const res = await axios.get(`${API_URL}/courses`);
+      const [coursesRes, quizzesRes] = await Promise.all([
+        axios.get(`${API_URL}/courses`),
+        axios.get(`${API_URL}/quizzes`)
+      ]);
+      
       // Filter only courses that have quizzes generated
-      const availableQuizzes = res.data.filter(c => c.quiz && c.quiz.length > 0);
+      const availableQuizzes = coursesRes.data.filter(c => c.quiz && c.quiz.length > 0);
       setCourses(availableQuizzes);
+
+      // Filter quizzes that are published and not course-bound
+      const availableStandalone = quizzesRes.data.filter(q => q.isPublished && !q.courseId);
+      setEmployerQuizzes(availableStandalone);
     } catch (error) {
-      toast.error('Failed to load courses');
+      toast.error('Failed to load assessments');
     } finally {
       setLoading(false);
     }
@@ -376,7 +385,8 @@ const Quiz = () => {
       
       setActiveQuiz(prev => ({
         ...prev,
-        quiz: questions
+        quiz: questions,
+        isStandalone: !isCourse
       }));
       
       const initialStatus = {};
@@ -1173,7 +1183,7 @@ const Quiz = () => {
 
       const aiSuspicionScore = Math.max(0, 100 - trustScore);
 
-      const isCourse = activeQuiz.lessonIndex !== undefined || activeQuiz.quiz !== undefined;
+      const isCourse = !activeQuiz.isStandalone;
       const response = await axios.post(`${API_URL}/quizzes/submit`, {
         userId: user.id || user._id,
         attemptId,
@@ -1679,71 +1689,146 @@ const Quiz = () => {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left / Middle: Available Quizzes list */}
-          <div className="lg:col-span-2 space-y-6">
-            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Available Assessments</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {courses.map((course, i) => (
-                <motion.div
-                  key={course._id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  whileHover={{ y: -8 }}
-                  className="group relative bg-white rounded-[2.5rem] overflow-hidden border border-slate-200 shadow-xl shadow-slate-200/50 flex flex-col transition-all duration-500"
-                >
-                  {/* Premium Top Accent */}
-                  <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-slate-900 via-primary to-slate-900 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-20"></div>
-                  
-                  {/* Cover Banner */}
-                  <div className="h-44 relative overflow-hidden bg-slate-100">
-                    <img src={course.coverImage || course.thumbnail} className="w-full h-full object-cover mix-blend-multiply opacity-80 transition-transform duration-700 group-hover:scale-105" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-white via-white/20 to-transparent"></div>
+          <div className="lg:col-span-2 space-y-8">
+            <div>
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Available Course Assessments</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {courses.map((course, i) => (
+                  <motion.div
+                    key={course._id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    whileHover={{ y: -8 }}
+                    className="group relative bg-white rounded-[2.5rem] overflow-hidden border border-slate-200 shadow-xl shadow-slate-200/55 flex flex-col transition-all duration-500"
+                  >
+                    {/* Premium Top Accent */}
+                    <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-slate-900 via-primary to-slate-900 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-20"></div>
                     
-                    {/* Security Badge */}
-                    <div className="absolute top-5 left-5 flex gap-2 z-10">
-                      <span className="px-4 py-1.5 bg-white/90 backdrop-blur-md border border-red-100 text-red-600 text-[9px] font-black uppercase tracking-[0.2em] rounded-full flex items-center gap-2 shadow-sm">
-                        <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> Proctored Exam
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="px-8 pb-8 flex-1 flex flex-col relative z-10 -mt-6">
-                    <div className="w-14 h-14 bg-white border border-slate-100 rounded-2xl mb-5 flex items-center justify-center text-slate-900 shadow-lg group-hover:-translate-y-2 transition-transform duration-500 relative z-20">
-                       <ShieldAlert size={24} strokeWidth={1.5} />
-                    </div>
-                    
-                    <h3 className="text-xl font-black text-slate-900 mb-2 uppercase tracking-tight leading-tight">{course.title}</h3>
-                    <p className="text-slate-500 text-xs font-medium leading-relaxed mb-8 line-clamp-2">{course.description}</p>
-
-                    <div className="flex items-center justify-between gap-2 mb-8 p-1 bg-slate-50 rounded-2xl border border-slate-100">
-                      <div className="flex-1 text-center py-2">
-                        <p className="text-slate-900 font-black text-lg">{course.quiz.length}</p>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Questions</p>
-                      </div>
-                      <div className="w-px h-8 bg-slate-200"></div>
-                      <div className="flex-1 text-center py-2">
-                        <p className="text-slate-900 font-black text-lg">30m</p>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Duration</p>
-                      </div>
-                      <div className="w-px h-8 bg-slate-200"></div>
-                      <div className="flex-1 text-center py-2">
-                        <p className="text-primary font-black text-lg">Strict</p>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Integrity</p>
+                    {/* Cover Banner */}
+                    <div className="h-44 relative overflow-hidden bg-slate-100">
+                      <img src={course.coverImage || course.thumbnail} className="w-full h-full object-cover mix-blend-multiply opacity-80 transition-transform duration-700 group-hover:scale-105" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-white via-white/20 to-transparent"></div>
+                      
+                      {/* Security Badge */}
+                      <div className="absolute top-5 left-5 flex gap-2 z-10">
+                        <span className="px-4 py-1.5 bg-white/90 backdrop-blur-md border border-red-100 text-red-600 text-[9px] font-black uppercase tracking-[0.2em] rounded-full flex items-center gap-2 shadow-sm">
+                          <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> Proctored Exam
+                        </span>
                       </div>
                     </div>
 
-                    <div className="mt-auto">
-                      <button
-                        onClick={() => setActiveQuiz(course)}
-                        className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] hover:bg-primary hover:text-white transition-all duration-300 shadow-lg shadow-slate-900/20 group/btn"
-                      >
-                        Enter Exam Portal
-                      </button>
+                    <div className="px-8 pb-8 flex-1 flex flex-col relative z-10 -mt-6">
+                      <div className="w-14 h-14 bg-white border border-slate-100 rounded-2xl mb-5 flex items-center justify-center text-slate-900 shadow-lg group-hover:-translate-y-2 transition-transform duration-500 relative z-20">
+                         <ShieldAlert size={24} strokeWidth={1.5} />
+                      </div>
+                      
+                      <h3 className="text-xl font-black text-slate-900 mb-2 uppercase tracking-tight leading-tight">{course.title}</h3>
+                      <p className="text-slate-500 text-xs font-medium leading-relaxed mb-8 line-clamp-2">{course.description}</p>
+
+                      <div className="flex items-center justify-between gap-2 mb-8 p-1 bg-slate-50 rounded-2xl border border-slate-100">
+                        <div className="flex-1 text-center py-2">
+                          <p className="text-slate-900 font-black text-lg">{course.quiz.length}</p>
+                          <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Questions</p>
+                        </div>
+                        <div className="w-px h-8 bg-slate-200"></div>
+                        <div className="flex-1 text-center py-2">
+                          <p className="text-slate-900 font-black text-lg">30m</p>
+                          <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Duration</p>
+                        </div>
+                        <div className="w-px h-8 bg-slate-200"></div>
+                        <div className="flex-1 text-center py-2">
+                          <p className="text-primary font-black text-lg">Strict</p>
+                          <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Integrity</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-auto">
+                        <button
+                          onClick={() => setActiveQuiz(course)}
+                          className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] hover:bg-primary hover:text-white transition-all duration-300 shadow-lg shadow-slate-900/20 group/btn"
+                        >
+                          Enter Exam Portal
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                ))}
+              </div>
             </div>
+
+            {employerQuizzes.length > 0 && (
+              <div>
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Direct Employer Hiring Exams</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {employerQuizzes.map((quiz, i) => (
+                    <motion.div
+                      key={quiz._id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.1 }}
+                      whileHover={{ y: -8 }}
+                      className="group relative bg-white rounded-[2.5rem] overflow-hidden border border-slate-200 shadow-xl shadow-slate-200/55 flex flex-col transition-all duration-500"
+                    >
+                      {/* Premium Top Accent */}
+                      <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-500 via-primary to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-20"></div>
+                      
+                      {/* Cover Banner */}
+                      <div className="h-44 relative overflow-hidden bg-slate-100">
+                        {/* Beautiful generic green graphic background */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-600 via-teal-800 to-slate-950 opacity-90 transition-transform duration-700 group-hover:scale-105 animate-pulse duration-[10000ms]"></div>
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white/10 via-transparent to-transparent opacity-50"></div>
+                        
+                        {/* Security Badge */}
+                        <div className="absolute top-5 left-5 flex gap-2 z-10">
+                          <span className="px-4 py-1.5 bg-white/90 backdrop-blur-md border border-emerald-100 text-emerald-600 text-[9px] font-black uppercase tracking-[0.2em] rounded-full flex items-center gap-2 shadow-sm">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Employer Custom
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="px-8 pb-8 flex-1 flex flex-col relative z-10 -mt-6">
+                        <div className="w-14 h-14 bg-white border border-slate-100 rounded-2xl mb-5 flex items-center justify-center text-slate-900 shadow-lg group-hover:-translate-y-2 transition-transform duration-500 relative z-20">
+                           <Award size={24} className="text-emerald-500" strokeWidth={1.5} />
+                        </div>
+                        
+                        <h3 className="text-xl font-black text-slate-900 mb-2 uppercase tracking-tight leading-tight">{quiz.title}</h3>
+                        <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-2">
+                          Created by: {quiz.createdBy?.companyName || quiz.createdBy?.name || 'Recruitment Team'}
+                        </p>
+                        <p className="text-slate-500 text-xs font-medium leading-relaxed mb-8 line-clamp-2">{quiz.description || 'Custom skills verification challenge for hiring pipelines.'}</p>
+
+                        <div className="flex items-center justify-between gap-2 mb-8 p-1 bg-slate-50 rounded-2xl border border-slate-100">
+                          <div className="flex-1 text-center py-2">
+                            <p className="text-slate-900 font-black text-lg">{quiz.questions?.length || 0}</p>
+                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Questions</p>
+                          </div>
+                          <div className="w-px h-8 bg-slate-200"></div>
+                          <div className="flex-1 text-center py-2">
+                            <p className="text-slate-900 font-black text-lg">{quiz.duration || 15}m</p>
+                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Duration</p>
+                          </div>
+                          <div className="w-px h-8 bg-slate-200"></div>
+                          <div className="flex-1 text-center py-2">
+                            <p className="text-emerald-500 font-black text-lg">{quiz.category || 'General'}</p>
+                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Category</p>
+                          </div>
+                        </div>
+
+                        <div className="mt-auto">
+                          <button
+                            onClick={() => setActiveQuiz(quiz)}
+                            className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] transition-all duration-300 shadow-lg shadow-emerald-600/20"
+                          >
+                            Enter Exam Portal
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right Column: Attempt history */}
