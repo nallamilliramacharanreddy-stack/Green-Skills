@@ -79,6 +79,7 @@ const AdminDashboard = () => {
   const [leaderboard, setLeaderboard] = useState([]);
   const [admins, setAdmins] = useState([]);
   const [nameChangeRequests, setNameChangeRequests] = useState([]);
+  const [certRegenRequests, setCertRegenRequests] = useState([]);
   const [stats, setStats] = useState({
     totalUsers: 0, activeUsers: 0, suspendedUsers: 0,
     totalHirers: 0, totalCourses: 0, totalQuizzes: 0, completedQuizzes: 0
@@ -96,13 +97,14 @@ const AdminDashboard = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [u, h, c, l, a, ncr] = await Promise.all([
+      const [u, h, c, l, a, ncr, crr] = await Promise.all([
         axios.get(`${API_URL}/auth/users`),
         axios.get(`${API_URL}/auth/hirers`),
         axios.get(`${API_URL}/courses`),
         axios.get(`${API_URL}/streak/leaderboard`),
         axios.get(`${API_URL}/auth/admins`),
-        axios.get(`${API_URL}/auth/name-change/requests`)
+        axios.get(`${API_URL}/auth/name-change/requests`),
+        axios.get(`${API_URL}/certificates/regen-requests`)
       ]);
 
       setUsers(u.data || []);
@@ -111,6 +113,7 @@ const AdminDashboard = () => {
       setLeaderboard(l.data || []);
       setAdmins(a.data || []);
       setNameChangeRequests(ncr.data || []);
+      setCertRegenRequests(crr.data || []);
 
       setStats({
         totalUsers: u.data?.length || 0,
@@ -208,6 +211,19 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleDecideCertRegen = async (id, action) => {
+    try {
+      await axios.post(`${API_URL}/certificates/regen-requests/${id}/decide`, {
+        action,
+        decidedBy: currentUser?._id
+      });
+      toast.success(`Regeneration request ${action === 'approve' ? 'approved' : 'rejected'} successfully.`);
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Operation failed');
+    }
+  };
+
   const generateCourseContent = async (id) => {
     try {
       toast.loading('AI Nexus generating 20 Lessons, 5 Tasks & 50 MCQ...', { id: 'courseContent' });
@@ -248,7 +264,7 @@ const AdminDashboard = () => {
               {activeTab === 'courses' && <ManageCourses courses={courses} onGenQuiz={generateCourseContent} onDeleteCourse={handleDeleteCourse} refresh={fetchData} users={users} />}
               {activeTab === 'leaderboard' && <AdminLeaderboard data={leaderboard} />}
               {activeTab === 'users' && <UserDataManagement data={users} onToggleStatus={toggleUserStatus} onDelete={deleteUser} onHandleRequest={handleSuspensionAction} />}
-              {activeTab === 'name-changes' && <NameChangeManagement data={nameChangeRequests} onDecide={handleDecideNameChange} />}
+              {activeTab === 'name-changes' && <NameChangeManagement data={nameChangeRequests} onDecide={handleDecideNameChange} certRegenData={certRegenRequests} onRegenDecide={handleDecideCertRegen} />}
               {activeTab === 'hirers' && <HirerDataManagement data={hirers} onToggleStatus={toggleUserStatus} onDelete={deleteUser} onApprove={handleApproveHirer} onReject={handleRejectHirer} />}
               {activeTab === 'quizzes' && <QuizManagement courses={courses} onGenQuiz={generateCourseContent} refresh={fetchData} />}
               {activeTab === 'proctoring' && <AdminProctoring />}
@@ -2423,108 +2439,216 @@ const QuestionBankIntegrityReport = () => {
   );
 };
 
-const NameChangeManagement = ({ data, onDecide }) => {
+const NameChangeManagement = ({ data, onDecide, certRegenData, onRegenDecide }) => {
   const safeData = Array.isArray(data) ? data : [];
+  const safeRegenData = Array.isArray(certRegenData) ? certRegenData : [];
 
   const [currentPage, setCurrentPage] = useState(1);
+  const [currentRegenPage, setCurrentRegenPage] = useState(1);
   const itemsPerPage = 10;
+
   const totalPages = Math.ceil(safeData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentData = safeData.slice(startIndex, startIndex + itemsPerPage);
 
-  return (
-    <div className="space-y-10">
-      <div className="flex justify-between items-end">
-        <div className="space-y-1">
-          <h2 className="text-5xl font-black text-slate-900 uppercase tracking-tighter italic">Name Change Requests</h2>
-          <p className="text-slate-500 font-medium">Verify and approve student/learner name updates for certificate integrity.</p>
-        </div>
-      </div>
+  const totalRegenPages = Math.ceil(safeRegenData.length / itemsPerPage);
+  const startRegenIndex = (currentRegenPage - 1) * itemsPerPage;
+  const currentRegenData = safeRegenData.slice(startRegenIndex, startRegenIndex + itemsPerPage);
 
-      <div className="bg-white rounded-[48px] border border-slate-100 shadow-2xl overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-slate-50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
-            <tr>
-              <th className="px-10 py-8">User Details</th>
-              <th className="px-10 py-8">Current Name</th>
-              <th className="px-10 py-8">Requested New Name</th>
-              <th className="px-10 py-8">Request Date</th>
-              <th className="px-10 py-8">Status</th>
-              <th className="px-10 py-8 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-50">
-            {currentData.length > 0 ? (
-              currentData.map(req => (
-                <tr key={req._id} className="hover:bg-slate-50/50 transition-all group">
-                  <td className="px-10 py-6">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white font-black uppercase text-xs">
-                        {req.user?.name?.[0] || 'U'}
+  return (
+    <div className="space-y-16">
+      {/* SECTION 1: PROFILE NAME CHANGE REQUESTS */}
+      <div className="space-y-10">
+        <div className="flex justify-between items-end">
+          <div className="space-y-1">
+            <h2 className="text-5xl font-black text-slate-900 uppercase tracking-tighter italic">Profile Name Changes</h2>
+            <p className="text-slate-500 font-medium">Verify and approve student/learner name updates for account profile integrity.</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-[48px] border border-slate-100 shadow-2xl overflow-hidden">
+          <table className="w-full text-left">
+            <thead className="bg-slate-50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
+              <tr>
+                <th className="px-10 py-8">User Details</th>
+                <th className="px-10 py-8">Current Name</th>
+                <th className="px-10 py-8">Requested New Name</th>
+                <th className="px-10 py-8">Request Date</th>
+                <th className="px-10 py-8">Status</th>
+                <th className="px-10 py-8 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {currentData.length > 0 ? (
+                currentData.map(req => (
+                  <tr key={req._id} className="hover:bg-slate-50/50 transition-all group">
+                    <td className="px-10 py-6">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white font-black uppercase text-xs">
+                          {req.user?.name?.[0] || 'U'}
+                        </div>
+                        <div>
+                          <p className="font-black text-slate-900 uppercase text-sm">{req.user?.name || 'Unknown'}</p>
+                          <p className="text-[10px] text-slate-400 font-bold">{req.user?.email || 'N/A'}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-black text-slate-900 uppercase text-sm">{req.user?.name || 'Unknown'}</p>
-                        <p className="text-[10px] text-slate-400 font-bold">{req.user?.email || 'N/A'}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-10 py-6">
-                    <p className="text-sm font-semibold text-slate-600 uppercase">{req.oldName}</p>
-                  </td>
-                  <td className="px-10 py-6">
-                    <p className="text-sm font-black text-slate-900 uppercase">{req.newName}</p>
-                  </td>
-                  <td className="px-10 py-6">
-                    <p className="text-xs text-slate-500 font-medium">
-                      {new Date(req.requestedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                  </td>
-                  <td className="px-10 py-6">
-                    <span className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                      req.status === 'pending' ? 'bg-amber-100 text-amber-600' :
-                      req.status === 'approved' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'
-                    }`}>
-                      {req.status}
-                    </span>
-                  </td>
-                  <td className="px-10 py-6 text-right">
-                    {req.status === 'pending' ? (
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={() => onDecide(req._id, 'approve')}
-                          className="p-3 bg-white border border-emerald-100 text-emerald-600 rounded-xl hover:bg-emerald-600 hover:text-white transition-all shadow-md group/btn"
-                          title="Approve Name Change"
-                        >
-                          <Check size={18} className="group-hover/btn:scale-110 transition-transform" />
-                        </button>
-                        <button
-                          onClick={() => onDecide(req._id, 'reject')}
-                          className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all shadow-md group/btn"
-                          title="Reject Name Change"
-                        >
-                          <X size={18} className="group-hover/btn:scale-110 transition-transform" />
-                        </button>
-                      </div>
-                    ) : (
-                      <span className="text-xs text-slate-400 italic">
-                        Processed
+                    </td>
+                    <td className="px-10 py-6">
+                      <p className="text-sm font-semibold text-slate-600 uppercase">{req.oldName}</p>
+                    </td>
+                    <td className="px-10 py-6">
+                      <p className="text-sm font-black text-slate-900 uppercase">{req.newName}</p>
+                    </td>
+                    <td className="px-10 py-6">
+                      <p className="text-xs text-slate-500 font-medium">
+                        {new Date(req.requestedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </td>
+                    <td className="px-10 py-6">
+                      <span className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                        req.status === 'pending' ? 'bg-amber-100 text-amber-600' :
+                        req.status === 'approved' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'
+                      }`}>
+                        {req.status}
                       </span>
-                    )}
+                    </td>
+                    <td className="px-10 py-6 text-right">
+                      {req.status === 'pending' ? (
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => onDecide(req._id, 'approve')}
+                            className="p-3 bg-white border border-emerald-100 text-emerald-600 rounded-xl hover:bg-emerald-600 hover:text-white transition-all shadow-md group/btn"
+                            title="Approve Profile Name Change"
+                          >
+                            <Check size={18} className="group-hover/btn:scale-110 transition-transform" />
+                          </button>
+                          <button
+                            onClick={() => onDecide(req._id, 'reject')}
+                            className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all shadow-md group/btn"
+                            title="Reject Profile Name Change"
+                          >
+                            <X size={18} className="group-hover/btn:scale-110 transition-transform" />
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-slate-400 italic">
+                          Processed
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="6" className="px-10 py-12 text-center text-slate-400 italic text-sm">
+                    No profile name change requests found.
                   </td>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="6" className="px-10 py-12 text-center text-slate-400 italic text-sm">
-                  No name change requests found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              )}
+            </tbody>
+          </table>
+        </div>
+        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
       </div>
 
-      <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+      {/* SECTION 2: CERTIFICATE REGEN NAME CHANGE REQUESTS */}
+      <div className="space-y-10">
+        <div className="flex justify-between items-end">
+          <div className="space-y-1">
+            <h2 className="text-5xl font-black text-slate-900 uppercase tracking-tighter italic">Certificate Regeneration Requests</h2>
+            <p className="text-slate-500 font-medium">Verify and approve student/learner name updates on specific generated certificates.</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-[48px] border border-slate-100 shadow-2xl overflow-hidden">
+          <table className="w-full text-left">
+            <thead className="bg-slate-50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
+              <tr>
+                <th className="px-10 py-8">User Details</th>
+                <th className="px-10 py-8">Cert ID / Course</th>
+                <th className="px-10 py-8">Current Cert Name</th>
+                <th className="px-10 py-8">Requested New Name</th>
+                <th className="px-10 py-8">Request Date</th>
+                <th className="px-10 py-8">Status</th>
+                <th className="px-10 py-8 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {currentRegenData.length > 0 ? (
+                currentRegenData.map(req => (
+                  <tr key={req._id} className="hover:bg-slate-50/50 transition-all group">
+                    <td className="px-10 py-6">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white font-black uppercase text-xs">
+                          {req.user?.name?.[0] || 'U'}
+                        </div>
+                        <div>
+                          <p className="font-black text-slate-900 uppercase text-sm">{req.user?.name || 'Unknown'}</p>
+                          <p className="text-[10px] text-slate-400 font-bold">{req.user?.email || 'N/A'}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-10 py-6">
+                      <p className="font-bold text-indigo-600 text-xs uppercase tracking-wider">{req.certificateId}</p>
+                      <p className="text-sm font-semibold text-slate-700 uppercase mt-0.5">{req.courseName}</p>
+                    </td>
+                    <td className="px-10 py-6">
+                      <p className="text-sm font-semibold text-slate-600 uppercase">{req.oldName}</p>
+                    </td>
+                    <td className="px-10 py-6">
+                      <p className="text-sm font-black text-slate-900 uppercase">{req.newName}</p>
+                    </td>
+                    <td className="px-10 py-6">
+                      <p className="text-xs text-slate-500 font-medium">
+                        {new Date(req.requestedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </td>
+                    <td className="px-10 py-6">
+                      <span className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                        req.status === 'pending' ? 'bg-amber-100 text-amber-600' :
+                        req.status === 'approved' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'
+                      }`}>
+                        {req.status}
+                      </span>
+                    </td>
+                    <td className="px-10 py-6 text-right">
+                      {req.status === 'pending' ? (
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => onRegenDecide(req._id, 'approve')}
+                            className="p-3 bg-white border border-emerald-100 text-emerald-600 rounded-xl hover:bg-emerald-600 hover:text-white transition-all shadow-md group/btn"
+                            title="Approve Regeneration Request"
+                          >
+                            <Check size={18} className="group-hover/btn:scale-110 transition-transform" />
+                          </button>
+                          <button
+                            onClick={() => onRegenDecide(req._id, 'reject')}
+                            className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all shadow-md group/btn"
+                            title="Reject Regeneration Request"
+                          >
+                            <X size={18} className="group-hover/btn:scale-110 transition-transform" />
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-slate-400 italic">
+                          Processed
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="7" className="px-10 py-12 text-center text-slate-400 italic text-sm">
+                    No certificate regeneration requests found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        <Pagination currentPage={currentRegenPage} totalPages={totalRegenPages} onPageChange={setCurrentRegenPage} />
+      </div>
     </div>
   );
 };

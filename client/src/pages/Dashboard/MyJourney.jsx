@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   CheckCircle, ArrowRight, 
   Award, BookOpen, Clock, Star, PlayCircle, Flame, Calendar, ChevronLeft, ChevronRight, Download
@@ -25,6 +25,22 @@ const MyJourney = () => {
   const [certificates, setCertificates] = useState([]);
   const [isLoadingCerts, setIsLoadingCerts] = useState(false);
 
+  const [regenRequests, setRegenRequests] = useState([]);
+  const [showRegenModal, setShowRegenModal] = useState(false);
+  const [selectedRegenCert, setSelectedRegenCert] = useState(null);
+  const [newNameRegenInput, setNewNameRegenInput] = useState('');
+
+  const fetchRegenRequests = async () => {
+    const uId = user?._id || user?.id;
+    if (!uId) return;
+    try {
+      const res = await axios.get(`${API_URL}/certificates/regen-requests?userId=${uId}`);
+      setRegenRequests(res.data || []);
+    } catch (err) {
+      console.error("Error loading regeneration requests:", err);
+    }
+  };
+
   const fetchCertificates = async () => {
     const uId = user?._id || user?.id;
     if (!uId) return;
@@ -46,6 +62,7 @@ const MyJourney = () => {
 
   useEffect(() => {
     fetchCertificates();
+    fetchRegenRequests();
   }, [user]);
 
   // Dynamic verification check: Log warnings instead of throwing errors to avoid crashing the application.
@@ -87,7 +104,7 @@ const MyJourney = () => {
   const isAlreadyGenerated = (course) => {
     if (!course || !certificates) return false;
     const courseTitle = course.title || '';
-    return certificates.some(cert => cert && cert.courseName && cert.courseName.trim().toUpperCase() === courseTitle.trim().toUpperCase());
+    return certificates.some(cert => cert && cert.courseName && cert.courseName.trim().toUpperCase() === courseTitle.trim().toUpperCase() && (cert.pdfData || (cert.pdfUrl && cert.pdfUrl.startsWith('/uploads'))));
   };
 
   const handlePrevMonth = () => {
@@ -211,7 +228,7 @@ const MyJourney = () => {
         <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.3em] mt-2">Synchronizing your path to green-tech mastery</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
         {/* Left Column */}
         <div className="space-y-12">
           {/* Active Nodes */}
@@ -365,6 +382,106 @@ const MyJourney = () => {
           </div>
         </section>
         </div>
+
+        {/* Right Column: Certificate Regeneration */}
+        <div className="space-y-12">
+          <section className="space-y-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-indigo-500/10 rounded-xl flex items-center justify-center text-indigo-600">
+                <Award size={20} />
+              </div>
+              <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight italic">Regeneration</h3>
+            </div>
+
+            <div className="space-y-6">
+              {validCertificates.length > 0 ? (
+                validCertificates.map((cert, idx) => {
+                  const reqForCert = regenRequests.find(r => r.certificateId === cert.certificateId);
+                  
+                  return (
+                    <div key={idx} className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-xl relative overflow-hidden">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest italic">ID: {cert.certificateId}</span>
+                          <h4 className="text-lg font-black text-slate-900 uppercase tracking-tighter italic leading-none mt-1">{cert.courseName}</h4>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase mt-2">NAME: <span className="text-slate-800">{cert.candidateName}</span></p>
+                        </div>
+                      </div>
+
+                      {reqForCert ? (
+                        <div className="mt-4 p-3 rounded-xl border text-[11px] font-semibold flex flex-col gap-1.5 bg-slate-50 border-slate-100">
+                          <div className="flex justify-between">
+                            <span className="text-slate-500 uppercase tracking-wider text-[9px] font-bold">Request Status:</span>
+                            <span className={`uppercase font-black tracking-widest text-[9px] ${
+                              reqForCert.status === 'pending' ? 'text-amber-500' :
+                              reqForCert.status === 'approved' ? 'text-emerald-500' : 'text-red-500'
+                            }`}>
+                              {reqForCert.status}
+                            </span>
+                          </div>
+                          {reqForCert.status === 'pending' && (
+                            <p className="text-slate-400">Waiting for admin to review name change to <strong className="uppercase font-bold text-slate-600">"{reqForCert.newName}"</strong></p>
+                          )}
+                          {reqForCert.status === 'approved' && (
+                            <div>
+                              <p className="text-emerald-600 mb-2">Approved! Name updated to <strong className="uppercase font-bold">"{reqForCert.newName}"</strong>.</p>
+                              <button
+                                onClick={() => {
+                                  const courseObj = allEnrolled.find(c => c.title.trim().toUpperCase() === cert.courseName.trim().toUpperCase());
+                                  if (courseObj) {
+                                    setSelectedCertCourse(courseObj);
+                                    setIsCertModalOpen(true);
+                                  } else {
+                                    setSelectedCertCourse({ title: cert.courseName });
+                                    setIsCertModalOpen(true);
+                                  }
+                                }}
+                                className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-black uppercase text-[9px] tracking-widest transition-colors shadow-md"
+                              >
+                                Generate New PDF
+                              </button>
+                            </div>
+                          )}
+                          {reqForCert.status === 'rejected' && (
+                            <div>
+                              <p className="text-red-500 mb-2">Rejected. Admin declined change to "{reqForCert.newName}".</p>
+                              <button
+                                onClick={() => {
+                                  setSelectedRegenCert(cert);
+                                  setNewNameRegenInput('');
+                                  setShowRegenModal(true);
+                                }}
+                                className="w-full py-2 bg-slate-900 hover:bg-indigo-600 text-white rounded-lg font-black uppercase text-[9px] tracking-widest transition-colors"
+                              >
+                                Re-Submit Request
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setSelectedRegenCert(cert);
+                            setNewNameRegenInput('');
+                            setShowRegenModal(true);
+                          }}
+                          className="mt-4 w-full py-3 bg-slate-100 text-slate-800 hover:bg-slate-200 border border-slate-200 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all"
+                        >
+                          Request Name Change
+                        </button>
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="p-12 text-center bg-slate-50 rounded-[40px] border border-dashed border-slate-200">
+                  <Award size={40} className="mx-auto text-slate-300 mb-4" />
+                  <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">No generated certificates found to regenerate</p>
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-12">
@@ -494,8 +611,90 @@ const MyJourney = () => {
         isOpen={isCertModalOpen} 
         onClose={() => setIsCertModalOpen(false)} 
         user={user}
-        onGenerated={fetchCertificates}
+        onGenerated={() => {
+          fetchCertificates();
+          fetchRegenRequests();
+        }}
+        initialStudentName={
+          certificates.find(c => c.courseName.trim().toUpperCase() === (selectedCertCourse?.title || selectedCertCourse?.courseName || '').trim().toUpperCase())?.candidateName
+        }
       />
+
+      {/* Regeneration Name Input Modal */}
+      <AnimatePresence>
+        {showRegenModal && selectedRegenCert && (
+          <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white w-full max-w-md rounded-[32px] p-8 border border-slate-100 shadow-2xl space-y-6"
+            >
+              <div className="space-y-1">
+                <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter italic">Regenerate Certificate</h3>
+                <p className="text-xs text-slate-500 font-bold">Request admin permission to change the name on your certificate.</p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Course</p>
+                  <p className="text-sm font-bold text-slate-700 uppercase">{selectedRegenCert.courseName}</p>
+                </div>
+
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Current Name on Cert</p>
+                  <p className="text-sm font-bold text-slate-700 uppercase">{selectedRegenCert.candidateName}</p>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Requested New Name</label>
+                  <input
+                    type="text"
+                    value={newNameRegenInput}
+                    onChange={(e) => setNewNameRegenInput(e.target.value)}
+                    placeholder="ENTER NEW NAME FOR CERTIFICATE"
+                    className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:ring-4 focus:ring-primary/10 transition-all font-semibold text-sm uppercase"
+                    required
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!newNameRegenInput.trim()) return alert('Name cannot be empty');
+                      try {
+                        await axios.post(`${API_URL}/certificates/regen-requests`, {
+                          userId: user._id || user.id,
+                          certificateId: selectedRegenCert.certificateId,
+                          courseName: selectedRegenCert.courseName,
+                          oldName: selectedRegenCert.candidateName,
+                          newName: newNameRegenInput.trim()
+                        });
+                        alert('Regeneration request submitted successfully');
+                        setShowRegenModal(false);
+                        fetchRegenRequests();
+                      } catch (err) {
+                        alert(err.response?.data?.message || 'Failed to submit request');
+                      }
+                    }}
+                    className="flex-1 py-4 bg-slate-900 text-white rounded-xl font-black uppercase tracking-tighter text-xs hover:opacity-90 transition-all shadow-lg flex items-center justify-center gap-2"
+                  >
+                    Submit Request
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowRegenModal(false)}
+                    className="px-6 py-4 bg-slate-50 text-slate-400 rounded-xl font-black uppercase tracking-tighter text-xs hover:bg-slate-100 transition-all border border-slate-100"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </DashboardLayout>
   );
 };

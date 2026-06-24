@@ -92,7 +92,7 @@ const Certificates = () => {
   const isAlreadyGenerated = (course) => {
     if (!course || !validCertificates) return false;
     const courseTitle = course.title || '';
-    return validCertificates.some(cert => cert && cert.courseName && cert.courseName.trim().toUpperCase() === courseTitle.trim().toUpperCase());
+    return validCertificates.some(cert => cert && cert.courseName && cert.courseName.trim().toUpperCase() === courseTitle.trim().toUpperCase() && (cert.pdfData || (cert.pdfUrl && cert.pdfUrl.startsWith('/uploads'))));
   };
 
   const getBadgeStatus = (index) => {

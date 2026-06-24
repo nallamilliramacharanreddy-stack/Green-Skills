@@ -165,3 +165,92 @@ exports.getCertificateThumbnail = async (req, res) => {
     return res.status(500).json({ message: "Failed to serve thumbnail" });
   }
 };
+
+const CertRegenRequest = require('../models/CertRegenRequest');
+
+exports.submitRegenRequest = async (req, res) => {
+  try {
+    const { userId, certificateId, courseName, oldName, newName } = req.body;
+    if (!userId || !certificateId || !courseName || !oldName || !newName) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    // Check if there is already a pending request for this certificate
+    const existing = await CertRegenRequest.findOne({ certificateId, status: 'pending' });
+    if (existing) {
+      return res.status(400).json({ message: "A pending regeneration request already exists for this certificate." });
+    }
+
+    const request = new CertRegenRequest({
+      user: userId,
+      certificateId,
+      courseName,
+      oldName,
+      newName
+    });
+
+    await request.save();
+    return res.status(201).json({ message: "Regeneration request submitted successfully", request });
+  } catch (error) {
+    console.error("Submit regen request error:", error);
+    return res.status(500).json({ message: "Failed to submit request" });
+  }
+};
+
+exports.getRegenRequests = async (req, res) => {
+  try {
+    const { userId } = req.query;
+    const filter = userId ? { user: userId } : {};
+    const requests = await CertRegenRequest.find(filter).populate('user', 'name email role').sort({ requestedAt: -1 });
+    return res.status(200).json(requests);
+  } catch (error) {
+    console.error("Get regen requests error:", error);
+    return res.status(500).json({ message: "Failed to load requests" });
+  }
+};
+
+exports.decideRegenRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { action, decidedBy } = req.body; // action: 'approve' or 'reject'
+
+    if (!action || !['approve', 'reject'].includes(action)) {
+      return res.status(400).json({ message: "Invalid action. Must be approve or reject." });
+    }
+
+    const request = await CertRegenRequest.findById(id);
+    if (!request) {
+      return res.status(404).json({ message: "Request not found" });
+    }
+
+    if (request.status !== 'pending') {
+      return res.status(400).json({ message: "Request already processed" });
+    }
+
+    if (action === 'approve') {
+      request.status = 'approved';
+      
+      // Update the candidateName in the actual Certificate document
+      await Certificate.findOneAndUpdate(
+        { certificateId: request.certificateId },
+        { 
+          candidateName: request.newName,
+          // Clear PDF data so the user has to regenerate it with the new approved name
+          pdfData: "", 
+          thumbnailData: ""
+        }
+      );
+    } else {
+      request.status = 'rejected';
+    }
+
+    request.decidedAt = new Date();
+    request.decidedBy = decidedBy;
+    await request.save();
+
+    return res.status(200).json({ message: `Request ${action}ed successfully`, request });
+  } catch (error) {
+    console.error("Decide regen request error:", error);
+    return res.status(500).json({ message: "Failed to process request" });
+  }
+};

@@ -6,8 +6,8 @@ import jsPDF from 'jspdf';
 import axios from 'axios';
 import { API_URL, API_BASE_URL } from '../../utils/api';
 
-const CertificateGenerator = ({ course, isOpen, onClose, user, onGenerated }) => {
-  const [studentName, setStudentName] = useState(user?.name || '');
+const CertificateGenerator = ({ course, isOpen, onClose, user, onGenerated, initialStudentName }) => {
+  const [studentName, setStudentName] = useState(initialStudentName || user?.name || '');
   const [courseName, setCourseName] = useState('');
   const [completionDate, setCompletionDate] = useState(new Date().toISOString().split('T')[0]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -26,10 +26,12 @@ const CertificateGenerator = ({ course, isOpen, onClose, user, onGenerated }) =>
   }, [course]);
 
   useEffect(() => {
-    if (user?.name) {
+    if (initialStudentName) {
+      setStudentName(initialStudentName);
+    } else if (user?.name) {
       setStudentName(user.name);
     }
-  }, [user]);
+  }, [user, initialStudentName]);
 
   useEffect(() => {
     if (isGenerated && containerRef.current) {
