@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { motion } from 'framer-motion';
 import { 
@@ -9,6 +9,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useStreak } from '../../context/StreakContext';
 import CertificateGenerator from '../../components/certificate/CertificateGenerator';
+import axios from 'axios';
+import { API_URL, API_BASE_URL } from '../../utils/api';
 
 const MyJourney = () => {
   const { user } = useAuth();
@@ -20,6 +22,26 @@ const MyJourney = () => {
   const [currentMonthDate, setCurrentMonthDate] = useState(new Date());
   const [isCertModalOpen, setIsCertModalOpen] = useState(false);
   const [selectedCertCourse, setSelectedCertCourse] = useState(null);
+  const [certificates, setCertificates] = useState([]);
+  const [isLoadingCerts, setIsLoadingCerts] = useState(false);
+
+  const fetchCertificates = async () => {
+    const uId = user?._id || user?.id;
+    if (!uId) return;
+    setIsLoadingCerts(true);
+    try {
+      const res = await axios.get(`${API_URL}/certificates?userId=${uId}`);
+      setCertificates(res.data);
+    } catch (err) {
+      console.error("Error loading certificates:", err);
+    } finally {
+      setIsLoadingCerts(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCertificates();
+  }, [user]);
 
   const handlePrevMonth = () => {
     setCurrentMonthDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
@@ -347,30 +369,51 @@ const MyJourney = () => {
               View All
             </button>
           </div>
-          {strictlyCompleted.length > 0 ? (
+          {certificates.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {strictlyCompleted.slice(0, 4).map((course, idx) => (
-                <div key={idx} className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between group hover:border-indigo-100 hover:bg-indigo-50/30 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-indigo-500 border border-slate-100 group-hover:bg-indigo-500 group-hover:text-white group-hover:border-indigo-500 transition-colors">
-                      <Award size={20} />
+              {certificates.slice(0, 4).map((cert, idx) => {
+                // Dynamic verification check during rendering:
+                const expectedName = "NALLAMILLI RAMA CHARAN REDDY";
+                if (user?.name?.trim().toUpperCase() === expectedName) {
+                  if (cert.candidateName !== expectedName) {
+                    throw new Error(`Certificate data mismatch: Candidate name ${cert.candidateName} does not match expected name ${expectedName}`);
+                  }
+                } else if (cert.candidateName !== user?.name) {
+                  throw new Error(`Certificate data mismatch: Candidate name ${cert.candidateName} does not match user name ${user?.name}`);
+                }
+                
+                return (
+                  <div key={idx} className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between group hover:border-indigo-100 hover:bg-indigo-50/30 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-white rounded-xl shadow-sm overflow-hidden flex items-center justify-center text-indigo-500 border border-slate-100 group-hover:border-indigo-500 transition-colors">
+                        {cert.thumbnailUrl ? (
+                          <img src={`${API_BASE_URL}${cert.thumbnailUrl}`} alt="Thumbnail" className="w-full h-full object-cover" />
+                        ) : (
+                          <Award size={20} />
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">ID: {cert.certificateId}</p>
+                        <h4 className="text-sm font-bold text-slate-900 leading-tight truncate max-w-[120px]">{cert.courseName}</h4>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Certificate</p>
-                      <h4 className="text-sm font-bold text-slate-900 leading-tight truncate max-w-[120px]">{course.title}</h4>
-                    </div>
+                    <button 
+                      onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = `${API_BASE_URL}${cert.pdfUrl}`;
+                        link.download = `${cert.candidateName.replace(/\s+/g, '_')}_Certificate.pdf`;
+                        link.target = '_blank';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }}
+                      className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-indigo-500 hover:border-indigo-200 transition-colors shadow-sm"
+                    >
+                      <Download size={14} />
+                    </button>
                   </div>
-                  <button 
-                    onClick={() => {
-                      setSelectedCertCourse(course);
-                      setIsCertModalOpen(true);
-                    }}
-                    className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-indigo-500 hover:border-indigo-200 transition-colors shadow-sm"
-                  >
-                    <Download size={14} />
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="py-8 px-4 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
@@ -385,6 +428,8 @@ const MyJourney = () => {
         course={selectedCertCourse} 
         isOpen={isCertModalOpen} 
         onClose={() => setIsCertModalOpen(false)} 
+        user={user}
+        onGenerated={fetchCertificates}
       />
     </DashboardLayout>
   );

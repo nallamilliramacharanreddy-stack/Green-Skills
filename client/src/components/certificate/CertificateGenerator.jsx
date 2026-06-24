@@ -3,13 +3,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Download, X, Printer, CheckCircle } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import axios from 'axios';
+import { API_URL, API_BASE_URL } from '../../utils/api';
 
-const CertificateGenerator = ({ course, isOpen, onClose, user }) => {
+const CertificateGenerator = ({ course, isOpen, onClose, user, onGenerated }) => {
   const [studentName, setStudentName] = useState(user?.name || '');
   const [courseName, setCourseName] = useState('');
   const [completionDate, setCompletionDate] = useState(new Date().toISOString().split('T')[0]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGenerated, setIsGenerated] = useState(false);
+  const [certificateId, setCertificateId] = useState('');
+  const [savedCertificate, setSavedCertificate] = useState(null);
   const certificateRef = useRef(null);
 
   const containerRef = useRef(null);
@@ -22,39 +26,125 @@ const CertificateGenerator = ({ course, isOpen, onClose, user }) => {
   }, [course]);
 
   useEffect(() => {
+    if (user?.name) {
+      setStudentName(user.name);
+    }
+  }, [user]);
+
+  useEffect(() => {
     if (isGenerated && containerRef.current) {
       const updateScale = () => {
         const containerWidth = containerRef.current.offsetWidth;
         if (containerWidth < 1000) {
-          // Add a little padding reduction
           setScale((containerWidth - 40) / 1000);
         } else {
           setScale(1);
         }
       };
       
-      // Small delay to ensure DOM is fully rendered
       setTimeout(updateScale, 50);
       window.addEventListener('resize', updateScale);
       return () => window.removeEventListener('resize', updateScale);
     }
   }, [isGenerated]);
 
+  useEffect(() => {
+    const saveCertificate = async () => {
+      if (isGenerated && isGenerating) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        if (!certificateRef.current) {
+          setIsGenerating(false);
+          setIsGenerated(false);
+          alert("Error: Certificate element not found.");
+          return;
+        }
+        
+        const originalTransform = certificateRef.current.style.transform;
+        certificateRef.current.style.transform = 'none';
+        
+        try {
+          const canvas = await html2canvas(certificateRef.current, { 
+            scale: 2,
+            useCORS: true,
+            logging: false
+          });
+          
+          const thumbnailBase64 = canvas.toDataURL('image/jpeg', 0.8);
+          
+          const pdf = new jsPDF({
+            orientation: 'landscape',
+            unit: 'px',
+            format: [canvas.width, canvas.height]
+          });
+          pdf.addImage(thumbnailBase64, 'JPEG', 0, 0, canvas.width, canvas.height);
+          const pdfBase64 = pdf.output('datauristring');
+          
+          const generatedId = `CERT-2026-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+          setCertificateId(generatedId);
+          
+          const res = await axios.post(`${API_URL}/certificates`, {
+            certificateId: generatedId,
+            userId: user?._id || user?.id,
+            candidateName: studentName,
+            courseName: courseName,
+            issueDate: completionDate,
+            pdfBase64,
+            thumbnailBase64
+          });
+          
+          setSavedCertificate(res.data.certificate);
+          if (onGenerated) {
+            onGenerated();
+          }
+        } catch (error) {
+          console.error("Error saving certificate:", error);
+          alert(error.response?.data?.message || error.message || "Failed to generate and save certificate. Please try again.");
+          setIsGenerated(false);
+        } finally {
+          if (certificateRef.current) {
+            certificateRef.current.style.transform = originalTransform;
+          }
+          setIsGenerating(false);
+        }
+      }
+    };
+    
+    saveCertificate();
+  }, [isGenerated]);
+
   if (!isOpen) return null;
 
   const handleGenerate = async () => {
     if (!studentName || !courseName || !completionDate) return;
+    
+    const expectedName = "NALLAMILLI RAMA CHARAN REDDY";
+    const inputName = studentName.trim();
+    if (inputName.toUpperCase() === expectedName) {
+      if (inputName !== expectedName) {
+        alert(`Name must match exactly: ${expectedName}`);
+        return;
+      }
+    }
+
     setIsGenerating(true);
-    setTimeout(() => {
-      setIsGenerating(false);
-      setIsGenerated(true);
-    }, 500);
+    setIsGenerated(true);
   };
 
   const handleDownloadPDF = async () => {
+    if (savedCertificate?.pdfUrl) {
+      const link = document.createElement('a');
+      link.href = `${API_BASE_URL}${savedCertificate.pdfUrl}`;
+      link.download = `${studentName.replace(/\s+/g, '_')}_Certificate.pdf`;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return;
+    }
+
     if (!certificateRef.current) return;
     
-    // Temporarily remove transform for accurate capture
     const originalTransform = certificateRef.current.style.transform;
     certificateRef.current.style.transform = 'none';
     
@@ -77,10 +167,10 @@ const CertificateGenerator = ({ course, isOpen, onClose, user }) => {
     } catch (error) {
       console.error("Error generating PDF:", error);
     } finally {
-      // Restore transform
       certificateRef.current.style.transform = originalTransform;
     }
   };
+
 
   const handlePrint = async () => {
     if (!certificateRef.current) return;
@@ -253,7 +343,7 @@ const CertificateGenerator = ({ course, isOpen, onClose, user }) => {
 
                       {/* Unique ID Generator */}
                       <p className="absolute bottom-12 left-12 text-slate-500 text-[11px] font-mono opacity-70">
-                        ID: {Math.random().toString(36).substring(2, 10).toUpperCase()}-{Date.now().toString().slice(-6)}
+                        ID: {certificateId || 'GENERATING...'}
                       </p>
                     </div>
                   </div>

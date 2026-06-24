@@ -12,6 +12,11 @@ const Certificates = () => {
   const [selectedCertCourse, setSelectedCertCourse] = useState(null);
   const [isCertModalOpen, setIsCertModalOpen] = useState(false);
 
+  const generateCertificate = (course) => {
+    setSelectedCertCourse(course);
+    setIsCertModalOpen(true);
+  };
+
   const completedCourses = user?.progress?.completedCourses || [];
 
   const getCourseProgress = (course) => {
