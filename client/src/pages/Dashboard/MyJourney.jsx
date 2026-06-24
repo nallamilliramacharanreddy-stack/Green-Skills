@@ -375,11 +375,14 @@ const MyJourney = () => {
                 // Dynamic verification check during rendering:
                 if (user && user.name) {
                   const expectedName = "NALLAMILLI RAMA CHARAN REDDY";
-                  if (user.name.trim().toUpperCase() === expectedName) {
-                    if (cert.candidateName !== expectedName) {
+                  const certNameUpper = cert.candidateName.trim().toUpperCase();
+                  const userNameUpper = user.name.trim().toUpperCase();
+                  
+                  if (userNameUpper === expectedName) {
+                    if (certNameUpper !== expectedName) {
                       throw new Error(`Certificate data mismatch: Candidate name ${cert.candidateName} does not match expected name ${expectedName}`);
                     }
-                  } else if (cert.candidateName !== user.name) {
+                  } else if (certNameUpper !== userNameUpper) {
                     throw new Error(`Certificate data mismatch: Candidate name ${cert.candidateName} does not match user name ${user.name}`);
                   }
                 }
