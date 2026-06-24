@@ -36,7 +36,15 @@ const HiringExams = () => {
       // 1. Fetch all quizzes
       const quizzesRes = await axios.get(`${API_URL}/quizzes`);
       // Filter for standalone, published hiring exams (no courseId attached)
-      const hiringExams = quizzesRes.data.filter(q => !q.courseId && q.isPublished);
+      // And verify target candidate matching
+      const hiringExams = quizzesRes.data.filter(q => {
+        if (q.courseId || !q.isPublished) return false;
+        if (q.assignedUser) {
+          const assignedId = q.assignedUser._id || q.assignedUser;
+          return currentUserId && assignedId.toString() === currentUserId.toString();
+        }
+        return true;
+      });
       setExams(hiringExams);
 
       // 2. Fetch student's attempt results

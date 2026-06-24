@@ -330,7 +330,23 @@ const Quiz = () => {
       setCourses(availableQuizzes);
 
       // Filter quizzes that are published and not course-bound
-      const availableStandalone = quizzesRes.data.filter(q => q.isPublished && !q.courseId);
+      const savedUserStr = localStorage.getItem('user');
+      let savedUser = null;
+      try {
+        savedUser = savedUserStr && savedUserStr !== 'undefined' ? JSON.parse(savedUserStr) : null;
+      } catch (e) {
+        console.error("Failed to parse user in fetchCoursesWithQuizzes:", e);
+      }
+      const currentUserId = user?.id || user?._id || savedUser?.id || savedUser?._id;
+
+      const availableStandalone = quizzesRes.data.filter(q => {
+        if (!q.isPublished || q.courseId) return false;
+        if (q.assignedUser) {
+          const assignedId = q.assignedUser._id || q.assignedUser;
+          return currentUserId && assignedId.toString() === currentUserId.toString();
+        }
+        return true;
+      });
       setEmployerQuizzes(availableStandalone);
     } catch (error) {
       toast.error('Failed to load assessments');

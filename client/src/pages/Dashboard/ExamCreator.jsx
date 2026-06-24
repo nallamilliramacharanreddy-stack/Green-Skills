@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, BookOpen, HelpCircle, Save, 
   Trash2, ChevronRight, FileText,
-  CheckCircle2, Clock, Zap
+  CheckCircle2, Clock, Zap, Users
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
@@ -29,6 +29,8 @@ const ExamCreator = () => {
   const [courses, setCourses] = useState([]);
   const [selectedCourseId, setSelectedCourseId] = useState('');
   const [selectedLessonId, setSelectedLessonId] = useState('');
+  const [students, setStudents] = useState([]);
+  const [selectedStudentId, setSelectedStudentId] = useState('');
 
   const [currentQuestion, setCurrentQuestion] = useState({
     questionText: '',
@@ -56,10 +58,20 @@ const ExamCreator = () => {
     }
   };
 
+  const fetchStudents = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/auth/users`);
+      setStudents(res.data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   useEffect(() => {
     if (user?._id) {
       fetchExams();
       fetchCourses();
+      fetchStudents();
     }
   }, [user]);
 
@@ -138,8 +150,13 @@ const ExamCreator = () => {
         // Create manual exam
         const res = await axios.post(`${API_URL}/quizzes`, {
           ...examData,
+          questions: examData.questions.map(q => ({
+            ...q,
+            correctAnswer: typeof q.correctAnswer === 'number' ? q.options[q.correctAnswer] : q.correctAnswer
+          })),
           courseId: selectedCourseId || undefined,
           lessonId: selectedLessonId || undefined,
+          assignedUser: selectedStudentId || undefined,
           createdBy: user._id
         });
         
@@ -154,6 +171,7 @@ const ExamCreator = () => {
       setYoutubeUrl('');
       setSelectedCourseId('');
       setSelectedLessonId('');
+      setSelectedStudentId('');
     } catch (error) {
       toast.error('Failed to save exam');
     }
@@ -252,6 +270,26 @@ const ExamCreator = () => {
                         ))}
                       </select>
                     </div>
+                  </div>
+
+                  {/* Assign to Specific Student */}
+                  <div className="space-y-3 col-span-2 pt-6 border-t border-slate-100 mt-2">
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                      <Users size={12} className="text-primary" /> Target Candidate Assignment (Optional)
+                    </h4>
+                    <select 
+                      className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-primary/50 transition-all font-bold"
+                      value={selectedStudentId}
+                      onChange={(e) => setSelectedStudentId(e.target.value)}
+                    >
+                      <option value="">Open to All Students...</option>
+                      {students.map(s => (
+                        <option key={s._id} value={s._id}>
+                          {s.name} ({s.email})
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-[10px] text-slate-400 font-semibold mt-1">If selected, only the assigned student will be allowed to view and attempt this hiring assessment.</p>
                   </div>
 
                   {/* AI Generation from YouTube */}
@@ -355,13 +393,18 @@ const ExamCreator = () => {
                             {q.question || q.questionText || q.text || q.title || q.content || <span className="text-red-500 font-bold">Question text missing</span>}
                           </p>
                           <div className="grid grid-cols-2 gap-2">
-                            {q.options.map((opt, oi) => (
-                              <div key={oi} className={`px-3 py-2 rounded-xl text-[10px] font-bold ${
-                                q.correctAnswer === oi ? 'bg-primary/20 text-primary border border-primary/30' : 'bg-white/5 text-slate-400'
-                              }`}>
-                                {opt}
-                              </div>
-                            ))}
+                            {q.options.map((opt, oi) => {
+                              const isCorrect = q.correctAnswer === oi || 
+                                                q.correctAnswer === opt || 
+                                                (typeof q.correctAnswer === 'string' && q.correctAnswer.trim().toLowerCase() === opt.trim().toLowerCase());
+                              return (
+                                <div key={oi} className={`px-3 py-2 rounded-xl text-[10px] font-bold ${
+                                  isCorrect ? 'bg-primary/20 text-primary border border-primary/30' : 'bg-white/5 text-slate-400'
+                                }`}>
+                                  {opt}
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                         <button 

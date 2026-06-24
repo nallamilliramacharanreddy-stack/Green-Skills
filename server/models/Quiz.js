@@ -7,6 +7,7 @@ const quizSchema = new mongoose.Schema({
   youtubeLink: { type: String },
   courseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Course' },
   lessonId: { type: mongoose.Schema.Types.ObjectId },
+  assignedUser: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   isPublished: { type: Boolean, default: false },
   questions: [{
     questionText: { type: String, required: true },

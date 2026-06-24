@@ -101,7 +101,17 @@ const getAllQuizzes = async (req, res) => {
     const user = getUserFromRequest(req);
     const isAdminOrEmployer = user && ['admin', 'employer', 'admin_course', 'admin_hiring', 'admin_exam', 'super-admin'].includes(user.role);
     
-    const sanitizedQuizzes = quizzes.map(q => stripQuizAnswers(q, isAdminOrEmployer));
+    let filteredQuizzes = quizzes;
+    if (!isAdminOrEmployer) {
+      const currentUserId = user?.id || user?._id;
+      filteredQuizzes = quizzes.filter(q => {
+        if (!q.assignedUser) return true;
+        const assignedId = q.assignedUser.toString();
+        return currentUserId && assignedId === currentUserId.toString();
+      });
+    }
+
+    const sanitizedQuizzes = filteredQuizzes.map(q => stripQuizAnswers(q, isAdminOrEmployer));
     res.json(sanitizedQuizzes);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching quizzes' });
@@ -174,6 +184,9 @@ const submitQuiz = async (req, res) => {
       if (!attemptDoc) {
         return res.status(404).json({ message: 'Attempt not found' });
       }
+      if (attemptDoc.user.toString() !== userId.toString()) {
+        return res.status(403).json({ message: 'Attempt does not belong to this user.' });
+      }
       dbQuestions = attemptDoc.questions || [];
       if (attemptDoc.quiz) {
         quizDoc = await Quiz.findById(attemptDoc.quiz);
@@ -184,6 +197,9 @@ const submitQuiz = async (req, res) => {
       quizDoc = await Quiz.findById(quizId);
       if (!quizDoc) {
         return res.status(404).json({ message: 'Quiz not found' });
+      }
+      if (quizDoc.assignedUser && quizDoc.assignedUser.toString() !== userId.toString()) {
+        return res.status(403).json({ message: 'You are not authorized to submit this hiring exam.' });
       }
       dbQuestions = quizDoc.questions || [];
     } else if (courseId) {
@@ -803,6 +819,15 @@ const startQuizAttempt = async (req, res) => {
       return res.status(400).json({ message: 'User ID is required' });
     }
 
+    let quizDoc = null;
+    if (quizId) {
+      quizDoc = await Quiz.findById(quizId);
+      if (!quizDoc) return res.status(404).json({ message: 'Quiz not found' });
+      if (quizDoc.assignedUser && quizDoc.assignedUser.toString() !== userId.toString()) {
+        return res.status(403).json({ message: 'You are not authorized to attempt this hiring exam.' });
+      }
+    }
+
     const query = {
       user: userId,
       isCompleted: false
@@ -847,8 +872,6 @@ const startQuizAttempt = async (req, res) => {
     // Create a new attempt
     let sourceQuestions = [];
     if (quizId) {
-      const quizDoc = await Quiz.findById(quizId);
-      if (!quizDoc) return res.status(404).json({ message: 'Quiz not found' });
       sourceQuestions = quizDoc.questions || [];
     } else if (courseId) {
       const courseDoc = await Course.findById(courseId);
