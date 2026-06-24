@@ -105,6 +105,69 @@ const StudentDashboard = () => {
   const activeCourseProgress = activeCourse ? getCourseProgress(activeCourse) : 0;
   const completedCount = user?.progress?.completedCourses?.length || 0;
 
+  const activeCourseProg = user?.progress?.courseProgress?.find(p => {
+    const id = p.courseId?._id || p.courseId;
+    const targetId = activeCourse?._id || activeCourse;
+    return id && targetId && id.toString() === targetId.toString();
+  });
+
+  const getRoadmapNodes = () => {
+    if (!activeCourse || !activeCourse.lessons || activeCourse.lessons.length === 0) {
+      return [
+        { title: "Enroll in a Course", status: "Pending", color: "text-amber-400", dot: "bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.6)]", line: "bg-amber-500/30" },
+        { title: "Complete First Lesson", status: "Locked", color: "text-slate-600", dot: "bg-slate-800 border border-slate-600", line: "bg-white/10" },
+        { title: "Earn Certification", status: "Locked", color: "text-slate-600", dot: "bg-slate-800 border border-slate-600", line: "bg-transparent" }
+      ];
+    }
+
+    const totalLessons = activeCourse.lessons.length;
+    let firstUncompleted = 0;
+    for (let i = 0; i < totalLessons; i++) {
+      if (!activeCourseProg?.completedLessons?.includes(i)) {
+        firstUncompleted = i;
+        break;
+      }
+    }
+
+    let startIndex = Math.max(0, firstUncompleted - 1);
+    if (startIndex + 3 > totalLessons) {
+      startIndex = Math.max(0, totalLessons - 3);
+    }
+    const visibleLessons = activeCourse.lessons.slice(startIndex, startIndex + 3);
+
+    return visibleLessons.map((lesson, idx) => {
+      const realIndex = startIndex + idx;
+      const isCompleted = activeCourseProg?.completedLessons?.includes(realIndex);
+      const isCurrent = realIndex === firstUncompleted;
+
+      let status = "Locked";
+      let color = "text-slate-600";
+      let dot = "bg-slate-800 border border-slate-600";
+      if (isCompleted) {
+        status = "Completed";
+        color = "text-violet-400";
+        dot = "bg-violet-400 shadow-[0_0_10px_rgba(139,92,246,0.6)]";
+      } else if (isCurrent) {
+        status = "In Progress";
+        color = "text-cyan-400";
+        dot = "bg-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.8)]";
+      }
+
+      const isLastVisible = idx === visibleLessons.length - 1;
+      const line = isLastVisible ? "bg-transparent" : isCompleted ? "bg-violet-500/30" : "bg-white/10";
+
+      return {
+        title: lesson.title,
+        status,
+        color,
+        dot,
+        line
+      };
+    });
+  };
+
+  const roadmapNodes = getRoadmapNodes();
+
   return (
     <DashboardLayout role="student">
       <div className="relative min-h-[90vh] bg-slate-950 overflow-hidden rounded-[2.5rem] shadow-[0_20px_60px_rgba(0,0,0,0.8)] m-4 md:m-8 border border-white/5">
@@ -315,23 +378,19 @@ const StudentDashboard = () => {
               >
                 <div className="absolute -top-10 -right-10 w-40 h-40 bg-fuchsia-500/10 blur-[40px] rounded-full pointer-events-none"></div>
                 <div className="flex justify-between items-center mb-8 relative z-10">
-                  <h3 className="text-xl font-medium text-white tracking-tight">AI Roadmap</h3>
+                  <h3 className="text-xl font-medium text-white tracking-tight">Course Roadmap</h3>
                   <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center border border-white/10 backdrop-blur-md">
                     <TrendingUp className="text-fuchsia-400" size={18} strokeWidth={1.5} />
                   </div>
                 </div>
 
                 <div className="flex-1 flex flex-col justify-center space-y-6 relative z-10">
-                  {[
-                    { title: "Digital Core", status: "Rendered", color: "text-violet-400", dot: "bg-violet-400 shadow-[0_0_10px_rgba(139,92,246,0.6)]", line: "bg-violet-500/30" },
-                    { title: "Advanced Matrix", status: "Syncing", color: "text-cyan-400", dot: "bg-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.8)]", line: "bg-white/10" },
-                    { title: "Master Protocol", status: "Encrypted", color: "text-slate-600", dot: "bg-slate-800 border border-slate-600", line: "bg-transparent" }
-                  ].map((node, idx) => (
+                  {roadmapNodes.map((node, idx) => (
                     <div key={idx} className="flex gap-4 relative">
-                      {idx !== 2 && <div className={`absolute top-6 left-1.5 w-[2px] h-10 ${node.line}`}></div>}
+                      {idx !== roadmapNodes.length - 1 && <div className={`absolute top-6 left-1.5 w-[2px] h-10 ${node.line}`}></div>}
                       <div className={`w-3.5 h-3.5 rounded-full mt-1 flex-shrink-0 relative z-10 ${node.dot}`}></div>
-                      <div>
-                        <h4 className={`text-sm font-semibold tracking-tight ${node.status === 'Encrypted' ? 'text-slate-500' : 'text-white'}`}>{node.title}</h4>
+                      <div className="min-w-0 flex-1">
+                        <h4 className={`text-sm font-semibold tracking-tight truncate ${node.status === 'Locked' ? 'text-slate-500' : 'text-white'}`}>{node.title}</h4>
                         <p className={`text-[9px] font-medium uppercase tracking-[0.2em] mt-1 ${node.color}`}>{node.status}</p>
                       </div>
                     </div>
