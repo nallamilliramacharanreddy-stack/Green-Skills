@@ -373,13 +373,15 @@ const MyJourney = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {certificates.slice(0, 4).map((cert, idx) => {
                 // Dynamic verification check during rendering:
-                const expectedName = "NALLAMILLI RAMA CHARAN REDDY";
-                if (user?.name?.trim().toUpperCase() === expectedName) {
-                  if (cert.candidateName !== expectedName) {
-                    throw new Error(`Certificate data mismatch: Candidate name ${cert.candidateName} does not match expected name ${expectedName}`);
+                if (user && user.name) {
+                  const expectedName = "NALLAMILLI RAMA CHARAN REDDY";
+                  if (user.name.trim().toUpperCase() === expectedName) {
+                    if (cert.candidateName !== expectedName) {
+                      throw new Error(`Certificate data mismatch: Candidate name ${cert.candidateName} does not match expected name ${expectedName}`);
+                    }
+                  } else if (cert.candidateName !== user.name) {
+                    throw new Error(`Certificate data mismatch: Candidate name ${cert.candidateName} does not match user name ${user.name}`);
                   }
-                } else if (cert.candidateName !== user?.name) {
-                  throw new Error(`Certificate data mismatch: Candidate name ${cert.candidateName} does not match user name ${user?.name}`);
                 }
                 
                 return (
