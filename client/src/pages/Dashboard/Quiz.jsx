@@ -93,7 +93,7 @@ const Quiz = () => {
         videoRef.current.play().catch(e => console.error("Proctoring video play failed:", e));
       };
     }
-  }, [proctorStream, activeQuiz, preVerified]);
+  }, [proctorStream, activeQuiz]);
 
   useEffect(() => {
     fetchCoursesWithQuizzes();
@@ -226,10 +226,10 @@ const Quiz = () => {
   };
 
   useEffect(() => {
-    if (activeQuiz && preVerified && !attemptId && !attemptLoading) {
+    if (activeQuiz && !attemptId && !attemptLoading) {
       startAttempt(activeQuiz);
     }
-  }, [activeQuiz, preVerified, attemptId]);
+  }, [activeQuiz, attemptId]);
 
   useEffect(() => {
     localStorage.setItem('quiz_current_question', currentQuestion.toString());
@@ -1030,7 +1030,6 @@ const Quiz = () => {
     setUserAnswers({});
     setWarnings(0);
     setSubmissionResult(null);
-    setPreVerified(true);
   };
 
   if (activeQuiz) {
@@ -1125,7 +1124,7 @@ const Quiz = () => {
                     </div>
                   ) : q.questionType === 'multiple' ? (
                     <div className="space-y-4">
-                      {q.options.map((option, i) => {
+                      {q.options && q.options.map((option, i) => {
                         const currentSelections = userAnswers[currentQuestion] || [];
                         const isSelected = currentSelections.includes(option);
                         
@@ -1161,7 +1160,7 @@ const Quiz = () => {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {q.options.map((option, i) => {
+                      {q.options && q.options.map((option, i) => {
                         const isSelected = userAnswers[currentQuestion] === option;
                         return (
                           <div 
