@@ -75,18 +75,8 @@ const Certificates = () => {
   const strictlyCompleted = completedCourses;
 
   const validCertificates = React.useMemo(() => {
-    if (!user || !user.name || !downloadedCerts) return [];
-    const expectedName = "NALLAMILLI RAMA CHARAN REDDY";
-    const userNameUpper = user.name.trim().toUpperCase();
-    
-    return downloadedCerts.filter(cert => {
-      if (!cert || !cert.candidateName) return false;
-      const certNameUpper = cert.candidateName.trim().toUpperCase();
-      if (userNameUpper === expectedName) {
-        return certNameUpper === expectedName;
-      }
-      return certNameUpper === userNameUpper;
-    });
+    if (!user || !downloadedCerts) return [];
+    return downloadedCerts;
   }, [downloadedCerts, user]);
 
   const isAlreadyGenerated = (course) => {

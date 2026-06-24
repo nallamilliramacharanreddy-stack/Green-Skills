@@ -87,18 +87,8 @@ const MyJourney = () => {
   }, [certificates, user]);
 
   const validCertificates = useMemo(() => {
-    if (!user || !user.name || !certificates) return [];
-    const expectedName = "NALLAMILLI RAMA CHARAN REDDY";
-    const userNameUpper = user.name.trim().toUpperCase();
-
-    return certificates.filter(cert => {
-      if (!cert || !cert.candidateName) return false;
-      const certNameUpper = cert.candidateName.trim().toUpperCase();
-      if (userNameUpper === expectedName) {
-        return certNameUpper === expectedName;
-      }
-      return certNameUpper === userNameUpper;
-    });
+    if (!user || !certificates) return [];
+    return certificates;
   }, [certificates, user]);
 
   const isAlreadyGenerated = (course) => {
