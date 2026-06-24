@@ -18,24 +18,35 @@ const StudentDashboard = () => {
   const [lastAttempt, setLastAttempt] = useState(null);
 
   useEffect(() => {
+    const currentUserId = user?.id || user?._id;
+    if (!currentUserId) return;
+
+    // 1. Instantly render from localStorage cache
+    const cacheKey = `lastAttempt_${currentUserId}`;
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        setLastAttempt(JSON.parse(cached));
+      }
+    } catch (_) {}
+
+    // 2. Fetch fresh data from the new fast endpoint in background
     const fetchLastAttempt = async () => {
       try {
-        const currentUserId = user?.id || user?._id;
-        const res = await axios.get(`${API_URL}/quizzes/results`, {
+        const res = await axios.get(`${API_URL}/quizzes/results/latest`, {
           params: { userId: currentUserId }
         });
-        const userResults = res.data.filter(r => r.course);
-        if (userResults && userResults.length > 0) {
-          userResults.sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
-          setLastAttempt(userResults[0]);
+        if (res.data) {
+          setLastAttempt(res.data);
+          try {
+            localStorage.setItem(cacheKey, JSON.stringify(res.data));
+          } catch (_) {}
         }
       } catch (err) {
         console.error("Failed to load last attempt:", err);
       }
     };
-    if (user?._id || user?.id) {
-      fetchLastAttempt();
-    }
+    fetchLastAttempt();
   }, [user]);
 
   useEffect(() => {

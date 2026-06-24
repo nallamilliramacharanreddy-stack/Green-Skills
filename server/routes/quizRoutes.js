@@ -7,6 +7,7 @@ const {
   generateFromYoutube, 
   publishQuiz, 
   getAllResults,
+  getLatestCourseResult,
   startQuizAttempt,
   saveQuizProgress,
   getIntegrityReport,
@@ -15,6 +16,7 @@ const {
 const router = express.Router();
 
 router.get('/', getAllQuizzes);
+router.get('/results/latest', getLatestCourseResult);
 router.get('/results', getAllResults);
 router.get('/integrity-report', getIntegrityReport);
 router.get('/employer/:employerId', getQuizzesByEmployer);

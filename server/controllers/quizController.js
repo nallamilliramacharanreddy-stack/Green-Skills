@@ -532,6 +532,25 @@ const getAllResults = async (req, res) => {
   }
 };
 
+// Fast endpoint: returns only the single most recent course-based result for a user
+const getLatestCourseResult = async (req, res) => {
+  try {
+    const { userId } = req.query;
+    if (!userId) {
+      return res.status(400).json({ message: 'userId is required' });
+    }
+    const result = await Result.findOne({ user: userId, course: { $exists: true, $ne: null } })
+      .sort({ completedAt: -1 })
+      .limit(1)
+      .populate('course', 'title category')
+      .lean();
+    res.json(result || null);
+  } catch (error) {
+    console.error('[getLatestCourseResult] Error:', error);
+    res.status(500).json({ message: 'Error fetching latest result' });
+  }
+};
+
 const generateFromYoutube = async (req, res) => {
   try {
     const { youtubeUrl, courseId, lessonId, adminId } = req.body;
@@ -1038,6 +1057,7 @@ module.exports = {
   generateFromYoutube,
   publishQuiz,
   getAllResults,
+  getLatestCourseResult,
   startQuizAttempt,
   saveQuizProgress,
   getIntegrityReport,
