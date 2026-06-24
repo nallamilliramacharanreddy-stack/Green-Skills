@@ -360,4 +360,14 @@ const updateApplicationStatus = async (req, res) => {
   }
 };
 
-module.exports = { applyForJob, getEmployerApplications, updateApplicationStatus };
+const getStudentApplications = async (req, res) => {
+  try {
+    const apps = await Application.find({ studentId: req.params.studentId });
+    res.json(apps);
+  } catch (error) {
+    console.error('Error fetching student applications:', error);
+    res.status(500).json({ message: 'Error fetching student applications' });
+  }
+};
+
+module.exports = { applyForJob, getEmployerApplications, updateApplicationStatus, getStudentApplications };

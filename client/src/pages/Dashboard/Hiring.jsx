@@ -16,9 +16,23 @@ const Hiring = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(null);
+  const [appliedJobIds, setAppliedJobIds] = useState(new Set());
+
+  const currentUserId = user?._id || user?.id;
+
+  const fetchAppliedJobs = async () => {
+    if (!currentUserId) return;
+    try {
+      const res = await axios.get(`${API_URL}/applications/student/${currentUserId}`);
+      const ids = new Set(res.data.map(app => (app.jobId?._id || app.jobId || '').toString()));
+      setAppliedJobIds(ids);
+    } catch (error) {
+      console.error('Failed to fetch applied jobs:', error);
+    }
+  };
 
   const handleApply = async (job) => {
-    if (!user) {
+    if (!currentUserId) {
       toast.error('Identity Authorization Required');
       return;
     }
@@ -26,7 +40,7 @@ const Hiring = () => {
     try {
       const response = await axios.post(`${API_URL}/applications/apply`, {
         jobId: job._id,
-        studentId: user._id,
+        studentId: currentUserId,
         employerId: job.postedBy,
         resume: user.profilePicture || '',
         coverLetter: 'I am interested in this green energy role.'
@@ -36,6 +50,11 @@ const Hiring = () => {
       } else {
         toast.success(`Application transmitted to ${job.companyName}`);
       }
+      setAppliedJobIds(prev => {
+        const next = new Set(prev);
+        next.add(job._id.toString());
+        return next;
+      });
     } catch (error) {
       toast.error(error.response?.data?.message || 'Application transfer failed');
     } finally {
@@ -56,7 +75,8 @@ const Hiring = () => {
       }
     };
     fetchJobs();
-  }, []);
+    fetchAppliedJobs();
+  }, [currentUserId]);
 
   return (
     <DashboardLayout role="student">
@@ -174,11 +194,13 @@ const Hiring = () => {
                       <div className="flex items-center gap-4">
                         <button 
                           onClick={() => handleApply(job)}
-                          disabled={applying === job._id}
+                          disabled={applying === job._id || appliedJobIds.has(job._id.toString())}
                           className="flex-1 py-5 bg-slate-900 text-white rounded-[1.5rem] font-black uppercase text-[10px] tracking-widest hover:bg-primary transition-all shadow-xl shadow-slate-900/20 flex items-center justify-center gap-2 disabled:opacity-50"
                         >
                           {applying === job._id ? (
                             <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Applying...</>
+                          ) : appliedJobIds.has(job._id.toString()) ? (
+                            <>APPLIED <CheckCircle size={14} /></>
                           ) : (
                             <>APPLY <ArrowRight size={14} /></>
                           )}
