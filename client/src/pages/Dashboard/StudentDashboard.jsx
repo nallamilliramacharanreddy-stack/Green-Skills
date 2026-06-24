@@ -24,7 +24,7 @@ const StudentDashboard = () => {
         const res = await axios.get(`${API_URL}/quizzes/results`, {
           params: { userId: currentUserId }
         });
-        const userResults = res.data;
+        const userResults = res.data.filter(r => r.course);
         if (userResults && userResults.length > 0) {
           userResults.sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
           setLastAttempt(userResults[0]);

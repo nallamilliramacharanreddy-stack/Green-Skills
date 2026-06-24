@@ -115,7 +115,7 @@ const Quiz = () => {
         params: { userId: currentUserId }
       });
       
-      const userResults = res.data;
+      const userResults = res.data.filter(r => r.course);
       userResults.sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
       setAttempts(userResults);
     } catch (err) {

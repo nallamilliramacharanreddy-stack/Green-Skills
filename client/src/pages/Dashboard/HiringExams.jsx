@@ -69,7 +69,7 @@ const HiringExams = () => {
   // Find if student has completed this exam
   const getExamStatus = (examId) => {
     // Check results where quiz matches examId
-    const examAttempt = attempts.find(att => att.quiz === examId);
+    const examAttempt = attempts.find(att => (att.quiz?._id || att.quiz)?.toString() === examId.toString());
     if (!examAttempt) return { status: 'Not Attempted', score: 0 };
     
     const percentage = Math.round((examAttempt.score / examAttempt.totalQuestions) * 100);
