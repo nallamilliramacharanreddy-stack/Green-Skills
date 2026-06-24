@@ -1573,14 +1573,14 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
     <div className="space-y-10">
       <div className="flex justify-between items-end">
         <div className="space-y-1">
-          <h2 className="text-5xl font-black text-slate-900 uppercase tracking-tighter italic">AI Assessment Engine</h2>
-          <p className="text-slate-500 font-medium">Dynamic generation of learning validations.</p>
+          <h2 className="text-5xl font-black text-slate-900 uppercase tracking-tighter italic">Assessment Engine</h2>
+          <p className="text-slate-500 font-medium">Create and manage course assessments.</p>
         </div>
         <button
           onClick={() => setView('create')}
           className="px-10 py-5 bg-slate-900 text-white rounded-[24px] font-black uppercase tracking-tighter text-sm hover:bg-primary transition-all flex items-center gap-3 shadow-xl"
         >
-          <Plus size={20} /> Create AI Assessment
+          <Plus size={20} /> Create Assessment
         </button>
       </div>
 
@@ -1633,96 +1633,162 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
   );
 
   const renderCreate = () => (
-    <div className="space-y-10 max-w-4xl mx-auto">
+    <div className="space-y-10 max-w-5xl mx-auto">
       <div className="flex items-center gap-4">
         <button onClick={() => setView('dashboard')} className="p-4 bg-white rounded-full hover:bg-slate-100 transition-all text-slate-900 shadow-sm">
           <ChevronLeft size={24} />
         </button>
         <div>
-          <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter italic">Create AI Assessment</h2>
-          <p className="text-slate-500 font-medium">Configure parameters for automatic generation.</p>
+          <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter italic">Create Assessment</h2>
+          <p className="text-slate-500 font-medium">Build questions manually and select the correct answer.</p>
         </div>
       </div>
 
-      <div className="bg-white p-10 rounded-[48px] border border-slate-100 shadow-2xl space-y-8">
-        <div className="space-y-4">
-          <label className="text-xs font-black uppercase tracking-widest text-slate-500">Assessment Title</label>
-          <input value={formData.title} onChange={e=>setFormData({...formData, title: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-primary" placeholder="e.g. Advanced Solar Installation Quiz" />
-        </div>
-
-        <div className="grid grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <label className="text-xs font-black uppercase tracking-widest text-slate-500">Target Course</label>
-            <select value={formData.courseId} onChange={e=>setFormData({...formData, courseId: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-primary">
-              <option value="">Select Course...</option>
-              {courses.map(c => <option key={c._id} value={c._id}>{c.title}</option>)}
-            </select>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Left: Form */}
+        <div className="space-y-6">
+          {/* Assessment meta */}
+          <div className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-xl space-y-6">
+            <div className="space-y-3">
+              <label className="text-xs font-black uppercase tracking-widest text-slate-500">Assessment Title</label>
+              <input value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-primary" placeholder="e.g. Advanced Solar Installation Quiz" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <label className="text-xs font-black uppercase tracking-widest text-slate-500">Target Course</label>
+                <select value={formData.courseId} onChange={e => setFormData({...formData, courseId: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-primary">
+                  <option value="">Select Course...</option>
+                  {courses.map(c => <option key={c._id} value={c._id}>{c.title}</option>)}
+                </select>
+              </div>
+              <div className="space-y-3">
+                <label className="text-xs font-black uppercase tracking-widest text-slate-500">Duration (Minutes)</label>
+                <input type="number" value={formData.duration} onChange={e => setFormData({...formData, duration: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-primary" />
+              </div>
+            </div>
           </div>
-          <div className="space-y-4">
-            <label className="text-xs font-black uppercase tracking-widest text-slate-500">Specific Module (Optional)</label>
-            <input value={formData.module} onChange={e=>setFormData({...formData, module: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-primary" placeholder="e.g. Module 3: Inverters" />
-          </div>
-        </div>
 
-        <div className="space-y-4">
-          <label className="text-xs font-black uppercase tracking-widest text-slate-500">Transcript Input</label>
-          <div className="relative">
-            <FileText className="absolute left-4 top-6 text-slate-400" size={20} />
-            <textarea 
-              value={formData.transcript} 
-              onChange={e=>setFormData({...formData, transcript: e.target.value})} 
-              className="w-full pl-12 pr-4 py-4 min-h-[200px] bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-primary resize-y" 
-              placeholder="Paste Transcript Here... (Extract from video, PDF, or course notes)" 
+          {/* Manual question builder */}
+          <div className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-xl space-y-5">
+            <h3 className="text-base font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+              <MessageSquare size={18} className="text-primary" /> Add MCQ Question
+            </h3>
+            <textarea
+              className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-primary transition-all font-medium resize-none min-h-[90px]"
+              placeholder="Enter the question here..."
+              value={formData._qText || ''}
+              onChange={e => setFormData({...formData, _qText: e.target.value})}
             />
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Options — click the circle to mark correct answer</label>
+              {(formData._qOptions || ['', '', '', '']).map((opt, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({...formData, _qCorrect: i})}
+                    className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${
+                      (formData._qCorrect ?? 0) === i ? 'border-primary bg-primary text-white' : 'border-slate-300 hover:border-primary'
+                    }`}
+                  >
+                    {(formData._qCorrect ?? 0) === i && <CheckCircle size={14} />}
+                  </button>
+                  <input
+                    type="text"
+                    className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-primary transition-all text-sm font-medium"
+                    placeholder={`Option ${i + 1}`}
+                    value={opt}
+                    onChange={e => {
+                      const newOpts = [...(formData._qOptions || ['', '', '', ''])];
+                      newOpts[i] = e.target.value;
+                      setFormData({...formData, _qOptions: newOpts});
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const qText = (formData._qText || '').trim();
+                const opts = formData._qOptions || ['', '', '', ''];
+                if (!qText) return toast.error('Question text is required');
+                if (opts.some(o => !o.trim())) return toast.error('All 4 options must be filled');
+                const correctIdx = formData._qCorrect ?? 0;
+                const newQ = {
+                  id: Date.now() + Math.random(),
+                  question: qText,
+                  questionText: qText,
+                  options: opts,
+                  correctAnswer: opts[correctIdx],
+                  explanation: '',
+                  difficulty: formData.difficulty || 'Medium',
+                  marks: 1
+                };
+                setQuestions([...questions, newQ]);
+                setFormData({...formData, _qText: '', _qOptions: ['', '', '', ''], _qCorrect: 0});
+                toast.success('Question added!');
+              }}
+              className="w-full py-4 bg-primary/10 text-primary rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-2"
+            >
+              <Plus size={18} /> Add to Assessment
+            </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-6 pt-6 border-t border-slate-100">
-          <div className="space-y-4">
-            <label className="text-xs font-black uppercase tracking-widest text-slate-500">Question Count</label>
-            <input type="number" value={formData.numQuestions} onChange={e=>setFormData({...formData, numQuestions: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-primary" />
+        {/* Right: Live preview */}
+        <div className="bg-slate-900 p-8 rounded-[40px] shadow-2xl text-white flex flex-col min-h-[500px]">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h3 className="text-xl font-black uppercase tracking-tighter italic">Question Preview</h3>
+              <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mt-1">{questions.length} question{questions.length !== 1 ? 's' : ''} added</p>
+            </div>
           </div>
-          <div className="space-y-4">
-            <label className="text-xs font-black uppercase tracking-widest text-slate-500">Difficulty</label>
-            <select value={formData.difficulty} onChange={e=>setFormData({...formData, difficulty: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-primary">
-              <option>Beginner</option>
-              <option>Medium</option>
-              <option>Advanced</option>
-              <option>Mixed</option>
-            </select>
+          <div className="flex-1 space-y-4 max-h-[480px] overflow-y-auto pr-2 custom-scrollbar">
+            {questions.map((q, i) => (
+              <div key={q.id || i} className="p-5 bg-white/5 border border-white/10 rounded-[24px] hover:border-primary/50 transition-all">
+                <div className="flex justify-between items-start gap-3">
+                  <div className="flex-1">
+                    <span className="text-[10px] font-black text-primary uppercase tracking-widest block mb-2">Q{i + 1}</span>
+                    <p className="font-medium text-slate-200 text-sm mb-3 leading-relaxed">{q.question || q.questionText}</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {q.options.map((opt, oi) => {
+                        const isCorrect = q.correctAnswer === opt || q.correctAnswer === oi;
+                        return (
+                          <div key={oi} className={`px-3 py-2 rounded-xl text-[10px] font-bold ${isCorrect ? 'bg-primary/20 text-primary border border-primary/30' : 'bg-white/5 text-slate-400'}`}>
+                            {opt}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <button onClick={() => setQuestions(questions.filter((_, idx) => idx !== i))} className="p-2 text-slate-500 hover:text-red-400 transition-colors">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
+            {questions.length === 0 && (
+              <div className="text-center py-20 border-2 border-dashed border-white/10 rounded-[32px]">
+                <MessageSquare className="mx-auto text-slate-700 mb-4" size={40} />
+                <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Add questions to see preview</p>
+              </div>
+            )}
           </div>
-          <div className="space-y-4">
-            <label className="text-xs font-black uppercase tracking-widest text-slate-500">Language</label>
-            <select value={formData.language} onChange={e=>setFormData({...formData, language: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-primary">
-              <option>English</option>
-              <option>Hindi</option>
-              <option>Telugu</option>
-            </select>
-          </div>
+          <button
+            onClick={() => {
+              if (questions.length === 0) return toast.error('Add at least one question first.');
+              setView('review');
+            }}
+            disabled={questions.length === 0}
+            className="mt-6 w-full py-5 bg-primary text-white rounded-2xl font-black text-sm uppercase tracking-tighter hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-3 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+          >
+            <CheckCircle size={20} /> Proceed to Review &amp; Publish
+          </button>
         </div>
-
-        <div className="grid grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <label className="text-xs font-black uppercase tracking-widest text-slate-500">Passing Percentage (%)</label>
-            <input type="number" value={formData.passingPercentage} onChange={e=>setFormData({...formData, passingPercentage: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-primary" />
-          </div>
-          <div className="space-y-4">
-            <label className="text-xs font-black uppercase tracking-widest text-slate-500">Duration (Minutes)</label>
-            <input type="number" value={formData.duration} onChange={e=>setFormData({...formData, duration: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-primary" />
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4 pt-4">
-          <input type="checkbox" checked={formData.generateCertificate} onChange={e=>setFormData({...formData, generateCertificate: e.target.checked})} className="w-5 h-5 accent-primary" id="cert" />
-          <label htmlFor="cert" className="font-bold text-slate-900 cursor-pointer">Issue Certificate upon passing</label>
-        </div>
-
-        <button onClick={handleGenerate} className="w-full py-5 bg-slate-900 text-white rounded-[24px] font-black uppercase tracking-tighter text-lg hover:bg-primary transition-all flex items-center justify-center gap-3 shadow-xl">
-          <Zap size={24} /> Generate Assessment Intelligence
-        </button>
       </div>
     </div>
   );
+
 
   const renderGenerating = () => (
     <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-12">
