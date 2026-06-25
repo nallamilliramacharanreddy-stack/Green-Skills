@@ -238,8 +238,6 @@ const DashboardLayout = ({ children, role: propRole }) => {
       { category: 'MANAGEMENT', items: [
         { icon: BookOpen, label: 'Manage Courses', path: '/admin/courses' },
         { icon: MessageSquare, label: 'Quiz Management', path: '/admin/quizzes' },
-        { icon: Shield, label: 'AI Proctoring', path: '/admin/proctoring' },
-        { icon: ShieldAlert, label: 'Integrity Report', path: '/admin/integrity' },
         { icon: Headphones, label: 'Support Tickets', path: '/support' },
       ]},
       { category: 'DATA & USERS', items: [
