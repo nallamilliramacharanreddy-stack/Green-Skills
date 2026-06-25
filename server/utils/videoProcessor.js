@@ -42,26 +42,75 @@ const processVideo = async (courseId, lessonId, youtubeLink) => {
 
     // 3. Download if not exists
     if (!fs.existsSync(filePath)) {
-      const ytDlpPath = path.resolve(__dirname, '../node_modules/youtube-dl-exec/bin/yt-dlp');
-
-      const subprocess = spawn(ytDlpPath, [
-        `https://www.youtube.com/watch?v=${videoId}`,
-        '--format', 'best[ext=mp4]',
-        '--output', filePath,
-        '--no-check-certificates',
-        '--force-ipv4'
-      ]);
-
-      await new Promise((resolve, reject) => {
-        subprocess.on('close', (code) => {
-          if (code === 0 && fs.existsSync(filePath)) {
-            resolve();
-          } else {
-            reject(new Error(`yt-dlp exited with code ${code}`));
-          }
+      console.log(`[videoProcessor] Downloading video ${videoId} for course ${courseId}...`);
+      try {
+        const ytdl = require('@distube/ytdl-core');
+        console.log(`[videoProcessor] Trying programmatic download via @distube/ytdl-core for ${videoId}`);
+        await new Promise((resolve, reject) => {
+          const writeStream = fs.createWriteStream(filePath);
+          const downloadStream = ytdl(`https://www.youtube.com/watch?v=${videoId}`, { 
+            filter: 'audioandvideo', 
+            quality: 'highestvideo' 
+          });
+          
+          downloadStream.pipe(writeStream);
+          
+          writeStream.on('finish', () => {
+            if (fs.existsSync(filePath) && fs.statSync(filePath).size > 0) {
+              resolve();
+            } else {
+              reject(new Error('Downloaded file is empty'));
+            }
+          });
+          
+          downloadStream.on('error', (err) => {
+            reject(err);
+          });
+          writeStream.on('error', (err) => {
+            reject(err);
+          });
         });
-        subprocess.on('error', reject);
-      });
+        console.log(`[videoProcessor] Successfully downloaded video ${videoId} via @distube/ytdl-core`);
+      } catch (ytdlError) {
+        console.error(`[videoProcessor] @distube/ytdl-core download failed: ${ytdlError.message || ytdlError}. Falling back to yt-dlp...`);
+        // Fallback to yt-dlp using python3 or default spawn
+        const ytDlpPath = path.resolve(__dirname, '../node_modules/youtube-dl-exec/bin/yt-dlp');
+        
+        const runYtDlp = (cmd, args) => {
+          return new Promise((resolve, reject) => {
+            const subprocess = spawn(cmd, args);
+            subprocess.on('close', (code) => {
+              if (code === 0 && fs.existsSync(filePath)) {
+                resolve();
+              } else {
+                reject(new Error(`yt-dlp exited with code ${code}`));
+              }
+            });
+            subprocess.on('error', reject);
+          });
+        };
+
+        try {
+          await runYtDlp(ytDlpPath, [
+            `https://www.youtube.com/watch?v=${videoId}`,
+            '--format', 'best[ext=mp4]',
+            '--output', filePath,
+            '--no-check-certificates',
+            '--force-ipv4'
+          ]);
+        } catch (execError) {
+          console.error('[videoProcessor] yt-dlp default spawn failed, trying explicit python3...', execError);
+          // Try running via python3
+          await runYtDlp('python3', [
+            ytDlpPath,
+            `https://www.youtube.com/watch?v=${videoId}`,
+            '--format', 'best[ext=mp4]',
+            '--output', filePath,
+            '--no-check-certificates',
+            '--force-ipv4'
+          ]);
+        }
+      }
     }
 
     // 4. Update Database on Success

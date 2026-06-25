@@ -149,7 +149,7 @@ router.get('/stream-live/:videoId', async (req, res) => {
         }
       }
 
-      // 3. Forward all critical headers (206 Partial Content, Content-Length)
+      // Forward all critical headers (206 Partial Content, Content-Length)
       res.writeHead(proxyRes.statusCode, proxyRes.headers);
       proxyRes.pipe(res);
     }).on('error', (err) => {
@@ -168,28 +168,65 @@ router.get('/stream-live/:videoId', async (req, res) => {
     return makeRequest(cached.url);
   }
 
+  // 1. Try extracting programmatically with @distube/ytdl-core (fast, pure JS)
+  try {
+    const ytdl = require('@distube/ytdl-core');
+    console.log(`[STREAM-LIVE] Attempting programmatic extraction via @distube/ytdl-core for ${videoId}`);
+    const info = await ytdl.getInfo(`https://www.youtube.com/watch?v=${videoId}`);
+    const format = ytdl.chooseFormat(info.formats, { filter: 'audioandvideo', quality: 'highestvideo' });
+    if (format && format.url) {
+      const streamUrl = format.url;
+      streamUrlCache[videoId] = {
+        url: streamUrl,
+        expiresAt: now + 2 * 60 * 60 * 1000
+      };
+      console.log(`[STREAM-LIVE] Programmatically extracted and cached stream URL for video ${videoId}`);
+      return makeRequest(streamUrl);
+    }
+  } catch (ytdlError) {
+    console.error(`[STREAM-LIVE] Programmatic @distube/ytdl-core extraction failed for ${videoId}:`, ytdlError.message || ytdlError);
+  }
+
+  // 2. Fallback: yt-dlp execution
   const { exec } = require('child_process');
   const ytDlpPath = path.resolve(__dirname, '../node_modules/youtube-dl-exec/bin/yt-dlp');
 
-  // 1. Instantly extract the raw underlying streaming URL (bypasses 60s download)
-  exec(`"${ytDlpPath}" -g "https://www.youtube.com/watch?v=${videoId}" --format "best[ext=mp4]" --no-check-certificates --force-ipv4`, (error, stdout, stderr) => {
-    if (error || !stdout) {
-      console.error('yt-dlp error:', error);
-      console.error('yt-dlp stderr:', stderr);
-      return res.status(500).send('Failed to extract live stream URL: ' + (stderr || error?.message));
-    }
+  const runYtDlp = (cmdString) => {
+    return new Promise((resolve, reject) => {
+      exec(cmdString, (error, stdout, stderr) => {
+        if (error || !stdout) {
+          reject(new Error(stderr || error?.message || 'Empty stdout'));
+        } else {
+          resolve(stdout.trim());
+        }
+      });
+    });
+  };
 
-    const streamUrl = stdout.trim();
-
-    // Cache the URL for 2 hours (Google Video URLs typically last 4-6 hours)
+  try {
+    console.log(`[STREAM-LIVE] Trying yt-dlp fallback for ${videoId}`);
+    const streamUrl = await runYtDlp(`"${ytDlpPath}" -g "https://www.youtube.com/watch?v=${videoId}" --format "best[ext=mp4]" --no-check-certificates --force-ipv4`);
     streamUrlCache[videoId] = {
       url: streamUrl,
       expiresAt: now + 2 * 60 * 60 * 1000
     };
-
-    console.log(`[STREAM-LIVE] Extracted and cached new stream URL for video ${videoId}`);
-    makeRequest(streamUrl);
-  });
+    console.log(`[STREAM-LIVE] Extracted via yt-dlp for video ${videoId}`);
+    return makeRequest(streamUrl);
+  } catch (err) {
+    console.error(`[STREAM-LIVE] Standard yt-dlp failed, trying via explicit python3...`);
+    try {
+      const streamUrl = await runYtDlp(`python3 "${ytDlpPath}" -g "https://www.youtube.com/watch?v=${videoId}" --format "best[ext=mp4]" --no-check-certificates --force-ipv4`);
+      streamUrlCache[videoId] = {
+        url: streamUrl,
+        expiresAt: now + 2 * 60 * 60 * 1000
+      };
+      console.log(`[STREAM-LIVE] Extracted via python3 yt-dlp for video ${videoId}`);
+      return makeRequest(streamUrl);
+    } catch (pyErr) {
+      console.error(`[STREAM-LIVE] All extraction methods failed for ${videoId}:`, pyErr.message);
+      return res.status(500).send(`Failed to extract live stream URL: ${pyErr.message}`);
+    }
+  }
 });
 
 // Enterprise AI Video Translation Trigger
