@@ -451,6 +451,11 @@ const Quiz = () => {
     const v = VIOLATIONS_REGISTRY[violationId];
     if (!v) return;
 
+    // Automatically end the assessment immediately if any violation occurs
+    setTimeout(() => {
+      forceSubmit(`Auto Submission: Violation Detected - ${v.name}`);
+    }, 100);
+
     const timestamp = new Date().toLocaleTimeString();
     const desc = customDescription || `Detected violation: ${v.name}`;
     
