@@ -147,7 +147,7 @@ const Login = () => {
       // Face authentication completely disabled
 
       toast.success('Nexus Connection Established');
-      const savedUser = JSON.parse(localStorage.getItem('user'));
+      const savedUser = JSON.parse(sessionStorage.getItem('user'));
       if (savedUser.role === 'admin') {
         navigate('/admin');
       } else if (savedUser.role === 'employer') {

@@ -26,7 +26,7 @@ const HiringExams = () => {
 
   const fetchData = async () => {
     try {
-      const savedUserStr = localStorage.getItem('user');
+      const savedUserStr = sessionStorage.getItem('user');
       let savedUser = null;
       try {
         savedUser = savedUserStr && savedUserStr !== 'undefined' ? JSON.parse(savedUserStr) : null;

@@ -12,7 +12,7 @@ export const API_URL = `${API_BASE_URL}/api`;
 // Add a request interceptor to attach JWT token automatically
 axios.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

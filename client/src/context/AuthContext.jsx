@@ -9,20 +9,20 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
+    const token = sessionStorage.getItem('token');
+    const savedUser = sessionStorage.getItem('user');
     if (token && savedUser) {
       try {
         if (savedUser !== 'undefined') {
           setUser(JSON.parse(savedUser));
         } else {
-          localStorage.removeItem('user');
-          localStorage.removeItem('token');
+          sessionStorage.removeItem('user');
+          sessionStorage.removeItem('token');
         }
       } catch (e) {
-        console.error("Failed to parse user from localStorage:", e);
-        localStorage.removeItem('user');
-        localStorage.removeItem('token');
+        console.error("Failed to parse user from sessionStorage:", e);
+        sessionStorage.removeItem('user');
+        sessionStorage.removeItem('token');
       }
     }
     setLoading(false);
@@ -41,8 +41,8 @@ export const AuthProvider = ({ children }) => {
       }
 
       const { token, user } = response.data;
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
+      sessionStorage.setItem('token', token);
+      sessionStorage.setItem('user', JSON.stringify(user));
       setUser(user);
       return { success: true, requiresOtp: false };
     } catch (error) {
@@ -59,8 +59,8 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await axios.post(`${API_URL}/auth/verify-admin-otp`, { email, otp });
       const { token, user } = response.data;
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
+      sessionStorage.setItem('token', token);
+      sessionStorage.setItem('user', JSON.stringify(user));
       setUser(user);
       return { success: true };
     } catch (error) {
@@ -75,8 +75,8 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await axios.post(`${API_URL}/auth/verify-face-login`, { userId, facialEmbedding });
       const { token, user } = response.data;
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
+      sessionStorage.setItem('token', token);
+      sessionStorage.setItem('user', JSON.stringify(user));
       setUser(user);
       return { success: true };
     } catch (error) {
@@ -88,8 +88,8 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await axios.post(`${API_URL}/auth/signup`, userData);
       const { token, user } = response.data;
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
+      sessionStorage.setItem('token', token);
+      sessionStorage.setItem('user', JSON.stringify(user));
       setUser(user);
       return { success: true };
     } catch (error) {
@@ -98,13 +98,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
     setUser(null);
   };
 
   const updateUser = (updatedUser) => {
-    localStorage.setItem('user', JSON.stringify(updatedUser));
+    sessionStorage.setItem('user', JSON.stringify(updatedUser));
     setUser(updatedUser);
   };
 

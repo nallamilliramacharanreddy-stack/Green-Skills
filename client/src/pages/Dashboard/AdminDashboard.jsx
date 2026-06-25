@@ -1972,7 +1972,7 @@ const AdminProfile = ({ currentUser, refreshUser }) => {
       setIsEditing(false);
       refreshUser();
       const updatedUser = res.data.user;
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      sessionStorage.setItem('user', JSON.stringify(updatedUser));
       window.location.reload();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Update failed');

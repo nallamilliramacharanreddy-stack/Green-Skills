@@ -107,7 +107,7 @@ const Quiz = () => {
 
   const fetchUserAttempts = async () => {
     try {
-      const savedUserStr = localStorage.getItem('user');
+      const savedUserStr = sessionStorage.getItem('user');
       let savedUser = null;
       try {
         savedUser = savedUserStr && savedUserStr !== 'undefined' ? JSON.parse(savedUserStr) : null;
@@ -151,7 +151,7 @@ const Quiz = () => {
       setCourses(availableQuizzes);
 
       // Filter quizzes that are published and not course-bound
-      const savedUserStr = localStorage.getItem('user');
+      const savedUserStr = sessionStorage.getItem('user');
       let savedUser = null;
       try {
         savedUser = savedUserStr && savedUserStr !== 'undefined' ? JSON.parse(savedUserStr) : null;
@@ -179,7 +179,7 @@ const Quiz = () => {
   const startAttempt = async (quizToStart) => {
     try {
       setAttemptLoading(true);
-      const savedUserStr = localStorage.getItem('user');
+      const savedUserStr = sessionStorage.getItem('user');
       let savedUser = null;
       try {
         savedUser = savedUserStr && savedUserStr !== 'undefined' ? JSON.parse(savedUserStr) : null;
@@ -839,7 +839,7 @@ const Quiz = () => {
     // Make sure we fetch the face profile for matching during the quiz
     const fetchRegisteredEmbedding = async () => {
       if (!registeredFaceEmbedding) {
-        const savedUserStr = localStorage.getItem('user');
+        const savedUserStr = sessionStorage.getItem('user');
         let savedUser = null;
         try {
           savedUser = savedUserStr && savedUserStr !== 'undefined' ? JSON.parse(savedUserStr) : null;
