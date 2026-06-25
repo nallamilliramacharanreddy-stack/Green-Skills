@@ -68,6 +68,7 @@ const Quiz = () => {
   const chunksRef = useRef([]);
   const [streamActive, setStreamActive] = useState(false);
   const [trustScore, setTrustScore] = useState(100);
+  const [proctoringStarted, setProctoringStarted] = useState(false);
   const [submissionTypeState, setSubmissionTypeState] = useState('Normal Submission');
   const isProctoringReady = useRef(false);
   const consecutiveNoFaceCount = useRef(0);
@@ -591,20 +592,7 @@ const Quiz = () => {
   }, [activeQuiz, showResult]);
 
   useEffect(() => {
-    if (!activeQuiz || !attemptId || showResult) return;
-
-    // Enter Fullscreen
-    const enterFullscreen = async () => {
-      try {
-        if (document.documentElement.requestFullscreen) {
-          await document.documentElement.requestFullscreen();
-          setIsFullscreen(true);
-        }
-      } catch (err) {
-        console.error("Fullscreen error:", err);
-      }
-    };
-    enterFullscreen();
+    if (!activeQuiz || !attemptId || showResult || !proctoringStarted) return;
 
     // Timer
     const timer = setInterval(() => {
@@ -766,45 +754,7 @@ const Quiz = () => {
       triggerViolation(103, "Network Manipulation: System came online.");
     };
 
-    // Activate Webcam and Microphone for Proctoring
-    const startProctoringStream = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 640, height: 480 },
-          audio: true
-        });
-        mediaStreamRef.current = stream;
-        setProctorStream(stream);
-        setStreamActive(true);
 
-        try {
-          const options = { mimeType: 'video/webm;codecs=vp9' };
-          if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-            options.mimeType = 'video/webm;codecs=vp8';
-          }
-          if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-            options.mimeType = 'video/webm';
-          }
-          if (MediaRecorder.isTypeSupported(options.mimeType)) {
-            const mediaRecorder = new MediaRecorder(stream, options);
-            mediaRecorderRef.current = mediaRecorder;
-            chunksRef.current = [];
-            mediaRecorder.ondataavailable = (e) => {
-              if (e.data && e.data.size > 0) {
-                chunksRef.current.push(e.data);
-              }
-            };
-            mediaRecorder.start(1000);
-          }
-        } catch (recorderErr) {
-          console.error("MediaRecorder init failed:", recorderErr);
-        }
-      } catch (err) {
-        console.error("Error accessing camera/mic for proctoring:", err);
-        toast.error("Webcam and microphone access is required for proctoring.");
-      }
-    };
-    startProctoringStream();
 
     // Event registrations
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -987,6 +937,56 @@ const Quiz = () => {
 
     return () => clearInterval(proctorInterval);
   }, [activeQuiz, attemptId, showResult, streamActive, registeredFaceEmbedding]);
+
+  const handleStartProctoring = async () => {
+    try {
+      if (document.documentElement.requestFullscreen) {
+        await document.documentElement.requestFullscreen();
+        setIsFullscreen(true);
+      }
+    } catch (err) {
+      console.error("Fullscreen initiation failed:", err);
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 640, height: 480 },
+        audio: true
+      });
+      mediaStreamRef.current = stream;
+      setProctorStream(stream);
+      setStreamActive(true);
+
+      try {
+        const options = { mimeType: 'video/webm;codecs=vp9' };
+        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+          options.mimeType = 'video/webm;codecs=vp8';
+        }
+        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+          options.mimeType = 'video/webm';
+        }
+        if (MediaRecorder.isTypeSupported(options.mimeType)) {
+          const mediaRecorder = new MediaRecorder(stream, options);
+          mediaRecorderRef.current = mediaRecorder;
+          chunksRef.current = [];
+          mediaRecorder.ondataavailable = (e) => {
+            if (e.data && e.data.size > 0) {
+              chunksRef.current.push(e.data);
+            }
+          };
+          mediaRecorder.start(1000);
+        }
+      } catch (recorderErr) {
+        console.error("MediaRecorder init failed:", recorderErr);
+      }
+    } catch (err) {
+      console.error("Error accessing camera/mic:", err);
+      toast.error("Webcam and microphone access is required to proceed.");
+      return;
+    }
+
+    setProctoringStarted(true);
+  };
 
   const forceSubmit = (reason = 'Security Policy Violation') => {
     if (showResult) return;
@@ -1193,6 +1193,7 @@ const Quiz = () => {
     setUserAnswers({});
     setWarnings(0);
     setSubmissionResult(null);
+    setProctoringStarted(false);
   };
 
   if (activeQuiz) {
@@ -1208,6 +1209,39 @@ const Quiz = () => {
       );
     }
     const q = activeQuiz.quiz[currentQuestion];
+
+    if (!proctoringStarted) {
+      return (
+        <div className="fixed inset-0 z-[9999] bg-slate-950 flex flex-col items-center justify-center font-sans text-white p-6 relative overflow-hidden">
+          <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-emerald-500/20 blur-[120px] rounded-full"></div>
+          <div className="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-indigo-500/10 blur-[120px] rounded-full"></div>
+
+          <div className="max-w-md w-full bg-white/5 border border-white/10 backdrop-blur-xl p-8 rounded-[32px] text-center space-y-6 shadow-2xl relative z-10">
+            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto text-primary border border-primary/20">
+              <Video size={28} />
+            </div>
+            
+            <div className="space-y-2">
+              <h2 className="text-2xl font-black uppercase tracking-tighter italic">Proctoring Verification</h2>
+              <p className="text-xs text-slate-400 font-medium">This assessment requires webcam/microphone access and full-screen mode to maintain academic integrity.</p>
+            </div>
+
+            <div className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl text-left space-y-2 text-[11px] text-slate-300 font-medium">
+              <p className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-primary"></span> Webcam & Mic must remain active</p>
+              <p className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-primary"></span> Browser window must stay in Fullscreen</p>
+              <p className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-primary"></span> Tab switching or dev tools will trigger auto-submission</p>
+            </div>
+
+            <button
+              onClick={handleStartProctoring}
+              className="w-full py-4 bg-primary hover:bg-primary/90 text-slate-950 rounded-xl font-black text-xs uppercase tracking-widest transition-all shadow-lg shadow-primary/20 hover:scale-[1.02]"
+            >
+              Enter Proctoring & Start Exam
+            </button>
+          </div>
+        </div>
+      );
+    }
     
     return (
       <div className="fixed inset-0 z-[9999] bg-slate-50 flex flex-col font-sans overflow-hidden select-none">
