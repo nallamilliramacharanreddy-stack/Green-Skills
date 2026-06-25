@@ -633,7 +633,7 @@ const Quiz = () => {
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement) {
         setIsFullscreen(false);
-        triggerViolation(2, "Full Screen Violation: Exited fullscreen mode.");
+        forceSubmit("Auto Termination: Exited Full Screen Mode");
       }
     };
 
