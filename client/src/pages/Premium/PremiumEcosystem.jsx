@@ -241,8 +241,8 @@ const RegionalLanguageSupport = () => {
         </div>
         <div className="p-3 bg-indigo-100 rounded-xl text-indigo-600"><Globe2 size={24} /></div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="col-span-2 bg-slate-50 p-6 rounded-3xl border border-slate-100">
+      <div className="grid grid-cols-1 gap-6">
+        <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
           <h4 className="font-bold text-slate-900 mb-4">Select Global Platform Language</h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {languages.map((lang, i) => (
@@ -255,16 +255,6 @@ const RegionalLanguageSupport = () => {
               </button>
             ))}
           </div>
-        </div>
-        <div className="col-span-1 bg-indigo-50 p-6 rounded-3xl border border-indigo-100 flex flex-col justify-center">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center text-white"><Video size={20} /></div>
-            <div>
-              <h4 className="font-bold text-indigo-900">Audio Learning</h4>
-              <p className="text-[10px] text-indigo-600 font-bold uppercase tracking-widest mt-1">Auto-translates course videos.</p>
-            </div>
-          </div>
-          <button onClick={() => toast.success('Voice instructions enabled. Module active.')} className="w-full py-4 bg-white text-indigo-900 font-black tracking-widest text-[10px] uppercase rounded-[20px] border border-indigo-200 shadow-sm hover:bg-indigo-100 transition-colors">Enable Voice</button>
         </div>
       </div>
     </div>
