@@ -468,7 +468,16 @@ const MyJourney = () => {
                           )}
                         </div>
                       ) : (
-                        <p className="text-[10px] text-slate-400 font-bold uppercase mt-2">No name change requests active</p>
+                        <button
+                          onClick={() => {
+                            setSelectedRegenCert(cert);
+                            setNewNameRegenInput('');
+                            setShowRegenModal(true);
+                          }}
+                          className="mt-4 w-full py-3 bg-slate-100 text-slate-800 hover:bg-slate-200 border border-slate-200 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all"
+                        >
+                          Ask Permission to Regenerate
+                        </button>
                       )}
                     </div>
                   );
