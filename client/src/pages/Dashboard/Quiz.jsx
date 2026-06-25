@@ -996,11 +996,24 @@ const Quiz = () => {
     if (document.fullscreenElement) document.exitFullscreen().catch(e => console.log(e));
   };
 
+  const ensureFullscreen = async () => {
+    if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+      try {
+        await document.documentElement.requestFullscreen();
+        setIsFullscreen(true);
+      } catch (err) {
+        console.error("Auto-fullscreen fallback failed:", err);
+      }
+    }
+  };
+
   const handleOptionSelect = (option) => {
+    ensureFullscreen();
     setUserAnswers({ ...userAnswers, [currentQuestion]: option });
   };
 
   const handleSaveAndNext = () => {
+    ensureFullscreen();
     const newStatus = { ...questionStatus };
     if (userAnswers[currentQuestion]) {
       newStatus[currentQuestion] = 'answered';
@@ -1018,6 +1031,7 @@ const Quiz = () => {
   };
 
   const handleMarkForReview = () => {
+    ensureFullscreen();
     setQuestionStatus({ ...questionStatus, [currentQuestion]: 'marked' });
     if (currentQuestion + 1 < activeQuiz.quiz.length) {
       setCurrentQuestion(currentQuestion + 1);
@@ -1025,6 +1039,7 @@ const Quiz = () => {
   };
 
   const jumpToQuestion = (index) => {
+    ensureFullscreen();
     const newStatus = { ...questionStatus };
     if (newStatus[currentQuestion] === 'not_visited' || newStatus[currentQuestion] === 'visited') {
        if (userAnswers[currentQuestion]) newStatus[currentQuestion] = 'answered';
