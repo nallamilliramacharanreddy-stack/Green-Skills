@@ -371,24 +371,12 @@ const MyJourney = () => {
                       }
 
                       return (
-                        <div className="flex flex-col sm:flex-row items-center gap-2">
-                          <button
-                            disabled
-                            className="px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest bg-slate-100 text-slate-400 cursor-not-allowed flex items-center justify-center gap-2 border border-slate-200"
-                          >
-                            <CheckCircle size={14} className="text-emerald-500" /> Already Generated
-                          </button>
-                          <button
-                            onClick={() => {
-                              setSelectedRegenCert(cert);
-                              setNewNameRegenInput('');
-                              setShowRegenModal(true);
-                            }}
-                            className="px-4 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-xl font-black uppercase text-[10px] tracking-widest border border-indigo-100 transition-all"
-                          >
-                            Request Name Change
-                          </button>
-                        </div>
+                        <button
+                          disabled
+                          className="px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest bg-slate-100 text-slate-400 cursor-not-allowed flex items-center justify-center gap-2 border border-slate-200"
+                        >
+                          <CheckCircle size={14} className="text-emerald-500" /> Already Generated
+                        </button>
                       );
                     })()}
                   </div>
@@ -480,16 +468,7 @@ const MyJourney = () => {
                           )}
                         </div>
                       ) : (
-                        <button
-                          onClick={() => {
-                            setSelectedRegenCert(cert);
-                            setNewNameRegenInput('');
-                            setShowRegenModal(true);
-                          }}
-                          className="mt-4 w-full py-3 bg-slate-100 text-slate-800 hover:bg-slate-200 border border-slate-200 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all"
-                        >
-                          Request Name Change
-                        </button>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase mt-2">No name change requests active</p>
                       )}
                     </div>
                   );
