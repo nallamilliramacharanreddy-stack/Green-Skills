@@ -720,7 +720,8 @@ const getMockResume = (userData, refinementPrompt) => {
         answer: "Talk about component memoization, lazy loading of subcomponents, profile analyzer metrics, and reducing unnecessary state re-renders."
       }
     ],
-    linkedin: {
+    linkedin,
+    linkedinOpt: {
       headline: `${title} | React & Node.js Developer | Specializing in Sustainable Tech Solutions`,
       about: `Passionate ${title} dedicated to constructing highly scalable, clean, and sustainable web applications. Experienced in JavaScript frameworks and cloud deployment automation. Let's connect to build greener tech!`
     }
@@ -937,8 +938,8 @@ const AIResumeBuilder = () => {
 
       {/* STAGE 1: Collecting Details via Chat */}
       {stage === 'collecting' && (
-        <div className="bg-white p-6 sm:p-8 rounded-[40px] border border-slate-100 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6 no-print">
-          <div className="md:col-span-2 space-y-4 flex flex-col h-[500px]">
+        <div className="bg-white p-6 sm:p-8 rounded-[40px] border border-slate-100 shadow-sm max-w-4xl mx-auto no-print">
+          <div className="space-y-4 flex flex-col h-[500px]">
             {/* Chat Messages */}
             <div className="flex-1 overflow-y-auto space-y-4 pr-2">
               {chatHistory.map((msg, i) => (
@@ -977,22 +978,6 @@ const AIResumeBuilder = () => {
                 <Send size={16} />
               </button>
             </div>
-          </div>
-
-          {/* Sidebar Tips & Autofill */}
-          <div className="md:col-span-1 bg-slate-50 p-6 rounded-3xl border border-slate-100 flex flex-col justify-between">
-            <div className="space-y-4">
-              <h4 className="font-bold text-slate-900 uppercase tracking-widest text-xs">Interview Tips</h4>
-              <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                Answering these details helps our AI optimize grammar and alignment. Make sure to use descriptive keywords.
-              </p>
-              <div className="p-4 bg-rose-50 rounded-2xl border border-rose-100 text-xs text-rose-700 font-medium leading-relaxed">
-                <strong>Tip:</strong> Don't leave empty sections. If you don't have experience, we'll suggest academic projects!
-              </div>
-            </div>
-            <button onClick={handleAutofill} className="w-full py-4 mt-6 bg-slate-900 hover:bg-slate-800 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-lg transition-colors flex items-center justify-center gap-2">
-              <Sparkles size={14} className="text-yellow-400" /> Autofill from Profile
-            </button>
           </div>
         </div>
       )}
@@ -1426,7 +1411,7 @@ const AIResumeBuilder = () => {
                       <h4 className="font-bold text-slate-900 text-sm uppercase">LinkedIn Headline</h4>
                       <button 
                         onClick={() => {
-                          navigator.clipboard.writeText(resumeData.linkedin?.headline);
+                          navigator.clipboard.writeText(resumeData.linkedinOpt?.headline);
                           toast.success('Headline copied!');
                         }}
                         className="text-[10px] font-black text-rose-500 uppercase tracking-widest"
@@ -1435,7 +1420,7 @@ const AIResumeBuilder = () => {
                       </button>
                     </div>
                     <p className="text-xs text-slate-700 font-bold bg-white p-3 rounded-xl border border-slate-200">
-                      {resumeData.linkedin?.headline}
+                      {resumeData.linkedinOpt?.headline}
                     </p>
                   </div>
 
@@ -1444,7 +1429,7 @@ const AIResumeBuilder = () => {
                       <h4 className="font-bold text-slate-900 text-sm uppercase">LinkedIn About Section</h4>
                       <button 
                         onClick={() => {
-                          navigator.clipboard.writeText(resumeData.linkedin?.about);
+                          navigator.clipboard.writeText(resumeData.linkedinOpt?.about);
                           toast.success('About text copied!');
                         }}
                         className="text-[10px] font-black text-rose-500 uppercase tracking-widest"
@@ -1453,7 +1438,7 @@ const AIResumeBuilder = () => {
                       </button>
                     </div>
                     <p className="text-xs text-slate-650 font-medium bg-white p-4 rounded-xl border border-slate-200 whitespace-pre-wrap leading-relaxed">
-                      {resumeData.linkedin?.about}
+                      {resumeData.linkedinOpt?.about}
                     </p>
                   </div>
                 </div>

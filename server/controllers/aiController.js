@@ -423,7 +423,8 @@ const getMockResume = (userData, refinementPrompt) => {
         answer: "Talk about component memoization, lazy loading of subcomponents, profile analyzer metrics, and reducing unnecessary state re-renders."
       }
     ],
-    linkedin: {
+    linkedin,
+    linkedinOpt: {
       headline: `${title} | React & Node.js Developer | Specializing in Sustainable Tech Solutions`,
       about: `Passionate ${title} dedicated to constructing highly scalable, clean, and sustainable web applications. Experienced in JavaScript frameworks and cloud deployment automation. Let's connect to build greener tech!`
     }
@@ -532,7 +533,7 @@ Return a valid JSON object with the following structure:
   "interviewPrep": [
     { "question": "Question 1", "answer": "Suggested answer 1" }
   ],
-  "linkedin": {
+  "linkedinOpt": {
     "headline": "LinkedIn Headline",
     "about": "LinkedIn About section text"
   }
