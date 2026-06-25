@@ -957,43 +957,6 @@ const Quiz = () => {
       console.error("Fullscreen initiation failed:", err);
     }
 
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480 },
-        audio: true
-      });
-      mediaStreamRef.current = stream;
-      setProctorStream(stream);
-      setStreamActive(true);
-
-      try {
-        const options = { mimeType: 'video/webm;codecs=vp9' };
-        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-          options.mimeType = 'video/webm;codecs=vp8';
-        }
-        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-          options.mimeType = 'video/webm';
-        }
-        if (MediaRecorder.isTypeSupported(options.mimeType)) {
-          const mediaRecorder = new MediaRecorder(stream, options);
-          mediaRecorderRef.current = mediaRecorder;
-          chunksRef.current = [];
-          mediaRecorder.ondataavailable = (e) => {
-            if (e.data && e.data.size > 0) {
-              chunksRef.current.push(e.data);
-            }
-          };
-          mediaRecorder.start(1000);
-        }
-      } catch (recorderErr) {
-        console.error("MediaRecorder init failed:", recorderErr);
-      }
-    } catch (err) {
-      console.error("Error accessing camera/mic:", err);
-      toast.error("Webcam and microphone access is required to proceed.");
-      return;
-    }
-
     setProctoringStarted(true);
   };
 
@@ -1248,16 +1211,15 @@ const Quiz = () => {
 
           <div className="max-w-md w-full bg-white/5 border border-white/10 backdrop-blur-xl p-8 rounded-[32px] text-center space-y-6 shadow-2xl relative z-10">
             <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto text-primary border border-primary/20">
-              <Video size={28} />
+              <ShieldAlert size={28} />
             </div>
             
             <div className="space-y-2">
-              <h2 className="text-2xl font-black uppercase tracking-tighter italic">Proctoring Verification</h2>
-              <p className="text-xs text-slate-400 font-medium">This assessment requires webcam/microphone access and full-screen mode to maintain academic integrity.</p>
+              <h2 className="text-2xl font-black uppercase tracking-tighter italic">Secure Exam Verification</h2>
+              <p className="text-xs text-slate-400 font-medium">This assessment requires full-screen mode to maintain academic integrity.</p>
             </div>
 
             <div className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl text-left space-y-2 text-[11px] text-slate-300 font-medium">
-              <p className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-primary"></span> Webcam & Mic must remain active</p>
               <p className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-primary"></span> Browser window must stay in Fullscreen</p>
               <p className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-primary"></span> Tab switching or dev tools will trigger auto-submission</p>
             </div>
@@ -1266,7 +1228,7 @@ const Quiz = () => {
               onClick={handleStartProctoring}
               className="w-full py-4 bg-primary hover:bg-primary/90 text-slate-950 rounded-xl font-black text-xs uppercase tracking-widest transition-all shadow-lg shadow-primary/20 hover:scale-[1.02]"
             >
-              Enter Proctoring & Start Exam
+              Enter Secure Exam Mode
             </button>
           </div>
         </div>
@@ -1456,45 +1418,6 @@ const Quiz = () => {
             {/* Right Question Palette */}
             <div className="w-80 bg-white border-l border-slate-200 flex flex-col shrink-0 z-20">
               
-              {/* Webcam Proctoring */}
-              <div className="p-4 border-b border-slate-100 bg-slate-900 relative">
-                <div className="w-full h-32 rounded-lg border border-slate-700 bg-black overflow-hidden relative shadow-inner">
-                  <video 
-                    ref={videoRef} 
-                    autoPlay 
-                    playsInline 
-                    muted 
-                    className="w-full h-full object-cover scale-x-[-1]" 
-                  />
-                  
-                  {/* Real-time Bounding Box Overlays */}
-                  {activeBox && (
-                    <div 
-                      className={`absolute border-2 ${activeBox.borderColor} pointer-events-none rounded flex flex-col justify-between`}
-                      style={{
-                        top: `${activeBox.top}%`,
-                        left: `${activeBox.left}%`,
-                        width: `${activeBox.width}%`,
-                        height: `${activeBox.height}%`,
-                        transition: 'all 0.2s ease'
-                      }}
-                    >
-                      <span className="bg-black/80 text-[8px] font-black text-white px-1 py-0.5 rounded-br w-max truncate max-w-full">
-                        {activeBox.label}
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="absolute top-2 left-2 flex gap-1.5">
-                    <span className={`flex items-center justify-center w-5 h-5 rounded-full ${streamActive ? 'bg-red-500/20 text-red-500 animate-pulse' : 'bg-slate-800 text-slate-500'}`}><Video size={10}/></span>
-                    <span className={`flex items-center justify-center w-5 h-5 rounded-full ${streamActive ? 'bg-green-500/20 text-green-500 animate-pulse' : 'bg-slate-800 text-slate-500'}`}><Mic size={10}/></span>
-                  </div>
-                  <div className="absolute bottom-2 right-2 flex items-center gap-1 text-[9px] text-white font-black uppercase bg-black/60 backdrop-blur-md px-2 py-1 rounded shadow-md border border-white/10">
-                    <ShieldAlert size={10} className={trustScore > 70 ? 'text-blue-400' : trustScore > 40 ? 'text-yellow-400' : 'text-red-500'} /> 
-                    Trust: <span className={trustScore > 70 ? 'text-blue-400' : trustScore > 40 ? 'text-yellow-400' : 'text-red-500'}>{trustScore}%</span>
-                  </div>
-                </div>
-              </div>
 
               {/* Profile Card Mini */}
               <div className="p-4 border-b border-slate-100 flex items-center gap-3 bg-slate-50">
