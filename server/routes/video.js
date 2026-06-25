@@ -322,6 +322,19 @@ router.post('/translate-video', async (req, res) => {
   }
 
   const TranslationHistory = require('../models/TranslationHistory');
+  const existingJob = await TranslationHistory.findOne({ videoUrl, targetLanguage, status: 'completed' });
+  if (existingJob) {
+    return res.json({
+      success: true,
+      originalLanguage: existingJob.originalLanguage,
+      originalTranscript: existingJob.originalTranscript,
+      translatedTranscript: existingJob.translatedTranscript,
+      translatedVideoUrl: existingJob.translatedVideoUrl,
+      subtitleUrl: existingJob.srtUrl,
+      vttSubtitleUrl: existingJob.vttUrl
+    });
+  }
+
   const job = await TranslationHistory.create({
     videoName: videoUrl.split('/').pop()?.split('?')[0] || 'Untitled Video',
     videoUrl,

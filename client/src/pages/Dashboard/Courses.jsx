@@ -9,11 +9,12 @@ import {
   CheckCircle, ArrowRight, Video,
   LayoutDashboard, Tag, Info, X, Lock, ChevronRight,
   Trash2, Edit2, Save, FileText, Globe,
-  Pause, Volume2, VolumeX, Maximize, Minimize
+  Pause, Volume2, VolumeX, Maximize, Minimize, Loader2
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import { API_URL, API_BASE_URL } from '../../utils/api';
+import { useRealTime } from '../../context/RealTimeContext';
 import 'youtube-video-element';
 
 
@@ -40,6 +41,7 @@ const getYoutubeEmbedUrl = (url) => {
 
 const Courses = () => {
   const { user, updateUser } = useAuth();
+  const { socket } = useRealTime();
   const location = useLocation();
   const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
@@ -68,12 +70,79 @@ const Courses = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [activeSubLang, setActiveSubLang] = useState('none');
 
+  // Dynamic Translation States
+  const [isTranslatingOnFly, setIsTranslatingOnFly] = useState(false);
+  const [translationProgress, setTranslationProgress] = useState(0);
+  const [translationMsg, setTranslationMsg] = useState('');
+  const [selectedLang, setSelectedLang] = useState('en');
+  const [translatedSourceUrl, setTranslatedSourceUrl] = useState('');
+  const [translatedVttUrl, setTranslatedVttUrl] = useState('');
+
   useEffect(() => {
     setVideoSourceIndex(0);
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
+    setSelectedLang('en');
+    setTranslatedSourceUrl('');
+    setTranslatedVttUrl('');
+    setIsTranslatingOnFly(false);
   }, [selectedCourse, activeLessonIndex]);
+
+  useEffect(() => {
+    if (!socket) return;
+    const handleProgress = (data) => {
+      setTranslationProgress(data.progress);
+      if (data.message) setTranslationMsg(data.message);
+    };
+    socket.on('translation_progress', handleProgress);
+    return () => {
+      socket.off('translation_progress', handleProgress);
+    };
+  }, [socket]);
+
+  const handleLangChange = async (lang) => {
+    setSelectedLang(lang);
+    if (lang === 'en') {
+      setTranslatedSourceUrl('');
+      setTranslatedVttUrl('');
+      return;
+    }
+
+    setIsTranslatingOnFly(true);
+    setTranslationProgress(0);
+    setTranslationMsg('Starting dynamic translation...');
+
+    try {
+      const lesson = selectedCourse.lessons[activeLessonIndex];
+      const videoSrcUrl = lesson.internalVideoUrl || lesson.directVideoUrl || lesson.youtubeLink;
+
+      const res = await fetch(`${API_BASE_URL}/api/videos/translate-video`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          videoUrl: videoSrcUrl,
+          targetLanguage: lang,
+          socketId: socket?.id
+        })
+      });
+
+      if (!res.ok) throw new Error('Dynamic Translation failed');
+      const data = await res.json();
+      if (data.translatedVideoUrl) {
+        setTranslatedSourceUrl(data.translatedVideoUrl);
+        setTranslatedVttUrl(data.vttSubtitleUrl);
+        toast.success(`Video successfully dubbed to ${lang}`);
+      } else {
+        throw new Error('No translated URL returned');
+      }
+    } catch (e) {
+      toast.error(e.message);
+      setSelectedLang('en');
+    } finally {
+      setIsTranslatingOnFly(false);
+    }
+  };
 
   const getVideoUrl = (url) => {
     if (!url) return '';
@@ -577,7 +646,6 @@ const Courses = () => {
                       (() => {
                         const lesson = selectedCourse.lessons[activeLessonIndex];
                         let internalUrl = lesson.internalVideoUrl || lesson.directVideoUrl;
-                        const hasTranslations = lesson.audioTracks && lesson.audioTracks.length > 0;
 
                         let ytVideoId = '';
                         if (lesson.youtubeLink) {
@@ -589,49 +657,34 @@ const Courses = () => {
                           else if (embedMatch) ytVideoId = embedMatch[1];
                         }
 
-                        let playMode = 'native';
+                        // Always play native via our proxy or internal URL
                         let sourceUrl = '';
-
-                        if (videoSourceIndex === 0) {
-                          if (internalUrl) {
-                            sourceUrl = getVideoUrl(internalUrl);
-                          } else if (ytVideoId) {
-                            sourceUrl = `${API_URL}/videos/stream-live/${ytVideoId}`;
-                          } else {
-                            playMode = 'youtube';
-                          }
-                        } else if (videoSourceIndex === 1) {
-                          if (ytVideoId) {
-                            sourceUrl = `http://localhost:5001/api/videos/stream-live/${ytVideoId}`;
-                          } else {
-                            playMode = 'youtube';
-                          }
-                        } else {
-                          playMode = 'youtube';
+                        if (internalUrl) {
+                          sourceUrl = getVideoUrl(internalUrl);
+                        } else if (ytVideoId) {
+                          const baseApi = API_URL.endsWith('/api') ? API_URL.substring(0, API_URL.length - 4) : API_URL;
+                          sourceUrl = `${baseApi}/api/videos/stream-live/${ytVideoId}`;
                         }
+
+                        const activeVideoSrc = selectedLang !== 'en' && translatedSourceUrl ? translatedSourceUrl : sourceUrl;
 
                         return (
                           <div className="w-full h-full relative flex items-center justify-center">
-                            {/* 1. Youtube Video Element */}
-                            {playMode === 'youtube' && lesson.youtubeLink ? (
-                              <youtube-video
-                                ref={videoRef}
-                                id={`video-${lesson._id}`}
-                                className="w-full h-full aspect-video object-contain pointer-events-none"
-                                src={lesson.youtubeLink}
-                                playsInline
-                                autoPlay
-                                onPlay={() => setIsPlaying(true)}
-                                onPause={() => setIsPlaying(false)}
-                                onTimeUpdate={(e) => setCurrentTime(e.target.currentTime)}
-                                onDurationChange={(e) => setDuration(e.target.duration)}
-                                onEnded={() => {
-                                  setLessonWatched(true);
-                                  handleCompleteLesson(selectedCourse._id, activeLessonIndex);
-                                }}
-                              />
-                            ) : playMode === 'native' && sourceUrl ? (
-                              /* 2. Native HTML5 Video Element */
+                            
+                            {/* On-The-Fly Translation Loader Overlay */}
+                            {isTranslatingOnFly && (
+                              <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md z-[60] flex flex-col items-center justify-center p-8 text-center">
+                                <Loader2 className="text-primary animate-spin mb-4" size={48} />
+                                <h4 className="text-white font-bold uppercase tracking-wider text-sm mb-2">Translating Video to {selectedLang}</h4>
+                                <p className="text-slate-400 text-xs font-mono mb-4">{translationMsg}</p>
+                                <div className="w-64 h-2 bg-white/10 rounded-full overflow-hidden border border-white/5">
+                                  <div className="h-full bg-primary transition-all duration-300" style={{ width: `${translationProgress}%` }}></div>
+                                </div>
+                                <span className="text-[10px] font-mono text-primary font-bold mt-2">{Math.round(translationProgress)}%</span>
+                              </div>
+                            )}
+
+                            {activeVideoSrc ? (
                               <video
                                 ref={videoRef}
                                 id={`video-${lesson._id}`}
@@ -642,59 +695,35 @@ const Courses = () => {
                                 autoPlay
                                 muted={isMuted}
                                 crossOrigin="anonymous"
-                                src={sourceUrl}
-                                onError={() => {
-                                  console.log(`Failed to load native stream URL: ${sourceUrl} (index: ${videoSourceIndex})`);
-                                  if (videoSourceIndex === 0 && !API_URL.includes('localhost') && !API_URL.includes('127.0.0.1')) {
-                                    setVideoSourceIndex(1); // Try local backend proxy
-                                  } else {
-                                    setVideoSourceIndex(2); // Fallback to YouTube player
-                                  }
-                                }}
-                                onPlay={(e) => {
-                                  setIsPlaying(true);
-                                  // Sync alternative audio track if selected
-                                  const audioEl = document.getElementById(`audio-${lesson._id}`);
-                                  if (audioEl) {
-                                    audioEl.currentTime = e.target.currentTime;
-                                    audioEl.play().catch(() => { });
-                                    e.target.muted = true;
-                                  } else {
-                                    e.target.muted = isMuted;
-                                  }
-                                }}
-                                onPause={(e) => {
-                                  setIsPlaying(false);
-                                  const audioEl = document.getElementById(`audio-${lesson._id}`);
-                                  if (audioEl) audioEl.pause();
-                                }}
-                                onTimeUpdate={(e) => {
-                                  setCurrentTime(e.target.currentTime);
-                                }}
-                                onDurationChange={(e) => {
-                                  setDuration(e.target.duration);
-                                }}
+                                src={activeVideoSrc}
+                                onPlay={() => setIsPlaying(true)}
+                                onPause={() => setIsPlaying(false)}
+                                onTimeUpdate={(e) => setCurrentTime(e.target.currentTime)}
+                                onDurationChange={(e) => setDuration(e.target.duration)}
                                 onEnded={() => {
                                   setLessonWatched(true);
                                   handleCompleteLesson(selectedCourse._id, activeLessonIndex);
                                 }}
                               >
-                                {lesson.subtitles && lesson.subtitles.map((sub, i) => (
-                                  <track key={i} kind="subtitles" src={sub.url} srcLang={sub.languageCode} label={sub.language} />
-                                ))}
+                                {selectedLang !== 'en' && translatedVttUrl ? (
+                                  <track kind="subtitles" src={translatedVttUrl} srcLang={selectedLang} label={selectedLang} default />
+                                ) : (
+                                  lesson.subtitles && lesson.subtitles.map((sub, i) => (
+                                    <track key={i} kind="subtitles" src={sub.url} srcLang={sub.languageCode} label={sub.language} />
+                                  ))
+                                )}
                                 Your browser does not support the video tag.
                               </video>
                             ) : (
-                              /* 3. Unavailable */
                               <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900 text-slate-500 p-10 text-center">
                                 <Video size={48} className="mb-4 opacity-50 text-white" />
                                 <h3 className="text-xl font-black uppercase tracking-widest text-white mb-2">Video Unavailable</h3>
-                                <p className="text-xs font-medium uppercase tracking-widest text-slate-400">The instructor hasn't provided a valid video link for this lesson.</p>
+                                <p className="text-xs font-medium uppercase tracking-widest text-slate-400">No stream source is currently available for this lesson.</p>
                               </div>
                             )}
 
-                            {/* Unified Premium Controls Overlay */}
-                            {playMode !== 'none' && (sourceUrl || (playMode === 'youtube' && lesson.youtubeLink)) && (
+                            {/* Custom Controls Overlay */}
+                            {activeVideoSrc && (
                               <div 
                                 className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-6 z-30 transition-opacity duration-300 pointer-events-none ${
                                   showControls ? 'opacity-100' : 'opacity-0'
@@ -752,94 +781,28 @@ const Courses = () => {
                                   </div>
 
                                   <div className="flex items-center gap-6">
-                                    {/* Subtitles (Only if subtitles exist) */}
-                                    {lesson.subtitles && lesson.subtitles.length > 0 && (
-                                      <div className="relative group/sub">
-                                        <button className="text-white hover:text-primary transition-colors text-xs font-bold uppercase tracking-wider">
-                                          CC
-                                        </button>
-                                        <div className="absolute bottom-full right-0 mb-2 hidden group-hover/sub:block bg-slate-950/90 border border-white/10 rounded-xl p-2 min-w-[120px] shadow-2xl">
-                                          <button
-                                            onClick={() => {
-                                              if (videoRef.current) {
-                                                for (let i = 0; i < videoRef.current.textTracks.length; i++) {
-                                                  videoRef.current.textTracks[i].mode = 'disabled';
-                                                }
-                                              }
-                                              setActiveSubLang('none');
-                                            }}
-                                            className={`w-full text-left px-3 py-1.5 text-[10px] font-bold rounded-lg ${
-                                              activeSubLang === 'none' ? 'text-primary bg-white/5' : 'text-white hover:bg-white/5'
-                                            }`}
-                                          >
-                                            Off
-                                          </button>
-                                          {lesson.subtitles.map((sub, i) => (
-                                            <button
-                                              key={i}
-                                              onClick={() => {
-                                                if (videoRef.current) {
-                                                  for (let j = 0; j < videoRef.current.textTracks.length; j++) {
-                                                    if (videoRef.current.textTracks[j].language === sub.languageCode) {
-                                                      videoRef.current.textTracks[j].mode = 'showing';
-                                                    } else {
-                                                      videoRef.current.textTracks[j].mode = 'disabled';
-                                                    }
-                                                  }
-                                                }
-                                                setActiveSubLang(sub.languageCode);
-                                              }}
-                                              className={`w-full text-left px-3 py-1.5 text-[10px] font-bold rounded-lg ${
-                                                activeSubLang === sub.languageCode ? 'text-primary bg-white/5' : 'text-white hover:bg-white/5'
-                                              }`}
-                                            >
-                                              {sub.language}
-                                            </button>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    )}
+                                    {/* CC Subtitles Button */}
+                                    <button 
+                                      onClick={() => setShowSubtitles(!showSubtitles)}
+                                      className={`text-xs font-bold uppercase tracking-wider transition-colors ${showSubtitles ? 'text-primary' : 'text-white'}`}
+                                    >
+                                      CC
+                                    </button>
 
-                                    {/* AI Translation Overlay Controls */}
-                                    {hasTranslations && (
-                                      <div className="flex items-center gap-2 px-3 py-1.5 hover:bg-white/10 rounded-xl cursor-pointer transition-colors text-white text-xs font-bold">
-                                        <Globe size={14} className="text-primary" />
-                                        <select
-                                          className="bg-transparent outline-none border-none cursor-pointer text-white"
-                                          onChange={(e) => {
-                                            const lang = e.target.value;
-                                            const videoEl = videoRef.current;
-                                            let audioEl = document.getElementById(`audio-${lesson._id}`);
-
-                                            if (lang === 'en') {
-                                              if (audioEl) {
-                                                audioEl.pause();
-                                                audioEl.remove();
-                                              }
-                                              if (videoEl) videoEl.muted = isMuted;
-                                            } else {
-                                              const track = lesson.audioTracks.find(t => t.languageCode === lang);
-                                              if (track && videoEl) {
-                                                if (!audioEl) {
-                                                  audioEl = document.createElement('audio');
-                                                  audioEl.id = `audio-${lesson._id}`;
-                                                  document.body.appendChild(audioEl);
-                                                }
-                                                audioEl.src = track.url;
-                                                audioEl.currentTime = videoEl.currentTime;
-                                                videoEl.muted = true;
-                                                if (!videoEl.paused) audioEl.play().catch(() => {});
-                                              }
-                                            }
-                                          }}
-                                        >
-                                          <option value="en" className="bg-slate-900 text-white">English (Original)</option>
-                                          {lesson.audioTracks.map((t, i) => (
-                                            <option key={i} value={t.languageCode} className="bg-slate-900 text-white">{t.language} (AI Dub)</option>
-                                          ))}
-                                        </select>
-                                      </div>
-                                    )}
+                                    {/* Language Option Switcher */}
+                                    <div className="flex items-center gap-2 px-3 py-1.5 hover:bg-white/10 rounded-xl cursor-pointer transition-colors text-white text-xs font-bold">
+                                      <Globe size={14} className="text-primary" />
+                                      <select
+                                        className="bg-transparent outline-none border-none cursor-pointer text-white"
+                                        value={selectedLang}
+                                        onChange={(e) => handleLangChange(e.target.value)}
+                                      >
+                                        <option value="en" className="bg-slate-900 text-white">English (Original)</option>
+                                        {TARGET_LANGUAGES.map((lang, idx) => (
+                                          <option key={idx} value={lang} className="bg-slate-900 text-white">{lang}</option>
+                                        ))}
+                                      </select>
+                                    </div>
 
                                     {/* Fullscreen Toggle */}
                                     <button
