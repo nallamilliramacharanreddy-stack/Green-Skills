@@ -631,7 +631,8 @@ const Quiz = () => {
 
     // Fullscreen exit
     const handleFullscreenChange = () => {
-      if (!document.fullscreenElement) {
+      const isFS = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+      if (!isFS) {
         setIsFullscreen(false);
         forceSubmit("Auto Termination: Exited Full Screen Mode");
       }
@@ -759,6 +760,9 @@ const Quiz = () => {
     // Event registrations
     document.addEventListener('visibilitychange', handleVisibilityChange);
     document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
     document.addEventListener('contextmenu', preventDefaultContextMenu);
     document.addEventListener('selectstart', handleSelectStart);
     document.addEventListener('dragstart', handleDragStart);
@@ -779,6 +783,9 @@ const Quiz = () => {
       clearTimeout(inactivityTimer);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
       document.removeEventListener('contextmenu', preventDefaultContextMenu);
       document.removeEventListener('selectstart', handleSelectStart);
       document.removeEventListener('dragstart', handleDragStart);
@@ -803,7 +810,7 @@ const Quiz = () => {
       }
       setProctorStream(null);
     };
-  }, [activeQuiz, attemptId, showResult]);
+  }, [activeQuiz, attemptId, showResult, proctoringStarted]);
 
   // Real AI Proctoring Evaluation Loop
   useEffect(() => {
@@ -940,8 +947,10 @@ const Quiz = () => {
 
   const handleStartProctoring = async () => {
     try {
-      if (document.documentElement.requestFullscreen) {
-        await document.documentElement.requestFullscreen();
+      const docEl = document.documentElement;
+      const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+      if (requestFS) {
+        await requestFS.call(docEl);
         setIsFullscreen(true);
       }
     } catch (err) {
@@ -993,16 +1002,22 @@ const Quiz = () => {
     setAutoSubmitReasonState(reason);
     setShowResult(true);
     submitScore(true, reason);
-    if (document.fullscreenElement) document.exitFullscreen().catch(e => console.log(e));
+    const exitFS = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+    if (exitFS) exitFS.call(document).catch(e => console.log(e));
   };
 
   const ensureFullscreen = async () => {
-    if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
-      try {
-        await document.documentElement.requestFullscreen();
-        setIsFullscreen(true);
-      } catch (err) {
-        console.error("Auto-fullscreen fallback failed:", err);
+    const isFS = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+    if (!isFS) {
+      const docEl = document.documentElement;
+      const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+      if (requestFS) {
+        try {
+          await requestFS.call(docEl);
+          setIsFullscreen(true);
+        } catch (err) {
+          console.error("Auto-fullscreen fallback failed:", err);
+        }
       }
     }
   };
