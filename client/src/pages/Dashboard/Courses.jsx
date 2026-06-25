@@ -704,6 +704,16 @@ const Courses = () => {
                                   setLessonWatched(true);
                                   handleCompleteLesson(selectedCourse._id, activeLessonIndex);
                                 }}
+                                onError={(e) => {
+                                  console.error("Video streaming failed, loading backup video:", e);
+                                  const fallbackUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+                                  if (e.target.src !== fallbackUrl) {
+                                    toast.error("YouTube stream rate-limited on server. Loading backup MP4...");
+                                    e.target.src = fallbackUrl;
+                                    e.target.load();
+                                    e.target.play().catch(err => console.log("Playback failed:", err));
+                                  }
+                                }}
                               >
                                 {selectedLang !== 'en' && translatedVttUrl ? (
                                   <track kind="subtitles" src={translatedVttUrl} srcLang={selectedLang} label={selectedLang} default />
