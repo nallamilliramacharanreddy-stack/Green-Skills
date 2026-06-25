@@ -208,19 +208,19 @@ const ReportViewer = ({ result, onBack, onInvalidate }) => {
   let integrityColor = "text-emerald-500 border-emerald-200 bg-emerald-50";
   let integrityProgressColor = "stroke-emerald-500";
   
-  if (trust < 25) {
-    integrityLevel = "Integrity Failed";
+  if (trust < 50) {
+    integrityLevel = "Severe Violation";
     integrityColor = "text-red-600 border-red-200 bg-red-50";
     integrityProgressColor = "stroke-red-600";
-  } else if (trust < 50) {
+  } else if (trust < 70) {
     integrityLevel = "High Risk";
     integrityColor = "text-orange-500 border-orange-200 bg-orange-50";
     integrityProgressColor = "stroke-orange-500";
-  } else if (trust < 75) {
+  } else if (trust < 85) {
     integrityLevel = "Suspicious";
     integrityColor = "text-amber-500 border-amber-200 bg-amber-50";
     integrityProgressColor = "stroke-amber-500";
-  } else if (trust < 90) {
+  } else if (trust < 95) {
     integrityLevel = "Good";
     integrityColor = "text-teal-500 border-teal-200 bg-teal-50";
     integrityProgressColor = "stroke-teal-500";
@@ -318,6 +318,26 @@ const ReportViewer = ({ result, onBack, onInvalidate }) => {
               <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold flex items-center gap-1">
                 <Clock size={12} /> {Math.floor((result.duration || 0) / 60)}m {(result.duration || 0) % 60}s
               </span>
+              {(() => {
+                const getRec = () => {
+                  if (result.isInvalidated || result.autoSubmitReason || trust < 50) {
+                    return { text: "Disqualify Attempt", color: "bg-red-100 text-red-700 border-red-200" };
+                  }
+                  if (trust >= 95 && (result.warnings || 0) === 0) {
+                    return { text: "Pass Review", color: "bg-emerald-100 text-emerald-700 border-emerald-200" };
+                  }
+                  if (trust >= 85) {
+                    return { text: "Manual Review Required", color: "bg-teal-100 text-teal-700 border-teal-200" };
+                  }
+                  return { text: "High Risk Attempt", color: "bg-orange-100 text-orange-700 border-orange-200" };
+                };
+                const rec = getRec();
+                return (
+                  <span className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider border ${rec.color}`}>
+                    Rec: {rec.text}
+                  </span>
+                );
+              })()}
             </div>
           </div>
         </div>

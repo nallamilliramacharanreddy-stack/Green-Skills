@@ -58,6 +58,10 @@ const Quiz = () => {
   });
   const [questionStatus, setQuestionStatus] = useState({}); // 'not_visited', 'visited', 'answered', 'marked'
   const videoRef = useRef(null);
+  const tabSwitchCountRef = useRef(0);
+  const fullscreenExitCountRef = useRef(0);
+  const criticalViolationsCountRef = useRef(0);
+  const highViolationsCountRef = useRef(0);
   const mediaStreamRef = useRef(null);
   const [proctorStream, setProctorStream] = useState(null);
   const mediaRecorderRef = useRef(null);
@@ -412,10 +416,10 @@ const Quiz = () => {
 
   const getSeverityDeduction = (severity) => {
     switch (severity) {
-      case 'low': return 2;
-      case 'medium': return 5;
-      case 'high': return 10;
-      case 'critical': return 25;
+      case 'low': return 5;
+      case 'medium': return 10;
+      case 'high': return 20;
+      case 'critical': return 50;
       default: return 0;
     }
   };
@@ -454,17 +458,40 @@ const Quiz = () => {
     const deduction = getSeverityDeduction(v.severity);
     setTrustScore(t => {
       const nextScore = Math.max(0, t - deduction);
-      if (nextScore < 20) {
-        setTimeout(() => forceSubmit("Trust score fell below 20%"), 300);
+      if (nextScore < 50) {
+        setTimeout(() => forceSubmit("Auto Termination: Integrity Score fell below 50%"), 300);
       }
       return nextScore;
     });
 
-    // Track severity counts
+    // Track severity counts via refs and state
     if (v.severity === 'high') {
-      setHighSeverityCount(c => c + 1);
+      highViolationsCountRef.current += 1;
+      setHighSeverityCount(highViolationsCountRef.current);
     } else if (v.severity === 'critical') {
-      setCriticalSeverityCount(c => c + 1);
+      criticalViolationsCountRef.current += 1;
+      setCriticalSeverityCount(criticalViolationsCountRef.current);
+    }
+
+    if (violationId === 1) { // Tab Switch
+      tabSwitchCountRef.current += 1;
+    }
+    if (violationId === 2) { // Fullscreen Exit
+      fullscreenExitCountRef.current += 1;
+    }
+
+    // Auto Termination check on count limits
+    if (tabSwitchCountRef.current > 10) {
+      setTimeout(() => forceSubmit("Auto Termination: More than 10 tab switches"), 300);
+      return;
+    }
+    if (fullscreenExitCountRef.current > 5) {
+      setTimeout(() => forceSubmit("Auto Termination: More than 5 fullscreen exits"), 300);
+      return;
+    }
+    if (criticalViolationsCountRef.current >= 2) {
+      setTimeout(() => forceSubmit("Auto Termination: Multiple critical violations"), 300);
+      return;
     }
 
     if (violationId === 61) { // Mobile Phone Detected
@@ -497,16 +524,23 @@ const Quiz = () => {
       }, 100);
     }
 
-    if (v.severity === 'high' || v.severity === 'critical') {
-      setWarnings(w => {
-        const next = w + 1;
-        if (next >= 3) {
-          setTimeout(() => {
-            forceSubmit("Auto Submission Due To Violations");
-          }, 100);
-        }
-        return next;
+    // Warning Levels
+    // Warning Level 2: 5 High OR 3 Critical
+    // Warning Level 1: 2 High OR 1 Critical
+    const hCount = highViolationsCountRef.current;
+    const cCount = criticalViolationsCountRef.current;
+    if (hCount >= 5 || cCount >= 3) {
+      toast.error("Final Warning: Continued violations may terminate the exam.", {
+        duration: 5000,
+        style: { background: '#fef2f2', color: '#dc2626', border: '2px solid #ef4444', fontWeight: 'black', fontSize: '13px' }
       });
+      setWarnings(2);
+    } else if (hCount >= 2 || cCount >= 1) {
+      toast.warning("Warning: Suspicious activity detected.", {
+        duration: 4000,
+        style: { background: '#fffbeb', color: '#d97706', border: '1px solid #f59e0b', fontWeight: 'bold' }
+      });
+      setWarnings(1);
     }
 
     const logEntry = { timestamp, event: v.name, severity: v.severity };
@@ -527,11 +561,6 @@ const Quiz = () => {
       severity: v.severity,
       questionIndex: currentQuestion
     }]);
-
-    toast.error(`ALERT: ${v.name}`, {
-      duration: 3000,
-      style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5', fontWeight: 'bold' }
-    });
 
     // Auto submit rules
     if (violationId === 85) setTimeout(() => forceSubmit("Developer Tools Opened"), 300);
@@ -584,10 +613,24 @@ const Quiz = () => {
       });
     }, 1000);
 
+    // Inactivity Monitor (120 seconds threshold, Severity: Medium)
+    let inactivityTimer;
+    const resetInactivityTimer = () => {
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => {
+        triggerViolation(109, "Inactivity Monitoring: No mouse or keyboard interaction for 120 seconds.");
+      }, 120000);
+    };
+
     // Visibility switch
     const handleVisibilityChange = () => {
+      const isMobile = /Mobi|Android|iPhone/i.test(navigator.userAgent);
       if (document.hidden) {
-        triggerViolation(1, "Excessive Tab Switching: Hidden window state.");
+        if (isMobile) {
+          triggerViolation(31, "Mobile Device App Switch: Switched away or backgrounded on mobile.");
+        } else {
+          triggerViolation(1, "Tab Switching: Left the quiz tab or minimized window.");
+        }
       } else {
         triggerViolation(3, "Browser Hidden Behind Other Windows: Refocused.");
       }
@@ -597,73 +640,125 @@ const Quiz = () => {
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement) {
         setIsFullscreen(false);
-        triggerViolation(2, "Browser Minimized: Exited fullscreen.");
+        triggerViolation(2, "Full Screen Violation: Exited fullscreen mode.");
       }
     };
 
     // Right Click context menu blocker
-    const preventDefault = (e) => {
+    const preventDefaultContextMenu = (e) => {
       e.preventDefault();
-      triggerViolation(80, "Right Click Attempt: Blocked context menu.");
-      triggerViolation(81, "Context Menu Attempt: Blocked context menu.");
+      triggerViolation(80, "Copy and Paste: Right-click copy/context menu attempt blocked.");
     };
 
-    // Keyboard blockers
+    // Select start and drag copy blockers
+    const handleSelectStart = (e) => {
+      e.preventDefault();
+      triggerViolation(75, "Copy and Paste: Text selection attempt blocked.");
+    };
+    const handleDragStart = (e) => {
+      e.preventDefault();
+      triggerViolation(72, "Copy and Paste: Drag-copy attempt blocked.");
+    };
+
+    // Keyboard blockers & monitoring
     const handleKeyDown = (e) => {
+      resetInactivityTimer();
+
+      // Browser Refresh Detection
+      if (e.key === 'F5' || (e.ctrlKey && e.key.toLowerCase() === 'r') || (e.metaKey && e.key.toLowerCase() === 'r')) {
+        e.preventDefault();
+        triggerViolation(7, "Browser Refresh Detection: Refresh attempt (F5/Ctrl+R) intercepted.");
+        return;
+      }
+
+      // F12 key (DevTools)
       if (e.key === 'F12') {
         e.preventDefault();
-        triggerViolation(84, "F12 Key Usage");
-        triggerViolation(85, "Developer Tools Opened");
+        triggerViolation(84, "Developer Tools Detection: F12 key action.");
+        triggerViolation(85, "Developer Tools Detection: Developer tools opening.");
         return;
       }
 
-      if ((e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'i') || (e.metaKey && e.altKey && e.key.toLowerCase() === 'i')) {
+      // Ctrl+Shift+I / J / C (DevTools)
+      if (e.ctrlKey && e.shiftKey && (e.key.toLowerCase() === 'i' || e.key.toLowerCase() === 'j' || e.key.toLowerCase() === 'c')) {
         e.preventDefault();
-        triggerViolation(86, "Inspect Element Usage");
-        triggerViolation(85, "Developer Tools Opened");
+        triggerViolation(86, "Developer Tools Detection: Ctrl+Shift+I/J/C developer keys pressed.");
+        triggerViolation(85, "Developer Tools Detection: Developer tools opening.");
         return;
       }
-
-      if ((e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'j') || (e.metaKey && e.altKey && e.key.toLowerCase() === 'j')) {
+      if (e.metaKey && e.altKey && (e.key.toLowerCase() === 'i' || e.key.toLowerCase() === 'j' || e.key.toLowerCase() === 'c')) {
         e.preventDefault();
-        triggerViolation(87, "Console Access Attempt");
-        triggerViolation(85, "Developer Tools Opened");
+        triggerViolation(86, "Developer Tools Detection: Cmd+Alt+I/J/C developer keys pressed.");
+        triggerViolation(85, "Developer Tools Detection: Developer tools opening.");
         return;
       }
 
+      // Ctrl+U (source view)
       if ((e.ctrlKey && e.key.toLowerCase() === 'u') || (e.metaKey && e.altKey && e.key.toLowerCase() === 'u')) {
         e.preventDefault();
-        triggerViolation(88, "Source Code Inspection");
+        triggerViolation(88, "Developer Tools Detection: Attempted source code inspection.");
         return;
+      }
+
+      // Keyboard Shortcut Monitoring: Windows Key, Alt+Tab, Cmd+Tab, Ctrl+Tab, Ctrl+N, Ctrl+T, Ctrl+W
+      if (e.key === 'Meta' || e.key === 'OS') {
+        triggerViolation(8, "Keyboard Shortcut Monitoring: System logo/Windows/Cmd key pressed.");
+      }
+      if (e.altKey && e.key === 'Tab') {
+        triggerViolation(1, "Keyboard Shortcut Monitoring: Alt+Tab shortcut detected.");
+      }
+      if (e.ctrlKey && e.key === 'Tab') {
+        triggerViolation(1, "Keyboard Shortcut Monitoring: Ctrl+Tab shortcut detected.");
       }
 
       if (e.ctrlKey || e.metaKey) {
         if (e.key.toLowerCase() === 'c') {
           e.preventDefault();
-          triggerViolation(72, "Copy Attempt");
+          triggerViolation(72, "Copy and Paste: Copy shortcut (Ctrl+C) blocked.");
         }
         if (e.key.toLowerCase() === 'v') {
           e.preventDefault();
-          triggerViolation(73, "Paste Attempt");
+          triggerViolation(73, "Copy and Paste: Paste shortcut (Ctrl+V) blocked.");
+          triggerViolation(92, "AI Tool Usage Detection: Copy-paste behavior flagged.");
         }
         if (e.key.toLowerCase() === 'x') {
           e.preventDefault();
-          triggerViolation(74, "Cut Attempt");
+          triggerViolation(74, "Copy and Paste: Cut shortcut (Ctrl+X) blocked.");
         }
         if (e.key.toLowerCase() === 'a') {
           e.preventDefault();
-          triggerViolation(75, "Select All Attempt");
+          triggerViolation(75, "Copy and Paste: Select All shortcut (Ctrl+A) blocked.");
+        }
+        if (e.key.toLowerCase() === 'n') {
+          e.preventDefault();
+          triggerViolation(5, "Keyboard Shortcut Monitoring: Ctrl+N new window blocked.");
+        }
+        if (e.key.toLowerCase() === 't') {
+          e.preventDefault();
+          triggerViolation(4, "Keyboard Shortcut Monitoring: Ctrl+T new tab blocked.");
+        }
+        if (e.key.toLowerCase() === 'w') {
+          e.preventDefault();
+          triggerViolation(6, "Keyboard Shortcut Monitoring: Ctrl+W close tab blocked.");
         }
       }
     };
 
-    // Zoom/Resolution checks
+    // Zoom/Resolution/Resize checks
     const handleResize = () => {
       const ratio = window.outerWidth / window.innerWidth;
       if (Math.abs(ratio - 1) > 0.08) {
-        triggerViolation(13, "Browser Zoom Manipulation");
+        triggerViolation(13, "Full Screen Violations: Browser Zoom manipulation.");
       }
-      triggerViolation(18, "Screen Resolution Changed");
+      triggerViolation(18, "Full Screen Violations: Browser window resize event.");
+    };
+
+    // Network Manipulation events
+    const handleOffline = () => {
+      triggerViolation(98, "Network Manipulation: System went offline.");
+    };
+    const handleOnline = () => {
+      triggerViolation(103, "Network Manipulation: System came online.");
     };
 
     // Activate Webcam and Microphone for Proctoring
@@ -697,7 +792,7 @@ const Quiz = () => {
             mediaRecorder.start(1000);
           }
         } catch (recorderErr) {
-          console.error("MediaRecorder init failed (continuing with just stream):", recorderErr);
+          console.error("MediaRecorder init failed:", recorderErr);
         }
       } catch (err) {
         console.error("Error accessing camera/mic for proctoring:", err);
@@ -706,25 +801,40 @@ const Quiz = () => {
     };
     startProctoringStream();
 
+    // Event registrations
     document.addEventListener('visibilitychange', handleVisibilityChange);
     document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('contextmenu', preventDefault);
-    document.addEventListener('copy', preventDefault);
-    document.addEventListener('cut', preventDefault);
-    document.addEventListener('paste', preventDefault);
+    document.addEventListener('contextmenu', preventDefaultContextMenu);
+    document.addEventListener('selectstart', handleSelectStart);
+    document.addEventListener('dragstart', handleDragStart);
     document.addEventListener('keydown', handleKeyDown);
     window.addEventListener('resize', handleResize);
+    window.addEventListener('offline', handleOffline);
+    window.addEventListener('online', handleOnline);
+
+    // User activity interactions
+    window.addEventListener('mousemove', resetInactivityTimer);
+    window.addEventListener('click', resetInactivityTimer);
+    window.addEventListener('scroll', resetInactivityTimer);
+
+    resetInactivityTimer();
 
     return () => {
       clearInterval(timer);
+      clearTimeout(inactivityTimer);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      document.removeEventListener('contextmenu', preventDefault);
-      document.removeEventListener('copy', preventDefault);
-      document.removeEventListener('cut', preventDefault);
-      document.removeEventListener('paste', preventDefault);
+      document.removeEventListener('contextmenu', preventDefaultContextMenu);
+      document.removeEventListener('selectstart', handleSelectStart);
+      document.removeEventListener('dragstart', handleDragStart);
       document.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('mousemove', resetInactivityTimer);
+      window.removeEventListener('click', resetInactivityTimer);
+      window.removeEventListener('scroll', resetInactivityTimer);
+
       if (document.fullscreenElement) document.exitFullscreen().catch(e => console.log(e));
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
         try {
@@ -1167,7 +1277,14 @@ const Quiz = () => {
                         className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-2xl outline-none focus:border-primary transition-all font-bold text-lg text-slate-800"
                         placeholder="Type your answer here..."
                         value={userAnswers[currentQuestion] || ''}
-                        onChange={(e) => setUserAnswers({ ...userAnswers, [currentQuestion]: e.target.value })}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const prevVal = userAnswers[currentQuestion] || '';
+                          if (val.length - prevVal.length > 30) {
+                            triggerViolation(92, "AI Tool Usage Detection: Suspicious bulk/long answer insertion detected.");
+                          }
+                          setUserAnswers({ ...userAnswers, [currentQuestion]: val });
+                        }}
                       />
                     </div>
                   ) : q.questionType === 'multiple' ? (
@@ -1411,8 +1528,18 @@ const Quiz = () => {
                         <p className="text-[10px] text-slate-400 font-black uppercase mt-1 tracking-widest">Warning Count</p>
                       </div>
                       <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 shadow-sm text-center col-span-1 md:col-span-2 flex flex-col justify-center items-center">
-                        <p className={`text-2xl font-black tracking-tighter ${trustScore > 70 ? 'text-emerald-500' : trustScore > 40 ? 'text-amber-500' : 'text-red-500'}`}>
-                          {trustScore}% ({trustScore > 70 ? 'EXCELLENT TRUST' : trustScore > 40 ? 'MODERATE RISK' : 'CRITICAL WARNING'})
+                        <p className={`text-2xl font-black tracking-tighter ${
+                          trustScore >= 95 ? 'text-emerald-500' :
+                          trustScore >= 85 ? 'text-teal-500' :
+                          trustScore >= 70 ? 'text-amber-500' :
+                          trustScore >= 50 ? 'text-orange-500' : 'text-red-500'
+                        }`}>
+                          {trustScore}% ({
+                            trustScore >= 95 ? 'EXCELLENT' :
+                            trustScore >= 85 ? 'GOOD' :
+                            trustScore >= 70 ? 'SUSPICIOUS' :
+                            trustScore >= 50 ? 'HIGH RISK' : 'SEVERE VIOLATION'
+                          })
                         </p>
                         <p className="text-[10px] text-slate-400 font-black uppercase mt-1 tracking-widest">Trust Score</p>
                       </div>
