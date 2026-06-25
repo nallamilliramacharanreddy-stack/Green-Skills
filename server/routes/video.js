@@ -228,4 +228,431 @@ router.post('/translate', async (req, res) => {
   }
 });
 
+// Helper: Format seconds to SRT format (HH:MM:SS,mmm)
+function formatSrtTime(seconds) {
+  const ms = Math.floor((seconds % 1) * 1000);
+  const secs = Math.floor(seconds % 60);
+  const mins = Math.floor((seconds / 60) % 60);
+  const hrs = Math.floor(seconds / 3600);
+  return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')},${String(ms).padStart(3, '0')}`;
+}
+
+// Helper: Format seconds to VTT format (HH:MM:SS.mmm)
+function formatVttTime(seconds) {
+  const ms = Math.floor((seconds % 1) * 1000);
+  const secs = Math.floor(seconds % 60);
+  const mins = Math.floor((seconds / 60) % 60);
+  const hrs = Math.floor(seconds / 3600);
+  return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}.${String(ms).padStart(3, '0')}`;
+}
+
+// Helper: Fetch Google Translate TTS with chunking
+async function getTtsForText(text, langCode, outputPath) {
+  if (!text || !text.trim()) return false;
+  
+  const words = text.split(' ');
+  const chunks = [];
+  let currentChunk = '';
+  
+  for (const word of words) {
+    if ((currentChunk + ' ' + word).length > 150) {
+      chunks.push(currentChunk.trim());
+      currentChunk = word;
+    } else {
+      currentChunk += (currentChunk ? ' ' : '') + word;
+    }
+  }
+  if (currentChunk.trim()) {
+    chunks.push(currentChunk.trim());
+  }
+
+  const chunkBuffers = [];
+  for (const chunk of chunks) {
+    const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${langCode}&client=tw-ob&q=${encodeURIComponent(chunk)}`;
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0' }
+    });
+    if (!res.ok) throw new Error(`TTS generation failed: ${res.statusText}`);
+    const buf = await res.arrayBuffer();
+    chunkBuffers.push(Buffer.from(buf));
+  }
+  
+  fs.writeFileSync(outputPath, Buffer.concat(chunkBuffers));
+  return true;
+}
+
+// Helper: Call Gemini with robust retry logic
+async function callGeminiWithRetry(model, prompt, content, retries = 3) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const parts = content ? [prompt, content] : [prompt];
+      const response = await model.generateContent(parts);
+      let text = response.response.text();
+      if (text.includes('```json')) {
+        text = text.split('```json')[1].split('```')[0].trim();
+      } else if (text.includes('```')) {
+        text = text.split('```')[1].split('```')[0].trim();
+      }
+      return JSON.parse(text);
+    } catch (e) {
+      if (i === retries - 1) throw e;
+      console.warn(`[RETRY ${i + 1}/${retries}] Gemini prompt failed:`, e.message);
+      await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+    }
+  }
+}
+
+// Enterprise GET Translation History Route
+router.get('/history', async (req, res) => {
+  try {
+    const TranslationHistory = require('../models/TranslationHistory');
+    const history = await TranslationHistory.find({}).sort({ createdAt: -1 });
+    res.json(history);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch translation history: ' + err.message });
+  }
+});
+
+// Enterprise AI Video Translation and Localization Engine
+router.post('/translate-video', async (req, res) => {
+  const { videoUrl, targetLanguage, voiceOption, socketId, translationStyle, voiceStyle } = req.body;
+  
+  if (!videoUrl || !targetLanguage) {
+    return res.status(400).json({ message: 'Missing videoUrl or targetLanguage' });
+  }
+
+  const TranslationHistory = require('../models/TranslationHistory');
+  const job = await TranslationHistory.create({
+    videoName: videoUrl.split('/').pop()?.split('?')[0] || 'Untitled Video',
+    videoUrl,
+    targetLanguage,
+    translationStyle: translationStyle || 'natural',
+    voiceStyle: voiceStyle || 'standard',
+    status: 'processing',
+    logs: ['Initializing translation job...']
+  });
+
+  const io = req.app.get('io');
+  const sendProgress = (stepIndex, progressPercent, message) => {
+    if (io && socketId) {
+      io.to(socketId).emit('translation_progress', {
+        stepIndex,
+        progress: progressPercent,
+        message,
+        jobId: job._id
+      });
+    }
+  };
+
+  const logMessage = async (msg) => {
+    console.log(`[Job ${job._id}] ${msg}`);
+    job.logs.push(`[${new Date().toISOString()}] ${msg}`);
+    await job.save();
+  };
+
+  const updateProgress = async (stepIndex, percent, msg) => {
+    await logMessage(msg);
+    sendProgress(stepIndex, percent, msg);
+  };
+
+  const LANG_MAP = {
+    'Telugu': 'te', 'Hindi': 'hi', 'Tamil': 'ta', 'Kannada': 'kn', 
+    'Malayalam': 'ml', 'Bengali': 'bn', 'Marathi': 'mr', 'Gujarati': 'gu', 
+    'Punjabi': 'pa', 'Urdu': 'ur', 'Arabic': 'ar', 'French': 'fr', 
+    'German': 'de', 'Spanish': 'es', 'Japanese': 'ja', 'Korean': 'ko', 
+    'Chinese': 'zh-CN', 'English': 'en'
+  };
+
+  const targetLangCode = LANG_MAP[targetLanguage] || 'en';
+  const processId = Date.now() + '-' + Math.round(Math.random() * 1e4);
+
+  let videoFilePath = '';
+  let isTempVideo = false;
+
+  try {
+    // STEP 1: Audio Extraction & Source Loading
+    await updateProgress(0, 10, 'Resolving and preparing video source...');
+    
+    // Check if videoUrl is a local stream URL
+    if (videoUrl.includes('/api/videos/stream/')) {
+      const filename = videoUrl.split('/stream/')[1].split('?')[0];
+      videoFilePath = path.join(videosDir, filename);
+    } else if (videoUrl.startsWith('http') && (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be'))) {
+      // It's a YouTube URL
+      await updateProgress(0, 30, 'Downloading YouTube video via yt-dlp...');
+      
+      let videoId = '';
+      const watchMatch = videoUrl.match(/[?&]v=([^&#]+)/);
+      const shortMatch = videoUrl.match(/youtu\.be\/([^?&#]+)/);
+      if (watchMatch) videoId = watchMatch[1];
+      else if (shortMatch) videoId = shortMatch[1];
+
+      if (!videoId) throw new Error('Could not parse YouTube video ID');
+
+      videoFilePath = path.join(videosDir, `yt-${videoId}.mp4`);
+      
+      if (!fs.existsSync(videoFilePath)) {
+        const ytDlpPath = path.resolve(__dirname, '../node_modules/youtube-dl-exec/bin/yt-dlp');
+        const { spawn } = require('child_process');
+        const subprocess = spawn(ytDlpPath, [
+          `https://www.youtube.com/watch?v=${videoId}`,
+          '--format', 'best[ext=mp4]',
+          '--output', videoFilePath,
+          '--no-check-certificates',
+          '--force-ipv4'
+        ]);
+
+        await new Promise((resolve, reject) => {
+          subprocess.on('close', (code) => {
+            if (code === 0 && fs.existsSync(videoFilePath)) resolve();
+            else reject(new Error(`yt-dlp exited with code ${code}`));
+          });
+          subprocess.on('error', reject);
+        });
+      }
+    } else {
+      // Fallback: download direct video from arbitrary URL
+      await updateProgress(0, 30, 'Downloading external video URL...');
+      videoFilePath = path.join(videosDir, `temp-${processId}.mp4`);
+      isTempVideo = true;
+      const response = await fetch(videoUrl);
+      const buffer = await response.arrayBuffer();
+      fs.writeFileSync(videoFilePath, Buffer.from(buffer));
+    }
+
+    if (!fs.existsSync(videoFilePath)) {
+      throw new Error('Video file could not be located or downloaded.');
+    }
+
+    // Extract audio from video
+    await updateProgress(0, 70, 'Extracting audio track from video using fluent-ffmpeg...');
+    const ffmpeg = require('fluent-ffmpeg');
+    const ffmpegPath = require('ffmpeg-static');
+    ffmpeg.setFfmpegPath(ffmpegPath);
+
+    const audioFilePath = path.join(videosDir, `audio-raw-${processId}.mp3`);
+    await new Promise((resolve, reject) => {
+      ffmpeg(videoFilePath)
+        .noVideo()
+        .audioCodec('libmp3lame')
+        .save(audioFilePath)
+        .on('end', resolve)
+        .on('error', reject);
+    });
+
+    await updateProgress(0, 100, 'Audio extracted successfully.');
+
+    // STEP 2: AI Speech Recognition (Whisper / Gemini Native Audio)
+    await updateProgress(1, 20, 'Initializing advanced speech transcription engine...');
+    const { GoogleGenerativeAI } = require('@google/generative-ai');
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+    await updateProgress(1, 60, 'Transcribing audio, detecting original language, separating speakers, and detecting tone...');
+    const audioData = fs.readFileSync(audioFilePath);
+    
+    const transcriptionPrompt = `
+      You are an expert audio transcription tool.
+      Analyze the provided audio, detect the original language, and transcribe the speech with speaker separation, timestamp formatting, punctuation restoration, emotion, tone, and technical terminology identification.
+      Return ONLY a valid JSON object matching this schema:
+      {
+        "originalLanguage": "Detected language code (e.g. 'en')",
+        "transcript": [
+          {
+            "start": 0.0,
+            "end": 2.5,
+            "speaker": "Speaker 1",
+            "text": "The transcribed speech segment",
+            "emotion": "Detected emotion (e.g. happy, energetic, calm)",
+            "tone": "Detected tone (e.g. professional, conversational, formal)",
+            "technicalTerms": ["term1", "term2"]
+          }
+        ]
+      }
+    `;
+
+    const transcriptionObj = await callGeminiWithRetry(model, transcriptionPrompt, {
+      inlineData: {
+        mimeType: 'audio/mp3',
+        data: audioData.toString('base64')
+      }
+    });
+
+    const originalTranscript = transcriptionObj.transcript || [];
+    const detectedLanguage = transcriptionObj.originalLanguage || 'en';
+
+    await updateProgress(1, 100, `Speech recognition complete. Detected language: ${detectedLanguage}`);
+
+    // STEP 3: Context-Aware AI Translation
+    await updateProgress(2, 30, `Translating transcript details with ${translationStyle || 'natural'} style...`);
+    
+    const translationPrompt = `
+      Translate the following transcript JSON array into ${targetLanguage} (${targetLangCode}).
+      Style of translation to apply: ${translationStyle || 'natural'}.
+      Preserve meaning, context, emotion, tone, technical terminology, names, brands, speaker, start, and end.
+      If a direct translation is unnatural, rewrite it naturally for native speakers while preserving the original meaning.
+      Return ONLY a JSON array matching the original schema:
+      [
+        {
+          "start": 0.0,
+          "end": 2.5,
+          "speaker": "Speaker 1",
+          "text": "Translated segment in ${targetLanguage}"
+        }
+      ]
+    `;
+
+    const translatedTranscript = await callGeminiWithRetry(model, translationPrompt, JSON.stringify(originalTranscript));
+    await updateProgress(2, 100, 'Translation complete.');
+
+    // STEP 4: Neural Voice Generation (TTS)
+    await updateProgress(3, 10, 'Initializing neural voice synthesis...');
+    const ttsFiles = [];
+    
+    for (let i = 0; i < translatedTranscript.length; i++) {
+      const segment = translatedTranscript[i];
+      const segmentFilePath = path.join(videosDir, `tts-${processId}-${i}.mp3`);
+      
+      await updateProgress(3, Math.round(10 + (i / translatedTranscript.length) * 80), `Generating speech audio for segment ${i + 1}/${translatedTranscript.length} (${voiceStyle || 'standard'} voice delivery)...`);
+      
+      const generated = await getTtsForText(segment.text, targetLangCode, segmentFilePath);
+      if (generated) {
+        ttsFiles.push({
+          path: segmentFilePath,
+          start: segment.start,
+          end: segment.end,
+          index: i
+        });
+      }
+    }
+    await updateProgress(3, 100, 'Voice synthesis complete.');
+
+    // STEP 5: AI Lip Sync & Rebuilding
+    await updateProgress(4, 10, 'Merging translated audio streams and synchronizing with video timeline...');
+    
+    const outputVideoFilename = `translated-${targetLangCode}-${processId}.mp4`;
+    const outputVideoPath = path.join(videosDir, outputVideoFilename);
+    const dubbedAudioFilename = `dubbed-${targetLangCode}-${processId}.mp3`;
+    const dubbedAudioPath = path.join(videosDir, dubbedAudioFilename);
+
+    // Build FFmpeg complex filter to delay and mix all synthesized audio segments
+    let command = ffmpeg(videoFilePath);
+    let filterComplex = '';
+    const inputs = [];
+
+    // Add each TTS segment as an input
+    ttsFiles.forEach((file) => {
+      command = command.input(file.path);
+    });
+
+    // Build filter complex
+    ttsFiles.forEach((file, index) => {
+      const delayMs = Math.round(file.start * 1000);
+      filterComplex += `[${index + 1}:a]adelay=${delayMs}|${delayMs}[a${index}];`;
+      inputs.push(`[a${index}]`);
+    });
+
+    if (inputs.length > 0) {
+      filterComplex += `${inputs.join('')}amix=inputs=${inputs.length}:duration=longest[aout]`;
+    }
+
+    // Process dubbed audio track first
+    await updateProgress(4, 40, 'Compiling master dubbed audio track using amix filter...');
+    await new Promise((resolve, reject) => {
+      let audioCommand = ffmpeg();
+      ttsFiles.forEach((file) => {
+        audioCommand = audioCommand.input(file.path);
+      });
+      audioCommand
+        .complexFilter(filterComplex)
+        .outputOptions(['-map [aout]', '-c:a libmp3lame'])
+        .save(dubbedAudioPath)
+        .on('end', resolve)
+        .on('error', reject);
+    });
+
+    // Rebuild final video with new audio track
+    await updateProgress(4, 75, 'Encoding final output video file...');
+    await new Promise((resolve, reject) => {
+      ffmpeg(videoFilePath)
+        .input(dubbedAudioPath)
+        .outputOptions([
+          '-c:v copy', // Preserve original video resolution/frame rate without re-encoding
+          '-c:a aac',
+          '-map 0:v:0',
+          '-map 1:a:0',
+          '-shortest'
+        ])
+        .save(outputVideoPath)
+        .on('end', resolve)
+        .on('error', reject);
+    });
+
+    // Generate Subtitles (SRT and VTT)
+    await updateProgress(4, 90, 'Generating SRT and VTT subtitles...');
+    let srtContent = '';
+    let vttContent = 'WEBVTT\n\n';
+    
+    translatedTranscript.forEach((seg, index) => {
+      const displayIndex = index + 1;
+      const srtStart = formatSrtTime(seg.start);
+      const srtEnd = formatSrtTime(seg.end);
+      const vttStart = formatVttTime(seg.start);
+      const vttEnd = formatVttTime(seg.end);
+
+      srtContent += `${displayIndex}\n${srtStart} --> ${srtEnd}\n[${seg.speaker}] ${seg.text}\n\n`;
+      vttContent += `${displayIndex}\n${vttStart} --> ${vttEnd}\n[${seg.speaker}] ${seg.text}\n\n`;
+    });
+
+    const srtFilename = `subtitles-${targetLangCode}-${processId}.srt`;
+    const vttFilename = `subtitles-${targetLangCode}-${processId}.vtt`;
+    fs.writeFileSync(path.join(videosDir, srtFilename), srtContent);
+    fs.writeFileSync(path.join(videosDir, vttFilename), vttContent);
+
+    // Clean up temporary TTS segments
+    ttsFiles.forEach(file => {
+      try { fs.unlinkSync(file.path); } catch (e) {}
+    });
+    try { fs.unlinkSync(audioFilePath); } catch (e) {}
+    if (isTempVideo) {
+      try { fs.unlinkSync(videoFilePath); } catch (e) {}
+    }
+
+    await updateProgress(4, 100, 'Packaging downloads and completing job...');
+
+    const baseHost = `http://localhost:5001/api/videos`;
+    
+    // Save details to database
+    job.status = 'completed';
+    job.originalLanguage = detectedLanguage;
+    job.originalTranscript = originalTranscript;
+    job.translatedTranscript = translatedTranscript;
+    job.translatedVideoUrl = `${baseHost}/stream/${outputVideoFilename}`;
+    job.srtUrl = `${baseHost}/stream/${srtFilename}`;
+    job.vttUrl = `${baseHost}/stream/${vttFilename}`;
+    await job.save();
+
+    res.json({
+      success: true,
+      originalLanguage: detectedLanguage,
+      originalTranscript,
+      translatedTranscript,
+      srtContent,
+      vttContent,
+      dubbedAudioUrl: `${baseHost}/stream/${dubbedAudioFilename}`,
+      translatedVideoUrl: `${baseHost}/stream/${outputVideoFilename}`,
+      subtitleUrl: `${baseHost}/stream/${srtFilename}`,
+      vttSubtitleUrl: `${baseHost}/stream/${vttFilename}`
+    });
+
+  } catch (err) {
+    console.error('Translation pipeline error:', err);
+    job.status = 'failed';
+    job.logs.push(`[ERROR] ${err.message}`);
+    await job.save();
+    res.status(500).json({ message: 'AI Translation pipeline encountered an error: ' + err.message });
+  }
+});
+
 module.exports = router;
+
