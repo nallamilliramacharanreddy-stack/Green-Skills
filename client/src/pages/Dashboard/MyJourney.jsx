@@ -401,24 +401,7 @@ const MyJourney = () => {
               )}
             </div>
 
-            {/* Attractive Info Box */}
-            <div className="mt-8 bg-gradient-to-br from-emerald-950 to-slate-900 text-white p-8 rounded-[40px] border border-emerald-500/20 shadow-2xl relative overflow-hidden group hover:border-emerald-400/40 transition-all duration-300">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl -z-10 translate-x-1/2 -translate-y-1/2"></div>
-              <div className="absolute -bottom-10 -left-10 w-24 h-24 bg-cyan-500/10 blur-2xl -z-10"></div>
 
-              <div className="flex items-start gap-5">
-                <div className="p-4 bg-emerald-500/20 rounded-2xl text-emerald-400 border border-emerald-500/30 shadow-lg group-hover:scale-105 transition-transform duration-300">
-                  <Star className="w-6 h-6 animate-pulse" />
-                </div>
-                <div className="space-y-2">
-                  <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest italic">Verification Ledger</span>
-                  <h4 className="text-xl font-black uppercase tracking-tighter italic leading-tight">Eco-Skill Badge Activated</h4>
-                  <p className="text-slate-300 text-xs leading-relaxed font-medium">
-                    Your credentials are dynamically synced with the Green-Tech Ledger. These qualifications verify your skills for industry placements and certifications.
-                  </p>
-                </div>
-              </div>
-            </div>
           </section>
         </div>
 
