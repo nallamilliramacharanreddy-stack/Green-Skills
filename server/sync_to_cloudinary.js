@@ -3,6 +3,10 @@ const mongoose = require('mongoose');
 const path = require('path');
 const fs = require('fs');
 const Course = require('./models/Course');
+const Quiz = require('./models/Quiz');
+const User = require('./models/User');
+const Attempt = require('./models/Attempt');
+const Result = require('./models/Result');
 
 const videosDir = path.resolve(__dirname, 'uploads/videos');
 
@@ -88,7 +92,10 @@ async function syncToCloudinary() {
     }
 
     if (courseModified) {
-      await course.save();
+      await Course.updateOne(
+        { _id: course._id },
+        { $set: { lessons: course.lessons } }
+      );
       console.log(`  💾 Saved course updates: ${course.title}`);
     }
   }

@@ -532,14 +532,14 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
     duration: course?.duration || '',
     skillTags: course?.skillTags?.join(', ') || '',
     coverImage: course?.coverImage || '',
-    videoSource: course?.videoSource || 'youtube',
+    videoSource: course?.videoSource || 'direct',
     lessons: course?.lessons?.length > 0
       ? course.lessons
       : Array(1).fill().map((_, i) => ({
         moduleTitle: `Lesson 1`,
         title: `Video 1`,
-        videoSource: 'youtube',
-        youtubeLink: '',
+        videoSource: 'direct',
+        directVideoUrl: '',
         duration: '10:00'
       })),
     tasks: course?.tasks?.length > 0 ? course.tasks : Array(5).fill().map((_, i) => ({
@@ -571,43 +571,10 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
     }
   };
 
-  const handleConvertYoutube = async (lesson, idx) => {
-    if (!course?._id) {
-      toast.error('Please save the course details first before converting YouTube videos.');
-      return;
-    }
-    if (!lesson.youtubeLink) {
-      toast.error('Please provide a valid YouTube Link first.');
-      return;
-    }
-    try {
-      const tempLessons = [...formData.lessons];
-      tempLessons[idx].status = 'processing';
-      setFormData(p => ({ ...p, lessons: tempLessons }));
-
-      toast.loading('Starting YouTube to Video Player conversion...', { id: `convert-${idx}` });
-
-      await axios.post(`${API_URL}/videos/process-legacy`, {
-        courseId: course._id,
-        lessonId: lesson._id,
-        youtubeLink: lesson.youtubeLink
-      });
-
-      toast.success('Conversion started! It will download in the background.', { id: `convert-${idx}` });
-      if (refresh) refresh();
-    } catch (error) {
-      console.error('Failed to convert YouTube link:', error);
-      toast.error(error.response?.data?.message || 'YouTube conversion failed to start.', { id: `convert-${idx}` });
-      const tempLessons = [...formData.lessons];
-      tempLessons[idx].status = '';
-      setFormData(p => ({ ...p, lessons: tempLessons }));
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const validLessons = formData.lessons.filter(l => l.youtubeLink?.trim() || l.directVideoUrl?.trim());
+      const validLessons = formData.lessons.filter(l => l.directVideoUrl?.trim());
 
       const uniqueModules = [...new Set(validLessons.map(l => l.moduleTitle))];
       let isValid = true;
@@ -720,8 +687,8 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
                       {
                         moduleTitle: `Lesson ${nextModuleNum}`,
                         title: `Video 1`,
-                        videoSource: 'youtube',
-                        youtubeLink: '',
+                        videoSource: 'direct',
+                        directVideoUrl: '',
                         duration: '10:00'
                       }
                     ]
@@ -792,43 +759,17 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
                             <div className="relative flex-1">
                               <Play className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={12} />
                               <input
-                                value={lesson.youtubeLink || lesson.directVideoUrl || ''}
+                                value={lesson.directVideoUrl || ''}
                                 onChange={(e) => {
                                   const newLessons = [...formData.lessons];
-                                  newLessons[idx].youtubeLink = e.target.value;
-                                  newLessons[idx].directVideoUrl = ''; // Clear direct video if youtube link is pasted
+                                  newLessons[idx].directVideoUrl = e.target.value;
+                                  newLessons[idx].youtubeLink = ''; // Clear youtube link
                                   setFormData(p => ({ ...p, lessons: newLessons }));
                                 }}
                                 className="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-[10px] font-medium outline-none focus:border-primary transition-all placeholder:text-slate-300"
-                                placeholder={lesson.directVideoUrl ? "Uploaded MP4 File Attached" : "YouTube Link..."}
-                                disabled={!!lesson.directVideoUrl}
+                                placeholder="Direct Video URL (MP4/WebM)..."
                               />
                             </div>
-
-                            {/* YouTube to Video Player Converter controls */}
-                            {lesson.youtubeLink && !lesson.internalVideoUrl && !lesson.directVideoUrl && (
-                              lesson.status === 'processing' ? (
-                                <div className="shrink-0 flex items-center gap-1 bg-amber-50 text-amber-500 border border-amber-200 px-2 py-1.5 rounded-lg text-[9px] font-bold">
-                                  <div className="w-2.5 h-2.5 border border-amber-500 border-t-transparent rounded-full animate-spin"></div>
-                                  Converting...
-                                </div>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => handleConvertYoutube(lesson, idx)}
-                                  className="shrink-0 flex items-center gap-1 bg-primary/10 text-primary border border-primary/20 hover:bg-primary hover:text-white px-2 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all"
-                                >
-                                  <Cpu size={10} />
-                                  Convert
-                                </button>
-                              )
-                            )}
-
-                            {(lesson.internalVideoUrl || lesson.status === 'completed') && (
-                              <div className="shrink-0 flex items-center gap-1 bg-green-50 text-green-600 border border-green-200 px-2 py-1.5 rounded-lg text-[9px] font-bold">
-                                Converted
-                              </div>
-                            )}
                             
                             <label className={`shrink-0 p-2 border border-slate-200 rounded-lg cursor-pointer transition-all flex items-center justify-center ${lesson.status === 'uploading' ? 'bg-primary/10 border-primary text-primary' : 'bg-white text-slate-400 hover:bg-slate-50'}`}>
                               {lesson.status === 'uploading' ? (
@@ -917,8 +858,8 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
                             {
                               moduleTitle: moduleTitle,
                               title: `Video ${localVideosCount + 1}`,
-                              videoSource: 'youtube',
-                              youtubeLink: '',
+                              videoSource: 'direct',
+                              directVideoUrl: '',
                               duration: '10:00'
                             }
                           ]
