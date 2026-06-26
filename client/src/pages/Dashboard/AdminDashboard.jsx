@@ -794,19 +794,34 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
                                   formDataObj.append('video', file); // Multer expects 'video'
 
                                   try {
-                                    const response = await axios.post(`${API_URL}/videos/upload`, formDataObj, {
-                                      headers: { 'Content-Type': 'multipart/form-data' }
+                                    const token = sessionStorage.getItem('token');
+                                    const headers = {};
+                                    if (token) {
+                                      headers['Authorization'] = `Bearer ${token}`;
+                                    }
+
+                                    const response = await fetch(`${API_URL}/videos/upload`, {
+                                      method: 'POST',
+                                      headers: headers,
+                                      body: formDataObj
                                     });
+
+                                    if (!response.ok) {
+                                      const errText = await response.text();
+                                      throw new Error(`Upload status ${response.status}: ${errText}`);
+                                    }
+
+                                    const resData = await response.json();
                                     
                                     const newLessons = [...formData.lessons];
-                                    newLessons[idx].directVideoUrl = response.data.directVideoUrl; // Use local server stream URL
+                                    newLessons[idx].directVideoUrl = resData.directVideoUrl; // Use local server stream URL
                                     newLessons[idx].youtubeLink = ''; // Clear youtube link since we have direct file
                                     newLessons[idx].status = 'completed';
                                     setFormData(p => ({ ...p, lessons: newLessons }));
                                     toast.success('Video uploaded to server successfully!');
                                   } catch (error) {
                                     console.error('Upload failed:', error);
-                                    const errorMsg = error.response?.data?.message || error.message || 'Video upload failed';
+                                    const errorMsg = error.message || 'Video upload failed';
                                     toast.error(`Upload failed: ${errorMsg}`);
                                     const newLessons = [...formData.lessons];
                                     newLessons[idx].status = '';
