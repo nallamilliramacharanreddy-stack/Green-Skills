@@ -29,7 +29,9 @@ const upload = multer({
 // Endpoint for direct MP4 uploads from Admin Dashboard
 router.post('/upload', upload.single('video'), (req, res) => {
   if (!req.file) return res.status(400).json({ message: 'No video file provided' });
-  const internalUrl = `http://localhost:5001/api/videos/stream/${req.file.filename}`;
+  const host = req.get('host');
+  const protocol = req.protocol;
+  const internalUrl = `${protocol}://${host}/api/videos/stream/${req.file.filename}`;
   res.json({ directVideoUrl: internalUrl, file_size: req.file.size });
 });
 

@@ -791,47 +791,22 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
                                   setFormData(p => ({ ...p, lessons: tempLessons }));
 
                                   const formDataObj = new FormData();
-                                  formDataObj.append('file', file);
-                                  
-                                  // Cloudinary Unsigned Upload
-                                  const rawCloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-                                  const rawUploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
-                                   
-                                  const cloudName = (typeof rawCloudName === 'string' ? rawCloudName.replace(/['"]/g, '').trim() : '') || "dkxww8bsy";
-                                  const uploadPreset = (typeof rawUploadPreset === 'string' ? rawUploadPreset.replace(/['"]/g, '').trim() : '') || "green_skills_preset";
-                                   
-                                  if (!cloudName || !uploadPreset) {
-                                    toast.error('Cloudinary credentials missing in .env');
-                                    const newLessons = [...formData.lessons];
-                                    newLessons[idx].status = '';
-                                    setFormData(p => ({ ...p, lessons: newLessons }));
-                                    return;
-                                  }
-
-                                  formDataObj.append('upload_preset', uploadPreset);
+                                  formDataObj.append('video', file); // Multer expects 'video'
 
                                   try {
-                                    const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, {
-                                      method: 'POST',
-                                      body: formDataObj
+                                    const response = await axios.post(`${API_URL}/videos/upload`, formDataObj, {
+                                      headers: { 'Content-Type': 'multipart/form-data' }
                                     });
                                     
-                                    if (!response.ok) {
-                                      const errText = await response.text();
-                                      throw new Error(`Upload status ${response.status}: ${errText}`);
-                                    }
-                                    
-                                    const resData = await response.json();
-                                    
                                     const newLessons = [...formData.lessons];
-                                    newLessons[idx].directVideoUrl = resData.secure_url; // Use Cloudinary secure URL
+                                    newLessons[idx].directVideoUrl = response.data.directVideoUrl; // Use local server stream URL
                                     newLessons[idx].youtubeLink = ''; // Clear youtube link since we have direct file
                                     newLessons[idx].status = 'completed';
                                     setFormData(p => ({ ...p, lessons: newLessons }));
-                                    toast.success('Video uploaded to Cloud successfully!');
+                                    toast.success('Video uploaded to server successfully!');
                                   } catch (error) {
                                     console.error('Upload failed:', error);
-                                    const errorMsg = error.message || 'Video upload failed';
+                                    const errorMsg = error.response?.data?.message || error.message || 'Video upload failed';
                                     toast.error(`Upload failed: ${errorMsg}`);
                                     const newLessons = [...formData.lessons];
                                     newLessons[idx].status = '';
