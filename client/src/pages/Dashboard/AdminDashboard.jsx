@@ -808,19 +808,28 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
                                   formDataObj.append('upload_preset', uploadPreset);
 
                                   try {
-                                    const response = await axios.post(`https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, formDataObj, {
-                                      headers: { 'Content-Type': 'multipart/form-data' }
+                                    const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, {
+                                      method: 'POST',
+                                      body: formDataObj
                                     });
                                     
+                                    if (!response.ok) {
+                                      const errText = await response.text();
+                                      throw new Error(`Upload status ${response.status}: ${errText}`);
+                                    }
+                                    
+                                    const resData = await response.json();
+                                    
                                     const newLessons = [...formData.lessons];
-                                    newLessons[idx].directVideoUrl = response.data.secure_url; // Use Cloudinary secure URL
+                                    newLessons[idx].directVideoUrl = resData.secure_url; // Use Cloudinary secure URL
                                     newLessons[idx].youtubeLink = ''; // Clear youtube link since we have direct file
                                     newLessons[idx].status = 'completed';
                                     setFormData(p => ({ ...p, lessons: newLessons }));
                                     toast.success('Video uploaded to Cloud successfully!');
                                   } catch (error) {
                                     console.error('Upload failed:', error);
-                                    toast.error('Video upload failed');
+                                    const errorMsg = error.message || 'Video upload failed';
+                                    toast.error(`Upload failed: ${errorMsg}`);
                                     const newLessons = [...formData.lessons];
                                     newLessons[idx].status = '';
                                     setFormData(p => ({ ...p, lessons: newLessons }));
