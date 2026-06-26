@@ -866,7 +866,7 @@ const Courses = () => {
                   <div 
                     ref={playerContainerRef}
                     onMouseMove={handleMouseMove}
-                    className="w-full aspect-video bg-black flex items-center justify-center sticky top-0 z-20 overflow-hidden group"
+                    className="w-full aspect-video bg-black flex items-center justify-center relative z-20 overflow-hidden group"
                   >
                     {selectedCourse.lessons && selectedCourse.lessons[activeLessonIndex] ? (
                       (() => {
