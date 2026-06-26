@@ -576,7 +576,7 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const validLessons = formData.lessons.filter(l => l.directVideoUrl?.trim());
+      const validLessons = formData.lessons.filter(l => l.title?.trim());
 
       const uniqueModules = [...new Set(validLessons.map(l => l.moduleTitle))];
       let isValid = true;
