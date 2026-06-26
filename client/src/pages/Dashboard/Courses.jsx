@@ -1241,25 +1241,6 @@ const Courses = () => {
                         <button className="hover:text-slate-600 transition-colors flex items-center gap-1"><Flag size={16} /></button>
                       </div>
 
-                      {/* Go to next item trigger */}
-                      <button 
-                        onClick={() => {
-                          const nextIdx = activeLessonIndex + 1;
-                          if (nextIdx < selectedCourse.lessons.length) {
-                            if (isLessonLocked(selectedCourse._id, nextIdx)) {
-                              toast.error("Complete this lesson first to unlock the next item!");
-                            } else {
-                              setActiveLessonIndex(nextIdx);
-                            }
-                          } else {
-                            setPlayerTab('tasks');
-                            toast.success("All lectures completed! Move to tasks.");
-                          }
-                        }}
-                        className="flex items-center gap-1 px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-bold transition-all"
-                      >
-                        Go to next item <ArrowRight size={14} />
-                      </button>
                     </div>
 
                     {/* Tasks Details (If selected/active task tab) */}
