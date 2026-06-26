@@ -800,23 +800,46 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
                                   formDataObj.append('video', file); // Multer expects 'video'
 
                                   try {
-                                    const cleanAxios = axios.create();
                                     const token = sessionStorage.getItem('token');
-                                    const headers = {};
-                                    if (token) {
-                                      headers['Authorization'] = `Bearer ${token}`;
-                                    }
-
-                                    const response = await cleanAxios.post(`${API_URL}/videos/upload`, formDataObj, {
-                                      headers: headers,
-                                      onUploadProgress: (progressEvent) => {
-                                        const percentCompleted = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1));
-                                        setUploadProgress(prev => ({ ...prev, [idx]: percentCompleted }));
+                                    
+                                    const uploadPromise = new Promise((resolve, reject) => {
+                                      const xhr = new XMLHttpRequest();
+                                      xhr.open('POST', `${API_URL}/videos/upload`);
+                                      
+                                      if (token) {
+                                        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
                                       }
+                                      
+                                      xhr.upload.onprogress = (progressEvent) => {
+                                        if (progressEvent.lengthComputable) {
+                                          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                                          setUploadProgress(prev => ({ ...prev, [idx]: percentCompleted }));
+                                        }
+                                      };
+                                      
+                                      xhr.onload = () => {
+                                        if (xhr.status >= 200 && xhr.status < 300) {
+                                          try {
+                                            resolve(JSON.parse(xhr.responseText));
+                                          } catch (e) {
+                                            reject(new Error('Failed to parse server response'));
+                                          }
+                                        } else {
+                                          reject(new Error(`Upload failed with status ${xhr.status}`));
+                                        }
+                                      };
+                                      
+                                      xhr.onerror = () => {
+                                        reject(new Error('Network Error during upload'));
+                                      };
+                                      
+                                      xhr.send(formDataObj);
                                     });
+
+                                    const resData = await uploadPromise;
                                     
                                     const newLessons = [...formData.lessons];
-                                    newLessons[idx].directVideoUrl = response.data.directVideoUrl; // Use local server stream URL
+                                    newLessons[idx].directVideoUrl = resData.directVideoUrl; // Use local server stream URL
                                     newLessons[idx].youtubeLink = ''; // Clear youtube link since we have direct file
                                     newLessons[idx].status = 'completed';
                                     setFormData(p => ({ ...p, lessons: newLessons }));
@@ -828,7 +851,7 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
                                     toast.success('Video uploaded to server successfully!');
                                   } catch (error) {
                                     console.error('Upload failed:', error);
-                                    const errorMsg = error.response?.data?.message || error.message || 'Video upload failed';
+                                    const errorMsg = error.message || 'Video upload failed';
                                     toast.error(`Upload failed: ${errorMsg}`);
                                     const newLessons = [...formData.lessons];
                                     newLessons[idx].status = '';
