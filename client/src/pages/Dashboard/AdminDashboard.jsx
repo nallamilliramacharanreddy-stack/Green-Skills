@@ -554,6 +554,8 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
     video: course?.directVideoUrl || null
   });
 
+  const [uploadProgress, setUploadProgress] = useState({});
+
   const fileInputRef = useRef(null);
   const videoInputRef = useRef(null);
 
@@ -773,7 +775,10 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
                             
                             <label className={`shrink-0 p-2 border border-slate-200 rounded-lg cursor-pointer transition-all flex items-center justify-center ${lesson.status === 'uploading' ? 'bg-primary/10 border-primary text-primary' : 'bg-white text-slate-400 hover:bg-slate-50'}`}>
                               {lesson.status === 'uploading' ? (
-                                <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                <div className="flex items-center gap-1.5 text-[9px] font-black uppercase text-primary">
+                                  <div className="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                  <span>{uploadProgress[idx] ?? 0}%</span>
+                                </div>
                               ) : (
                                 <Video size={14} />
                               )}
@@ -789,43 +794,50 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
                                   const tempLessons = [...formData.lessons];
                                   tempLessons[idx].status = 'uploading';
                                   setFormData(p => ({ ...p, lessons: tempLessons }));
+                                  setUploadProgress(prev => ({ ...prev, [idx]: 0 }));
 
                                   const formDataObj = new FormData();
                                   formDataObj.append('video', file); // Multer expects 'video'
 
                                   try {
+                                    const cleanAxios = axios.create();
                                     const token = sessionStorage.getItem('token');
                                     const headers = {};
                                     if (token) {
                                       headers['Authorization'] = `Bearer ${token}`;
                                     }
 
-                                    const response = await fetch(`${API_URL}/videos/upload`, {
-                                      method: 'POST',
+                                    const response = await cleanAxios.post(`${API_URL}/videos/upload`, formDataObj, {
                                       headers: headers,
-                                      body: formDataObj
+                                      onUploadProgress: (progressEvent) => {
+                                        const percentCompleted = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1));
+                                        setUploadProgress(prev => ({ ...prev, [idx]: percentCompleted }));
+                                      }
                                     });
-
-                                    if (!response.ok) {
-                                      const errText = await response.text();
-                                      throw new Error(`Upload status ${response.status}: ${errText}`);
-                                    }
-
-                                    const resData = await response.json();
                                     
                                     const newLessons = [...formData.lessons];
-                                    newLessons[idx].directVideoUrl = resData.directVideoUrl; // Use local server stream URL
+                                    newLessons[idx].directVideoUrl = response.data.directVideoUrl; // Use local server stream URL
                                     newLessons[idx].youtubeLink = ''; // Clear youtube link since we have direct file
                                     newLessons[idx].status = 'completed';
                                     setFormData(p => ({ ...p, lessons: newLessons }));
+                                    setUploadProgress(prev => {
+                                      const copy = { ...prev };
+                                      delete copy[idx];
+                                      return copy;
+                                    });
                                     toast.success('Video uploaded to server successfully!');
                                   } catch (error) {
                                     console.error('Upload failed:', error);
-                                    const errorMsg = error.message || 'Video upload failed';
+                                    const errorMsg = error.response?.data?.message || error.message || 'Video upload failed';
                                     toast.error(`Upload failed: ${errorMsg}`);
                                     const newLessons = [...formData.lessons];
                                     newLessons[idx].status = '';
                                     setFormData(p => ({ ...p, lessons: newLessons }));
+                                    setUploadProgress(prev => {
+                                      const copy = { ...prev };
+                                      delete copy[idx];
+                                      return copy;
+                                    });
                                   }
                                 }} 
                               />
