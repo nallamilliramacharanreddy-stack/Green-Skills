@@ -104,12 +104,23 @@ if (process.env.REDIS_URL) {
 app.set('redis', redisClient);
 
 // Middleware
-const allowedOrigins = process.env.CLIENT_URL
-  ? [process.env.CLIENT_URL, 'http://localhost:5173', 'http://localhost:3000']
-  : true; // Allow all in development
-
 app.use(cors({
-  origin: allowedOrigins,
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    const allowed = [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'https://client-alpha-jet-54.vercel.app'
+    ];
+    if (process.env.CLIENT_URL) {
+      allowed.push(process.env.CLIENT_URL);
+    }
+    if (allowed.includes(origin) || origin.endsWith('.vercel.app')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 app.use(express.json({ limit: '50mb' }));
