@@ -794,9 +794,12 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
                                   formDataObj.append('file', file);
                                   
                                   // Cloudinary Unsigned Upload
-                                  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "dkxww8bsy";
-                                  const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "green_skills_preset";
-                                  
+                                  const rawCloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+                                  const rawUploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+                                   
+                                  const cloudName = (typeof rawCloudName === 'string' ? rawCloudName.replace(/['"]/g, '').trim() : '') || "dkxww8bsy";
+                                  const uploadPreset = (typeof rawUploadPreset === 'string' ? rawUploadPreset.replace(/['"]/g, '').trim() : '') || "green_skills_preset";
+                                   
                                   if (!cloudName || !uploadPreset) {
                                     toast.error('Cloudinary credentials missing in .env');
                                     const newLessons = [...formData.lessons];
