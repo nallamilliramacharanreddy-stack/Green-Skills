@@ -40,8 +40,14 @@ const processVideo = async (courseId, lessonId, youtubeLink) => {
       }
     );
 
-    // 3. Download if not exists
-    if (!fs.existsSync(filePath)) {
+    // 3. Download if not exists or is empty
+    const fileExists = fs.existsSync(filePath);
+    const isFileEmpty = fileExists && fs.statSync(filePath).size === 0;
+
+    if (!fileExists || isFileEmpty) {
+      if (isFileEmpty) {
+        try { fs.unlinkSync(filePath); } catch (e) {}
+      }
       console.log(`[videoProcessor] Downloading video ${videoId} for course ${courseId}...`);
       try {
         const ytdl = require('@distube/ytdl-core');
@@ -73,17 +79,24 @@ const processVideo = async (courseId, lessonId, youtubeLink) => {
         console.log(`[videoProcessor] Successfully downloaded video ${videoId} via @distube/ytdl-core`);
       } catch (ytdlError) {
         console.error(`[videoProcessor] @distube/ytdl-core download failed: ${ytdlError.message || ytdlError}. Falling back to yt-dlp...`);
-        // Fallback to yt-dlp using python3 or default spawn
+        // Clean up any 0-byte or partial file created by ytdl-core writeStream
+        try { if (fs.existsSync(filePath)) fs.unlinkSync(filePath); } catch (e) {}
+
         const ytDlpPath = path.resolve(__dirname, '../node_modules/youtube-dl-exec/bin/yt-dlp');
         
         const runYtDlp = (cmd, args) => {
           return new Promise((resolve, reject) => {
+            console.log(`[videoProcessor] Spawning: ${cmd} ${args.join(' ')}`);
             const subprocess = spawn(cmd, args);
+            let stderrData = '';
+            subprocess.stderr.on('data', (data) => {
+              stderrData += data.toString();
+            });
             subprocess.on('close', (code) => {
               if (code === 0 && fs.existsSync(filePath)) {
                 resolve();
               } else {
-                reject(new Error(`yt-dlp exited with code ${code}`));
+                reject(new Error(`yt-dlp exited with code ${code}. Stderr: ${stderrData}`));
               }
             });
             subprocess.on('error', reject);
@@ -99,8 +112,9 @@ const processVideo = async (courseId, lessonId, youtubeLink) => {
             '--force-ipv4'
           ]);
         } catch (execError) {
-          console.error('[videoProcessor] yt-dlp default spawn failed, trying explicit python3...', execError);
-          // Try running via python3
+          console.error('[videoProcessor] yt-dlp default spawn failed, trying explicit python3...', execError.message || execError);
+          // Clean up if partial file was created
+          try { if (fs.existsSync(filePath)) fs.unlinkSync(filePath); } catch (e) {}
           await runYtDlp('python3', [
             ytDlpPath,
             `https://www.youtube.com/watch?v=${videoId}`,
@@ -113,20 +127,42 @@ const processVideo = async (courseId, lessonId, youtubeLink) => {
       }
     }
 
-    // 4. Update Database on Success
+    // 4. Upload to Cloudinary
+    console.log(`[videoProcessor] Uploading ${videoId}.mp4 to Cloudinary...`);
+    const fileBuffer = fs.readFileSync(filePath);
+    const formData = new FormData();
+    formData.append('file', new Blob([fileBuffer], { type: 'video/mp4' }), `${videoId}.mp4`);
+    formData.append('upload_preset', 'green_skills_preset');
+
+    const uploadRes = await fetch('https://api.cloudinary.com/v1_1/dkxww8bsy/video/upload', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!uploadRes.ok) {
+      const errText = await uploadRes.text();
+      throw new Error(`Cloudinary upload failed: ${uploadRes.status} ${errText}`);
+    }
+
+    const uploadData = await uploadRes.json();
+    const cloudinaryUrl = uploadData.secure_url;
+    console.log(`[videoProcessor] Cloudinary upload successful: ${cloudinaryUrl}`);
+
+    // 5. Update Database on Success
     const stats = fs.statSync(filePath);
     await Course.findOneAndUpdate(
       { _id: courseId, 'lessons._id': lessonId },
       {
         $set: {
           'lessons.$.status': 'completed',
-          'lessons.$.internalVideoUrl': internalUrl,
+          'lessons.$.internalVideoUrl': cloudinaryUrl,
+          'lessons.$.directVideoUrl': cloudinaryUrl,
           'lessons.$.file_size': stats.size,
           'lessons.$.processed_at': new Date()
         }
       }
     );
-    console.log(`Successfully processed video ${videoId}`);
+    console.log(`Successfully processed and uploaded video ${videoId}`);
 
   } catch (error) {
     console.error('Video processing failed:', error);

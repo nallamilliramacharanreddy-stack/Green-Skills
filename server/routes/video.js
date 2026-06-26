@@ -53,6 +53,11 @@ router.get('/stream/:videoId', (req, res) => {
   const filePath = path.join(videosDir, filename);
 
   if (!fs.existsSync(filePath)) {
+    const cleanId = videoId.replace('.mp4', '').replace('.webm', '');
+    if (cleanId.length === 11) {
+      console.log(`[stream] File not found for ${videoId}. Redirecting to stream-live fallback.`);
+      return res.redirect(`/api/videos/stream-live/${cleanId}`);
+    }
     return res.status(404).send('Video not found');
   }
 
