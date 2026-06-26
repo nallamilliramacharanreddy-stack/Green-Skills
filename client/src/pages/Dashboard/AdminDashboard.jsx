@@ -794,8 +794,8 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
                                   formDataObj.append('file', file);
                                   
                                   // Cloudinary Unsigned Upload
-                                  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-                                  const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+                                  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "dkxww8bsy";
+                                  const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "green_skills_preset";
                                   
                                   if (!cloudName || !uploadPreset) {
                                     toast.error('Cloudinary credentials missing in .env');
