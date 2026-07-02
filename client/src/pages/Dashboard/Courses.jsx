@@ -919,12 +919,13 @@ const Courses = () => {
                 {/* COLUMN 2: CENTER MAIN CONTENT (Video Screen & Notes) */}
                 <div className="flex-1 flex flex-col h-full overflow-y-auto bg-white">
 
-                  {/* Video Player Box */}
-                  <div
-                    ref={playerContainerRef}
-                    onMouseMove={handleMouseMove}
-                    className="w-full aspect-video bg-black flex items-center justify-center relative z-20 overflow-hidden group"
-                  >
+                  {/* Video Player Box Wrapper */}
+                  <div className="w-full bg-[#111] flex items-center justify-center py-6 px-4 md:px-8 border-b border-slate-900 shrink-0">
+                    <div
+                      ref={playerContainerRef}
+                      onMouseMove={handleMouseMove}
+                      className="max-w-5xl w-full aspect-video bg-black flex items-center justify-center relative z-20 overflow-hidden group rounded-2xl border border-white/5 shadow-2xl"
+                    >
                     {selectedCourse.lessons && selectedCourse.lessons[activeLessonIndex] ? (
                       (() => {
                         const lesson = selectedCourse.lessons[activeLessonIndex];
@@ -1262,6 +1263,7 @@ const Courses = () => {
                       </div>
                     )}
                   </div>
+                </div>
 
                   {/* Course Video details */}
                   <div className="p-6 md:p-8 space-y-6 max-w-4xl w-full mx-auto">
