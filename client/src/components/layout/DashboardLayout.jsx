@@ -201,7 +201,6 @@ const DashboardLayout = ({ children, role: propRole }) => {
         { icon: BookOpen, label: 'My Journey', path: '/dashboard/journey' },
         { icon: Award, label: 'Courses', path: '/dashboard/courses' },
         { icon: MessageSquare, label: 'Quiz', path: '/dashboard/quiz' },
-        { icon: Video, label: 'Videos', path: '/dashboard/videos' },
       ]},
       { category: 'ACHIEVEMENTS', items: [
         { icon: Crown, label: 'Premium Hub', path: '/dashboard/premium' },
