@@ -888,43 +888,64 @@ const Courses = () => {
                     {selectedCourse.lessons && selectedCourse.lessons[activeLessonIndex] ? (
                       (() => {
                         const lesson = selectedCourse.lessons[activeLessonIndex];
+                        
+                        const isYoutubeUrl = (url) => {
+                          return url && (url.includes('youtube.com') || url.includes('youtu.be'));
+                        };
+
+                        const isYoutube = lesson.videoSource === 'youtube' || 
+                          isYoutubeUrl(lesson.youtubeLink) || 
+                          isYoutubeUrl(lesson.directVideoUrl) || 
+                          isYoutubeUrl(lesson.internalVideoUrl);
+
                         let internalUrl = '';
-                        if (lesson.directVideoUrl && lesson.directVideoUrl.includes('cloudinary.com')) {
-                          internalUrl = lesson.directVideoUrl;
-                        } else if (lesson.internalVideoUrl && lesson.internalVideoUrl.includes('cloudinary.com')) {
-                          internalUrl = lesson.internalVideoUrl;
-                        } else if (lesson.directVideoUrl && (lesson.directVideoUrl.startsWith('http://') || lesson.directVideoUrl.startsWith('https://')) && !lesson.directVideoUrl.includes('/stream/') && !lesson.directVideoUrl.includes('/uploads/')) {
-                          internalUrl = lesson.directVideoUrl;
-                        } else if (lesson.internalVideoUrl && (lesson.internalVideoUrl.startsWith('http://') || lesson.internalVideoUrl.startsWith('https://')) && !lesson.internalVideoUrl.includes('/stream/') && !lesson.internalVideoUrl.includes('/uploads/')) {
-                          internalUrl = lesson.internalVideoUrl;
+                        if (!isYoutube) {
+                          if (lesson.directVideoUrl && lesson.directVideoUrl.includes('cloudinary.com')) {
+                            internalUrl = lesson.directVideoUrl;
+                          } else if (lesson.internalVideoUrl && lesson.internalVideoUrl.includes('cloudinary.com')) {
+                            internalUrl = lesson.internalVideoUrl;
+                          } else if (lesson.directVideoUrl && (lesson.directVideoUrl.startsWith('http://') || lesson.directVideoUrl.startsWith('https://')) && !lesson.directVideoUrl.includes('/stream/') && !lesson.directVideoUrl.includes('/uploads/')) {
+                            internalUrl = lesson.directVideoUrl;
+                          } else if (lesson.internalVideoUrl && (lesson.internalVideoUrl.startsWith('http://') || lesson.internalVideoUrl.startsWith('https://')) && !lesson.internalVideoUrl.includes('/stream/') && !lesson.internalVideoUrl.includes('/uploads/')) {
+                            internalUrl = lesson.internalVideoUrl;
+                          }
                         }
 
                         let ytVideoId = '';
-                        if (lesson.youtubeLink) {
-                          const watchMatch = lesson.youtubeLink.match(/(?:[?&]v=|\/watch\?v=|\/embed\/|\/v\/|youtu\.be\/)([^&#?]+)/);
-                          if (watchMatch) {
-                            ytVideoId = watchMatch[1];
-                          } else {
-                            // Last segment fallback
-                            const parts = lesson.youtubeLink.split('/');
-                            ytVideoId = parts[parts.length - 1].split('?')[0];
+                        if (isYoutube) {
+                          const urls = [lesson.youtubeLink, lesson.directVideoUrl, lesson.internalVideoUrl];
+                          for (const url of urls) {
+                            if (isYoutubeUrl(url)) {
+                              const watchMatch = url.match(/(?:[?&]v=|\/watch\?v=|\/embed\/|\/v\/|youtu\.be\/)([^&#?]+)/);
+                              if (watchMatch) {
+                                ytVideoId = watchMatch[1];
+                                break;
+                              } else {
+                                const parts = url.split('/');
+                                const lastSegment = parts[parts.length - 1].split('?')[0];
+                                if (lastSegment) {
+                                  ytVideoId = lastSegment;
+                                  break;
+                                }
+                              }
+                            }
+                          }
+                          if (!ytVideoId) {
+                            ytVideoId = lesson.youtube_video_id || '';
                           }
                         }
 
                         let isYoutubeOnly = false;
                         let ytEmbedUrl = '';
-                        if (ytVideoId && (!internalUrl || !internalUrl.includes('cloudinary.com'))) {
+                        if (isYoutube && ytVideoId) {
                           isYoutubeOnly = true;
                           ytEmbedUrl = `https://www.youtube.com/embed/${ytVideoId}`;
                         }
 
                         // Always play native via our proxy or internal URL
                         let sourceUrl = '';
-                        if (internalUrl) {
+                        if (!isYoutubeOnly && internalUrl) {
                           sourceUrl = getVideoUrl(internalUrl);
-                        } else if (ytVideoId) {
-                          const baseApi = API_URL.endsWith('/api') ? API_URL.substring(0, API_URL.length - 4) : API_URL;
-                          sourceUrl = `${baseApi}/api/videos/stream-live/${ytVideoId}`;
                         }
 
                         const activeVideoSrc = selectedLang !== 'en' && translatedSourceUrl ? translatedSourceUrl : sourceUrl;

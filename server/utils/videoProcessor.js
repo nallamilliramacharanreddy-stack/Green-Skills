@@ -13,6 +13,40 @@ const processVideo = async (courseId, lessonId, youtubeLink) => {
   let videoId = '';
   let filePath = '';
   try {
+    // Check if it is a YouTube URL and skip local download / Cloudinary upload
+    const isYoutube = youtubeLink && (youtubeLink.includes('youtube.com') || youtubeLink.includes('youtu.be'));
+    if (isYoutube) {
+      console.log(`[videoProcessor] Skipping download/upload for YouTube link: ${youtubeLink}`);
+      
+      // Extract Video ID
+      const watchMatch = youtubeLink.match(/[?&]v=([^&#]+)/);
+      const shortMatch = youtubeLink.match(/youtu\.be\/([^?&#]+)/);
+      const embedMatch = youtubeLink.match(/youtube\.com\/embed\/([^?&#]+)/);
+
+      if (watchMatch) videoId = watchMatch[1];
+      else if (shortMatch) videoId = shortMatch[1];
+      else if (embedMatch) videoId = embedMatch[1];
+      else {
+        const parts = youtubeLink.split('/');
+        videoId = parts[parts.length - 1].split('?')[0];
+      }
+
+      await Course.findOneAndUpdate(
+        { _id: courseId, 'lessons._id': lessonId },
+        {
+          $set: {
+            'lessons.$.status': 'completed',
+            'lessons.$.youtubeLink': youtubeLink,
+            'lessons.$.youtube_video_id': videoId,
+            'lessons.$.internalVideoUrl': '',
+            'lessons.$.internalVideoPublicId': '',
+            'lessons.$.directVideoUrl': '',
+            'lessons.$.directVideoPublicId': ''
+          }
+        }
+      );
+      return;
+    }
     // 1. Extract Video ID
     const watchMatch = youtubeLink.match(/[?&]v=([^&#]+)/);
     const shortMatch = youtubeLink.match(/youtu\.be\/([^?&#]+)/);
