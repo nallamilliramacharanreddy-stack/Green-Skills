@@ -983,70 +983,7 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
               ))}
             </div>
 
-            <div className="mt-10 border-t border-slate-200 pt-8">
-              <div className="flex items-center justify-between mb-6">
-                <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest flex items-center gap-2 italic">
-                  <BookOpen size={14} className="text-blue-500" /> 3. Industrial Tasks ({formData.tasks.length} Slots)
-                </h4>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFormData(p => ({
-                      ...p,
-                      tasks: [
-                        ...p.tasks,
-                        { title: `Task ${p.tasks.length + 1}`, description: '', type: 'Assignment' }
-                      ]
-                    }));
-                  }}
-                  className="px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary transition-colors flex items-center gap-2 shadow-lg"
-                >
-                  <Plus size={14} /> Add Task
-                </button>
-              </div>
-              <div className="grid grid-cols-1 gap-4">
-                {formData.tasks.map((task, idx) => (
-                  <div key={idx} className="bg-white p-6 rounded-3xl border border-slate-200 flex gap-6 relative group">
-                    <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 font-black text-xs">{idx + 1}</div>
-                    <div className="flex-1 space-y-3">
-                      <input
-                        value={task.title}
-                        onChange={(e) => {
-                          const newTasks = [...formData.tasks];
-                          newTasks[idx].title = e.target.value;
-                          setFormData(p => ({ ...p, tasks: newTasks }));
-                        }}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-none focus:bg-white"
-                        placeholder="Task Title..."
-                      />
-                      <textarea
-                        value={task.description}
-                        onChange={(e) => {
-                          const newTasks = [...formData.tasks];
-                          newTasks[idx].description = e.target.value;
-                          setFormData(p => ({ ...p, tasks: newTasks }));
-                        }}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-medium outline-none focus:bg-white h-20"
-                        placeholder="Task Description..."
-                      />
-                    </div>
-                    {formData.tasks.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const newTasks = formData.tasks.filter((_, i) => i !== idx);
-                          setFormData(p => ({ ...p, tasks: newTasks }));
-                        }}
-                        className="absolute top-4 right-4 p-2 text-red-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all opacity-0 group-hover:opacity-100"
-                        title="Delete Task"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
+
           </div>
 
           {/* Section 3: Core Details */}
