@@ -908,7 +908,7 @@ const Courses = () => {
 
                         let isYoutubeOnly = false;
                         let ytEmbedUrl = '';
-                        if (!internalUrl && ytVideoId) {
+                        if (ytVideoId && (!internalUrl || !internalUrl.includes('cloudinary.com'))) {
                           isYoutubeOnly = true;
                           ytEmbedUrl = `https://www.youtube.com/embed/${ytVideoId}`;
                         }
