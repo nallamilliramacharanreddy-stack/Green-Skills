@@ -798,7 +798,7 @@ const Courses = () => {
                   <div className="w-px h-5 bg-slate-300 mx-4"></div>
                   <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{selectedCourse.category}</span>
                   <div className="w-px h-5 bg-slate-300 mx-4"></div>
-                  <span className="text-xs font-semibold text-slate-800 line-clamp-1">{selectedCourse.title}</span>
+                  <span className="text-sm md:text-base font-extrabold text-slate-800 line-clamp-1">{selectedCourse.title}</span>
                 </div>
 
                 <div className="flex items-center gap-6">
@@ -919,12 +919,13 @@ const Courses = () => {
                 {/* COLUMN 2: CENTER MAIN CONTENT (Video Screen & Notes) */}
                 <div className="flex-1 flex flex-col h-full overflow-y-auto bg-white">
 
-                  {/* Video Player Box */}
-                  <div
-                    ref={playerContainerRef}
-                    onMouseMove={handleMouseMove}
-                    className="w-full aspect-video bg-black flex items-center justify-center relative z-20 overflow-hidden group"
-                  >
+                  {/* Video Player Box Wrapper */}
+                  <div className="w-full bg-slate-50 border-b border-slate-200 py-6 px-4 flex items-center justify-center shrink-0">
+                    <div
+                      ref={playerContainerRef}
+                      onMouseMove={handleMouseMove}
+                      className="max-w-5xl w-full aspect-video bg-black flex items-center justify-center relative z-20 overflow-hidden group rounded-2xl shadow-lg border border-slate-200/80"
+                    >
                     {selectedCourse.lessons && selectedCourse.lessons[activeLessonIndex] ? (
                       (() => {
                         const lesson = selectedCourse.lessons[activeLessonIndex];
@@ -1261,10 +1262,11 @@ const Courses = () => {
                         <p className="font-black uppercase tracking-widest text-xs opacity-50">No video data found in this node</p>
                       </div>
                     )}
+                    </div>
                   </div>
 
                   {/* Course Video details */}
-                  <div className="p-6 md:p-8 space-y-6 max-w-4xl w-full mx-auto">
+                  <div className="p-6 md:p-8 space-y-6 max-w-5xl w-full mx-auto">
 
                     {/* Title and Save Note Row */}
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-100">
@@ -1514,29 +1516,6 @@ const Courses = () => {
                       </div>
                     )}
                   </div>
-                </div>
-                {/* 3. VERTICAL ICON DRAWER COLUMN ON THE RIGHT */}
-                <div className="w-14 bg-white border-l border-slate-200 flex flex-col items-center py-4 gap-6 shrink-0 h-full hidden lg:flex">
-                  <button
-                    className="flex flex-col items-center justify-center p-2 rounded-xl transition-all text-slate-400 hover:text-slate-600"
-                  >
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><line x1="4" y1="22" x2="4" y2="15" /></svg>
-                    <span className="text-[8px] font-bold mt-1 text-slate-400">Transcript</span>
-                  </button>
-
-                  <button
-                    className="flex flex-col items-center justify-center p-2 rounded-xl transition-all text-slate-400 hover:text-slate-600"
-                  >
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
-                    <span className="text-[8px] font-bold mt-1 text-slate-400">Notes</span>
-                  </button>
-
-                  <button
-                    className="flex flex-col items-center justify-center p-2 rounded-xl transition-all text-slate-400 hover:text-slate-600"
-                  >
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>
-                    <span className="text-[8px] font-bold mt-1 text-slate-400">Files</span>
-                  </button>
                 </div>
 
 
