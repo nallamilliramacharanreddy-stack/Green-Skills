@@ -110,6 +110,49 @@ const Courses = () => {
   }, [selectedCourse, activeLessonIndex]);
 
   useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+    const handleTimeUpdate = () => {
+      setCurrentTime(el.currentTime);
+      if (el.duration && !isNaN(el.duration)) {
+        setDuration(el.duration);
+      }
+      checkVideoProgress(el.currentTime, el.duration);
+    };
+    const handleDurationChange = () => {
+      if (el.duration && !isNaN(el.duration)) {
+        setDuration(el.duration);
+      }
+    };
+    const handleEnded = () => {
+      setLessonWatched(true);
+      toast.success("You have watched 100% of this video! The 'Mark as Completed' button is now unlocked.");
+    };
+
+    el.addEventListener('play', handlePlay);
+    el.addEventListener('pause', handlePause);
+    el.addEventListener('timeupdate', handleTimeUpdate);
+    el.addEventListener('durationchange', handleDurationChange);
+    el.addEventListener('ended', handleEnded);
+
+    // Initial check
+    if (el.duration && !isNaN(el.duration)) {
+      setDuration(el.duration);
+    }
+
+    return () => {
+      el.removeEventListener('play', handlePlay);
+      el.removeEventListener('pause', handlePause);
+      el.removeEventListener('timeupdate', handleTimeUpdate);
+      el.removeEventListener('durationchange', handleDurationChange);
+      el.removeEventListener('ended', handleEnded);
+    };
+  }, [activeLessonIndex, selectedCourse, translatedSourceUrl]);
+
+  useEffect(() => {
     if (!socket) return;
     const handleProgress = (data) => {
       setTranslationProgress(data.progress);
