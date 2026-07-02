@@ -9,7 +9,8 @@ import {
   LayoutDashboard, Minus, UserCheck, Shield, Lock,
   GraduationCap, Bell, Settings, MessageSquare,
   TrendingUp, FileText, Share2, Activity,
-  Upload, Video, Clock, Tag, Zap, Crown, Flame, ChevronLeft, ChevronRight, Building, ShieldAlert, Cpu, Globe
+  Upload, Video, Clock, Tag, Zap, Crown, Flame, ChevronLeft, ChevronRight, Building, ShieldAlert, Cpu, Globe,
+  ClipboardList, RotateCcw, Eye, AlignLeft, AlignJustify, Calendar
 } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
@@ -272,6 +273,7 @@ const AdminDashboard = () => {
               {activeTab === 'videos' && <ManageVideos />}
               {activeTab === 'admins' && <AdminApproval data={admins} onApprove={handleApproveAdmin} onToggleStatus={toggleUserStatus} onDelete={deleteUser} />}
               {activeTab === 'integrity' && <QuestionBankIntegrityReport />}
+              {activeTab === 'assignments' && <AdminAssignments courses={courses} />}
               {activeTab === 'profile' && <AdminProfile currentUser={currentUser} refreshUser={fetchData} />}
             </motion.div>
           </AnimatePresence>
@@ -2729,3 +2731,346 @@ const NameChangeManagement = ({ data, onDecide, certRegenData, onRegenDecide }) 
 
 export default AdminDashboard;
 
+// ─────────────────────────────────────────────
+// ADMIN ASSIGNMENTS MANAGEMENT COMPONENT
+// ─────────────────────────────────────────────
+const AdminAssignments = ({ courses }) => {
+  const [assignments, setAssignments] = useState([]);
+  const [submissions, setSubmissions] = useState([]);
+  const [view, setView] = useState('list'); // 'list' | 'create' | 'edit' | 'submissions' | 'readEssay'
+  const [editingAssignment, setEditingAssignment] = useState(null);
+  const [selectedSubmission, setSelectedSubmission] = useState(null);
+  const [reviewData, setReviewData] = useState({ status: 'Reviewed', adminFeedback: '', score: '' });
+  const [filterCourse, setFilterCourse] = useState('');
+  const [searchUser, setSearchUser] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const defaultForm = {
+    title: '',
+    instructions: 'Write an essay of 1000–1500 words explaining everything you have learned up to this lesson. Your essay should summarize the major concepts, explain important topics in your own words, describe practical applications, and reflect on your learning journey. The submission must be original and written by you.',
+    courseId: '',
+    lessonId: '',
+    minWords: 1000,
+    maxWords: 1500,
+    dueDate: '',
+    isActive: true,
+  };
+  const [form, setForm] = useState(defaultForm);
+
+  const fetchAssignments = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API_URL}/assignments`, { headers: { Authorization: `Bearer ${token}` } });
+      setAssignments(res.data.assignments || []);
+    } catch (e) {
+      toast.error('Failed to load assignments');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchSubmissions = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const params = {};
+      if (filterCourse) params.courseId = filterCourse;
+      const res = await axios.get(`${API_URL}/assignments/submissions`, { headers: { Authorization: `Bearer ${token}` }, params });
+      setSubmissions(res.data.submissions || []);
+    } catch (e) {
+      toast.error('Failed to load submissions');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchAssignments(); }, []);
+  useEffect(() => { if (view === 'submissions') fetchSubmissions(); }, [view, filterCourse]);
+
+  const handleSave = async () => {
+    if (!form.title || !form.courseId || !form.lessonId || !form.instructions) {
+      toast.error('Please fill all required fields'); return;
+    }
+    try {
+      const token = localStorage.getItem('token');
+      if (editingAssignment) {
+        await axios.put(`${API_URL}/assignments/${editingAssignment._id}`, form, { headers: { Authorization: `Bearer ${token}` } });
+        toast.success('Assignment updated!');
+      } else {
+        await axios.post(`${API_URL}/assignments`, form, { headers: { Authorization: `Bearer ${token}` } });
+        toast.success('Assignment created and published!');
+      }
+      setForm(defaultForm);
+      setEditingAssignment(null);
+      setView('list');
+      fetchAssignments();
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Save failed');
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this assignment? All submissions will be removed.')) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_URL}/assignments/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success('Assignment deleted');
+      fetchAssignments();
+    } catch (e) {
+      toast.error('Delete failed');
+    }
+  };
+
+  const handleToggleActive = async (a) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${API_URL}/assignments/${a._id}`, { ...a, isActive: !a.isActive }, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success(`Assignment ${!a.isActive ? 'published' : 'unpublished'}`);
+      fetchAssignments();
+    } catch (e) {
+      toast.error('Update failed');
+    }
+  };
+
+  const handleReview = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${API_URL}/assignments/submissions/${selectedSubmission._id}/review`, reviewData, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success('Review submitted!');
+      setView('submissions');
+      setSelectedSubmission(null);
+      fetchSubmissions();
+    } catch (e) {
+      toast.error('Review failed');
+    }
+  };
+
+  const getCourseTitle = (id) => courses.find(c => c._id === id)?.title || id;
+  const statusColor = { Draft: 'bg-slate-100 text-slate-600', Submitted: 'bg-blue-100 text-blue-700', Pending: 'bg-yellow-100 text-yellow-700', Reviewed: 'bg-purple-100 text-purple-700', Approved: 'bg-green-100 text-green-700', 'Needs Revision': 'bg-red-100 text-red-700' };
+
+  const selectedCourseLessons = form.courseId ? (courses.find(c => c._id === form.courseId)?.lessons || []) : [];
+
+  return (
+    <div className="min-h-screen bg-slate-50 p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-indigo-100 flex items-center justify-center">
+            <ClipboardList size={22} className="text-indigo-600" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter italic">Assignments</h2>
+            <p className="text-xs text-slate-500 font-medium">Manage essay tasks for enrolled students</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <button onClick={() => setView('submissions')} className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 ${view === 'submissions' ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'}`}>
+            <Eye size={14} /> Submissions
+          </button>
+          <button onClick={() => { setView('list'); }} className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 ${view === 'list' || view === 'create' || view === 'edit' ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'}`}>
+            <ClipboardList size={14} /> Assignments
+          </button>
+          <button onClick={() => { setForm(defaultForm); setEditingAssignment(null); setView('create'); }} className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-black uppercase tracking-widest hover:bg-indigo-600 transition-all flex items-center gap-2 shadow">
+            <Plus size={14} /> New Assignment
+          </button>
+        </div>
+      </div>
+
+      {/* LIST VIEW */}
+      {view === 'list' && (
+        <div className="space-y-4">
+          {loading && <p className="text-center text-slate-400 py-10 font-medium">Loading...</p>}
+          {!loading && assignments.length === 0 && (
+            <div className="text-center py-20 bg-white rounded-3xl border border-slate-200">
+              <ClipboardList size={48} className="mx-auto mb-4 text-slate-200" />
+              <p className="text-slate-400 font-black uppercase tracking-widest text-sm">No assignments yet</p>
+              <p className="text-slate-400 text-xs mt-1">Create your first assignment to get started.</p>
+            </div>
+          )}
+          {assignments.map(a => (
+            <div key={a._id} className="bg-white rounded-3xl border border-slate-200 p-6 flex items-start justify-between gap-4 hover:shadow-md transition-all">
+              <div className="flex items-start gap-4">
+                <div className={`w-3 h-3 rounded-full mt-1.5 shrink-0 ${a.isActive ? 'bg-green-400' : 'bg-slate-300'}`} />
+                <div>
+                  <h3 className="font-black text-slate-900 text-lg">{a.title}</h3>
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">{getCourseTitle(a.courseId)} · Lesson ID: {a.lessonId}</p>
+                  <div className="flex items-center gap-3 mt-2">
+                    <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full text-[10px] font-black uppercase tracking-widest">{a.minWords}–{a.maxWords} words</span>
+                    {a.dueDate && <span className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1"><Calendar size={10} /> Due: {new Date(a.dueDate).toLocaleDateString()}</span>}
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest ${a.isActive ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-500'}`}>{a.isActive ? 'Published' : 'Unpublished'}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button onClick={() => handleToggleActive(a)} className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 transition-all" title={a.isActive ? 'Unpublish' : 'Publish'}>
+                  {a.isActive ? <Eye size={15} /> : <Eye size={15} className="opacity-40" />}
+                </button>
+                <button onClick={() => { setForm({ title: a.title, instructions: a.instructions, courseId: a.courseId, lessonId: a.lessonId, minWords: a.minWords, maxWords: a.maxWords, dueDate: a.dueDate ? a.dueDate.slice(0,10) : '', isActive: a.isActive }); setEditingAssignment(a); setView('edit'); }} className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-blue-50 hover:text-blue-600 transition-all">
+                  <Edit size={15} />
+                </button>
+                <button onClick={() => handleDelete(a._id)} className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-red-50 hover:text-red-500 transition-all">
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* CREATE / EDIT FORM */}
+      {(view === 'create' || view === 'edit') && (
+        <div className="max-w-3xl mx-auto bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
+          <h3 className="font-black text-slate-900 text-xl mb-6 uppercase tracking-tighter italic">{view === 'edit' ? 'Edit Assignment' : 'Create New Assignment'}</h3>
+          <div className="space-y-5">
+            <div>
+              <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-1">Assignment Title *</label>
+              <input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none focus:bg-white focus:border-indigo-300" placeholder="e.g. Final Learning Essay" />
+            </div>
+            <div>
+              <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-1">Instructions *</label>
+              <textarea value={form.instructions} onChange={e => setForm(p => ({ ...p, instructions: e.target.value }))} rows={5} className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-medium outline-none focus:bg-white focus:border-indigo-300" placeholder="Write the assignment instructions..." />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-1">Target Course *</label>
+                <select value={form.courseId} onChange={e => setForm(p => ({ ...p, courseId: e.target.value, lessonId: '' }))} className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none focus:bg-white">
+                  <option value="">-- Select Course --</option>
+                  {courses.map(c => <option key={c._id} value={c._id}>{c.title}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-1">After Lesson *</label>
+                <select value={form.lessonId} onChange={e => setForm(p => ({ ...p, lessonId: e.target.value }))} className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none focus:bg-white" disabled={!form.courseId}>
+                  <option value="">-- Select Lesson --</option>
+                  {selectedCourseLessons.map((l, idx) => <option key={l._id || idx} value={l._id || String(idx)}>{idx + 1}. {l.title}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-1">Min Words</label>
+                <input type="number" value={form.minWords} onChange={e => setForm(p => ({ ...p, minWords: Number(e.target.value) }))} className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-1">Max Words</label>
+                <input type="number" value={form.maxWords} onChange={e => setForm(p => ({ ...p, maxWords: Number(e.target.value) }))} className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-1">Due Date (Optional)</label>
+                <input type="date" value={form.dueDate} onChange={e => setForm(p => ({ ...p, dueDate: e.target.value }))} className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none" />
+              </div>
+            </div>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <div className={`w-10 h-6 rounded-full transition-all ${form.isActive ? 'bg-indigo-600' : 'bg-slate-300'} relative`} onClick={() => setForm(p => ({ ...p, isActive: !p.isActive }))}>
+                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${form.isActive ? 'left-5' : 'left-1'}`} />
+              </div>
+              <span className="text-sm font-black text-slate-700">{form.isActive ? 'Published (visible to students)' : 'Unpublished (hidden from students)'}</span>
+            </label>
+          </div>
+          <div className="flex items-center gap-3 mt-8">
+            <button onClick={handleSave} className="px-6 py-3 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-600 transition-all shadow flex items-center gap-2">
+              <Check size={14} /> {view === 'edit' ? 'Update Assignment' : 'Publish Assignment'}
+            </button>
+            <button onClick={() => { setView('list'); setForm(defaultForm); setEditingAssignment(null); }} className="px-6 py-3 bg-slate-100 text-slate-700 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition-all">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* SUBMISSIONS VIEW */}
+      {view === 'submissions' && (
+        <div>
+          <div className="flex items-center gap-4 mb-6">
+            <div className="relative flex-1 max-w-sm">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input value={searchUser} onChange={e => setSearchUser(e.target.value)} placeholder="Search by student name or email..." className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none" />
+            </div>
+            <select value={filterCourse} onChange={e => setFilterCourse(e.target.value)} className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold outline-none">
+              <option value="">All Courses</option>
+              {courses.map(c => <option key={c._id} value={c._id}>{c.title}</option>)}
+            </select>
+          </div>
+          {loading && <p className="text-center text-slate-400 py-10">Loading submissions...</p>}
+          {!loading && submissions.length === 0 && (
+            <div className="text-center py-20 bg-white rounded-3xl border border-slate-200">
+              <AlignJustify size={48} className="mx-auto mb-4 text-slate-200" />
+              <p className="text-slate-400 font-black uppercase tracking-widest text-sm">No submissions yet</p>
+            </div>
+          )}
+          <div className="space-y-3">
+            {submissions.filter(s => {
+              if (!searchUser) return true;
+              const q = searchUser.toLowerCase();
+              return s.userId?.name?.toLowerCase().includes(q) || s.userId?.email?.toLowerCase().includes(q);
+            }).map(s => (
+              <div key={s._id} className="bg-white rounded-2xl border border-slate-200 p-5 flex items-center justify-between gap-4 hover:shadow-sm transition-all">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-black text-sm">{s.userId?.name?.[0]?.toUpperCase() || '?'}</div>
+                  <div>
+                    <p className="font-black text-slate-900">{s.userId?.name || 'Unknown'} <span className="font-medium text-slate-400 text-xs ml-1">{s.userId?.email}</span></p>
+                    <p className="text-xs text-slate-500 font-medium">{s.assignmentId?.title} · {s.wordCount} words · {s.submittedAt ? new Date(s.submittedAt).toLocaleDateString() : 'Draft'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${statusColor[s.status] || 'bg-slate-100 text-slate-600'}`}>{s.status}</span>
+                  <button onClick={() => { setSelectedSubmission(s); setReviewData({ status: s.status === 'Draft' ? 'Reviewed' : s.status, adminFeedback: s.adminFeedback || '', score: s.score || '' }); setView('readEssay'); }} className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-600 transition-all flex items-center gap-2">
+                    <Eye size={13} /> Review
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* READ ESSAY & REVIEW */}
+      {view === 'readEssay' && selectedSubmission && (
+        <div className="max-w-4xl mx-auto">
+          <button onClick={() => setView('submissions')} className="flex items-center gap-2 text-xs font-black text-slate-500 hover:text-slate-900 mb-6 uppercase tracking-widest transition-all">
+            <ChevronLeft size={14} /> Back to Submissions
+          </button>
+          <div className="bg-white rounded-3xl border border-slate-200 p-8 mb-6">
+            <div className="flex items-start justify-between mb-6">
+              <div>
+                <h3 className="font-black text-slate-900 text-xl">{selectedSubmission.assignmentId?.title}</h3>
+                <p className="text-sm text-slate-500 font-medium mt-1">Submitted by: <strong className="text-slate-800">{selectedSubmission.userId?.name}</strong> · {selectedSubmission.wordCount} words · {selectedSubmission.submittedAt ? new Date(selectedSubmission.submittedAt).toLocaleDateString() : 'Not submitted'}</p>
+              </div>
+              <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${statusColor[selectedSubmission.status] || 'bg-slate-100 text-slate-600'}`}>{selectedSubmission.status}</span>
+            </div>
+            <div className="bg-slate-50 rounded-2xl p-6 text-sm text-slate-700 leading-relaxed font-medium whitespace-pre-wrap max-h-96 overflow-y-auto border border-slate-100">
+              {selectedSubmission.essayContent || <span className="text-slate-400 italic">No content submitted yet (draft)</span>}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-3xl border border-slate-200 p-8">
+            <h4 className="font-black text-slate-900 uppercase tracking-widest text-xs mb-6">Admin Review</h4>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-1">Status</label>
+                <select value={reviewData.status} onChange={e => setReviewData(p => ({ ...p, status: e.target.value }))} className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none">
+                  <option value="Pending">Pending</option>
+                  <option value="Reviewed">Reviewed</option>
+                  <option value="Approved">Approved</option>
+                  <option value="Needs Revision">Needs Revision</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-1">Feedback / Comments</label>
+                <textarea value={reviewData.adminFeedback} onChange={e => setReviewData(p => ({ ...p, adminFeedback: e.target.value }))} rows={4} className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-medium outline-none focus:bg-white" placeholder="Write your feedback here..." />
+              </div>
+              <div>
+                <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-1">Score (Optional)</label>
+                <input type="number" value={reviewData.score} onChange={e => setReviewData(p => ({ ...p, score: e.target.value }))} className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none" placeholder="e.g. 85" min="0" max="100" />
+              </div>
+            </div>
+            <button onClick={handleReview} className="mt-6 px-6 py-3 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow flex items-center gap-2">
+              <Check size={14} /> Submit Review
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

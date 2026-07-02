@@ -10,7 +10,8 @@ import {
   LayoutDashboard, Tag, Info, X, Lock, ChevronRight,
   Trash2, Edit2, Save, FileText, Globe,
   Pause, Volume2, VolumeX, Maximize, Minimize, Loader2,
-  Settings, ThumbsUp, ThumbsDown, Flag
+  Settings, ThumbsUp, ThumbsDown, Flag,
+  ClipboardList, AlignJustify, Calendar, ChevronDown, Bold, Italic, Underline, List, ListOrdered
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
@@ -90,6 +91,16 @@ const Courses = () => {
   const [aiLoading, setAiLoading] = useState(false);
   const [showSubtitles, setShowSubtitles] = useState(true);
   const [transcriptSearch, setTranscriptSearch] = useState('');
+
+  // Essay Assignment States
+  const [courseAssignments, setCourseAssignments] = useState([]);
+  const [mySubmissions, setMySubmissions] = useState({}); // keyed by assignmentId
+  const [essayOpen, setEssayOpen] = useState(null); // assignment object when editor is open
+  const [essayText, setEssayText] = useState('');
+  const [essaySubmitting, setEssaySubmitting] = useState(false);
+  const [essaySaving, setEssaySaving] = useState(false);
+  const autoSaveTimerRef = React.useRef(null);
+  const essayEditorRef = React.useRef(null);
 
   // Auto-apply playback speed when video loads
   useEffect(() => {
@@ -488,7 +499,32 @@ const Courses = () => {
 
   useEffect(() => {
     fetchCourses();
+    return () => { if (autoSaveTimerRef.current) clearInterval(autoSaveTimerRef.current); };
   }, []);
+
+  const fetchCourseAssignments = async (courseId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API_URL}/assignments?courseId=${courseId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const active = (res.data.assignments || []).filter(a => a.isActive);
+      setCourseAssignments(active);
+      // Fetch my submissions for each
+      const submMap = {};
+      await Promise.all(active.map(async (a) => {
+        try {
+          const sr = await axios.get(`${API_URL}/assignments/my-submission/${a._id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (sr.data.submission) submMap[a._id] = sr.data.submission;
+        } catch {}
+      }));
+      setMySubmissions(submMap);
+    } catch (e) {
+      // silently fail - assignments are optional
+    }
+  };
 
   const openCoursePlayer = (course) => {
     if (!course) return;
@@ -516,6 +552,9 @@ const Courses = () => {
 
     setActiveLessonIndex(nextIndex);
     setSelectedCourse(freshCourse);
+    setCourseAssignments([]);
+    setMySubmissions({});
+    fetchCourseAssignments(freshCourse._id);
   };
 
   // Handle opening course from My Journey redirect
@@ -663,12 +702,108 @@ const Courses = () => {
     }
   };
 
+  // ── Essay Assignment Functions ──────────────────────────────────────────────
+  const countWords = (text) => {
+    const trimmed = text.trim();
+    if (!trimmed) return 0;
+    return trimmed.split(/\s+/).filter(Boolean).length;
+  };
+
+  const openEssayEditor = async (assignment) => {
+    setEssayOpen(assignment);
+    const existing = mySubmissions[assignment._id];
+    setEssayText(existing?.essayContent || '');
+    // Start autosave timer
+    if (autoSaveTimerRef.current) clearInterval(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setInterval(() => {
+      saveEssayDraft(assignment, false);
+    }, 30000);
+  };
+
+  const saveEssayDraft = async (assignment, showToast = true) => {
+    const text = essayEditorRef.current?.value ?? essayText;
+    if (!text.trim()) return;
+    setEssaySaving(true);
+    try {
+      const token = localStorage.getItem('token');
+      const wc = countWords(text);
+      await axios.post(`${API_URL}/assignments/submit`, {
+        assignmentId: assignment._id,
+        courseId: selectedCourse._id,
+        lessonId: assignment.lessonId,
+        essayContent: text,
+        wordCount: wc,
+        status: 'Draft'
+      }, { headers: { Authorization: `Bearer ${token}` } });
+      setMySubmissions(prev => ({ ...prev, [assignment._id]: { ...prev[assignment._id], essayContent: text, wordCount: wc, status: 'Draft' } }));
+      if (showToast) toast.success('Draft saved!');
+    } catch (e) {
+      if (showToast) toast.error(e.response?.data?.message || 'Failed to save draft');
+    } finally {
+      setEssaySaving(false);
+    }
+  };
+
+  const submitEssay = async (assignment) => {
+    const text = essayEditorRef.current?.value ?? essayText;
+    const wc = countWords(text);
+
+    if (!text.trim()) { toast.error('Please write your essay before submitting.'); return; }
+    if (wc < assignment.minWords) { toast.error(`Minimum ${assignment.minWords} words required. You have ${wc}.`); return; }
+    if (wc > assignment.maxWords) { toast.error(`Maximum ${assignment.maxWords} words exceeded. You have ${wc}.`); return; }
+
+    if (!window.confirm(`Submit your essay (${wc} words)? You cannot edit it after submission.`)) return;
+
+    setEssaySubmitting(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.post(`${API_URL}/assignments/submit`, {
+        assignmentId: assignment._id,
+        courseId: selectedCourse._id,
+        lessonId: assignment.lessonId,
+        essayContent: text,
+        wordCount: wc,
+        status: 'Submitted'
+      }, { headers: { Authorization: `Bearer ${token}` } });
+      setMySubmissions(prev => ({ ...prev, [assignment._id]: res.data.submission }));
+      toast.success('✅ Essay submitted successfully!');
+      if (autoSaveTimerRef.current) clearInterval(autoSaveTimerRef.current);
+      // Refresh assignments to show updated status
+      fetchCourseAssignments(selectedCourse._id);
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Submission failed. Please try again.');
+    } finally {
+      setEssaySubmitting(false);
+    }
+  };
+
+  // Determine if a lesson is completed by the user
+  const isLessonCompletedForAssignment = (lessonId) => {
+    if (!user || !selectedCourse) return false;
+    const prog = user.progress?.courseProgress?.find(p => {
+      const id = p.courseId?._id || p.courseId;
+      return id && id.toString() === selectedCourse._id.toString();
+    });
+    if (!prog) return false;
+    // lessonId can be an index or a mongo _id string
+    const lessons = selectedCourse.lessons || [];
+    const lessonIdx = lessons.findIndex(l => (l._id?.toString() === lessonId) || String(l._id) === String(lessonId));
+    if (lessonIdx === -1) {
+      // Try numeric index match
+      const numIdx = parseInt(lessonId);
+      if (!isNaN(numIdx)) return prog.completedLessons?.includes(numIdx) || false;
+      return false;
+    }
+    return prog.completedLessons?.includes(lessonIdx) || false;
+  };
+
   const filteredCourses = courses.filter(course =>
     course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     course.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
+    <>
     <DashboardLayout role="student">
       <div className="max-w-[1400px] mx-auto py-10">
 
@@ -1515,6 +1650,114 @@ const Courses = () => {
                         </div>
                       </div>
                     )}
+
+                    {/* ── Essay Assignments Section ────────────────────── */}
+                    {courseAssignments.length > 0 && (
+                      <div className="mt-8 pt-8 border-t border-slate-200 space-y-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <ClipboardList size={16} className="text-indigo-500" />
+                          <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Essay Assignments</h3>
+                          <span className="ml-auto text-[10px] font-black text-slate-400 uppercase tracking-widest">{courseAssignments.length} task{courseAssignments.length !== 1 ? 's' : ''}</span>
+                        </div>
+
+                        {courseAssignments.map((assignment) => {
+                          const unlocked = isLessonCompletedForAssignment(assignment.lessonId);
+                          const submission = mySubmissions[assignment._id];
+                          const isSubmitted = submission?.status === 'Submitted' || submission?.status === 'Approved' || submission?.status === 'Reviewed';
+                          const isDraft = submission?.status === 'Draft';
+                          const needsRevision = submission?.status === 'Needs Revision';
+                          const isApproved = submission?.status === 'Approved';
+                          const isReviewed = submission?.status === 'Reviewed';
+                          const isExpired = assignment.dueDate && new Date() > new Date(assignment.dueDate);
+
+                          return (
+                            <div key={assignment._id} className={`rounded-2xl border transition-all ${unlocked ? 'border-indigo-100 bg-gradient-to-br from-indigo-50/60 to-slate-50' : 'border-slate-200 bg-slate-50/60 opacity-60'}`}>
+                              {/* Card Header */}
+                              <div className="p-5">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="flex items-start gap-3">
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${unlocked ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-200 text-slate-400'}`}>
+                                      {unlocked ? <ClipboardList size={18} /> : <Lock size={16} />}
+                                    </div>
+                                    <div>
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <h4 className="font-black text-slate-900 text-sm">{assignment.title}</h4>
+                                        {!unlocked && <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 bg-slate-200 px-2 py-0.5 rounded-full">Locked</span>}
+                                        {unlocked && isApproved && <span className="text-[9px] font-black uppercase tracking-widest text-green-700 bg-green-100 px-2 py-0.5 rounded-full flex items-center gap-1"><CheckCircle size={9} /> Approved</span>}
+                                        {unlocked && isReviewed && !isApproved && <span className="text-[9px] font-black uppercase tracking-widest text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full">Reviewed</span>}
+                                        {unlocked && isSubmitted && !isApproved && !isReviewed && <span className="text-[9px] font-black uppercase tracking-widest text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">Submitted</span>}
+                                        {unlocked && isDraft && <span className="text-[9px] font-black uppercase tracking-widest text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">Draft</span>}
+                                        {unlocked && needsRevision && <span className="text-[9px] font-black uppercase tracking-widest text-red-700 bg-red-100 px-2 py-0.5 rounded-full">Needs Revision</span>}
+                                      </div>
+                                      <div className="flex items-center gap-3 mt-1 flex-wrap">
+                                        <span className="text-[10px] text-slate-500 font-medium">{assignment.minWords}–{assignment.maxWords} words</span>
+                                        {assignment.dueDate && <span className={`text-[10px] font-medium flex items-center gap-1 ${isExpired ? 'text-red-500' : 'text-amber-600'}`}><Calendar size={10} /> Due: {new Date(assignment.dueDate).toLocaleDateString()} {isExpired ? '(Expired)' : ''}</span>}
+                                        {submission?.wordCount && <span className="text-[10px] text-slate-400 font-medium">{submission.wordCount} words written</span>}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  {unlocked && !isSubmitted && !isApproved && (
+                                    <button
+                                      onClick={() => openEssayEditor(assignment)}
+                                      disabled={isExpired}
+                                      className={`shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 ${isExpired ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : isDraft ? 'bg-amber-500 text-white hover:bg-amber-600 shadow-sm' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm'}`}
+                                    >
+                                      <FileText size={11} />
+                                      {isDraft ? 'Continue Essay' : 'Start Assignment'}
+                                    </button>
+                                  )}
+                                  {unlocked && (isSubmitted || isApproved || isReviewed) && (
+                                    <button
+                                      onClick={() => openEssayEditor(assignment)}
+                                      className="shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all flex items-center gap-1.5"
+                                    >
+                                      <AlignJustify size={11} /> View Essay
+                                    </button>
+                                  )}
+                                  {unlocked && needsRevision && (
+                                    <button
+                                      onClick={() => openEssayEditor(assignment)}
+                                      className="shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest bg-red-500 text-white hover:bg-red-600 shadow-sm transition-all flex items-center gap-1.5"
+                                    >
+                                      <Edit2 size={11} /> Revise Essay
+                                    </button>
+                                  )}
+                                </div>
+
+                                {/* Locked state hint */}
+                                {!unlocked && (
+                                  <p className="text-[10px] text-slate-400 font-medium mt-3 ml-13 pl-0.5">
+                                    Complete the preceding lesson to unlock this essay assignment.
+                                  </p>
+                                )}
+
+                                {/* Submission feedback block */}
+                                {submission?.adminFeedback && (
+                                  <div className={`mt-4 p-4 rounded-xl border text-xs font-medium ${needsRevision ? 'bg-red-50 border-red-100 text-red-800' : 'bg-indigo-50 border-indigo-100 text-indigo-800'}`}>
+                                    <p className="font-black uppercase tracking-widest text-[10px] mb-1">Admin Feedback</p>
+                                    <p className="leading-relaxed">{submission.adminFeedback}</p>
+                                    {submission.score != null && (
+                                      <p className="mt-2 font-black text-indigo-700">Score: {submission.score} / 100</p>
+                                    )}
+                                    {submission.reviewedAt && (
+                                      <p className="text-[10px] text-slate-400 mt-1">Reviewed: {new Date(submission.reviewedAt).toLocaleDateString()}</p>
+                                    )}
+                                  </div>
+                                )}
+
+                                {/* Submitted confirmation */}
+                                {isSubmitted && !submission?.adminFeedback && (
+                                  <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-700 font-medium flex items-center gap-2">
+                                    <CheckCircle size={14} className="shrink-0" />
+                                    <span>Submitted {submission?.submittedAt ? `on ${new Date(submission.submittedAt).toLocaleDateString()}` : ''} · {submission?.wordCount} words · Awaiting review</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1528,6 +1771,216 @@ const Courses = () => {
         </AnimatePresence>
       </div>
     </DashboardLayout>
+
+    {/* ── Essay Editor Full-Screen Modal ─────────────────────────────────── */}
+    {essayOpen && (() => {
+      const submission = mySubmissions[essayOpen._id];
+      const isLocked = submission?.status === 'Submitted' || submission?.status === 'Approved' || submission?.status === 'Reviewed';
+      const wordCount = countWords(essayText);
+      const charCount = essayText.length;
+      const readingTime = Math.ceil(wordCount / 200);
+      const wordPct = Math.min((wordCount / essayOpen.maxWords) * 100, 100);
+      const wordOk = wordCount >= essayOpen.minWords && wordCount <= essayOpen.maxWords;
+
+      const applyFormat = (tag) => {
+        const el = essayEditorRef.current;
+        if (!el || isLocked) return;
+        const start = el.selectionStart;
+        const end = el.selectionEnd;
+        const selected = essayText.substring(start, end);
+        let insert = '';
+        if (tag === 'bold') insert = `**${selected || 'bold text'}**`;
+        else if (tag === 'italic') insert = `_${selected || 'italic text'}_`;
+        else if (tag === 'underline') insert = `<u>${selected || 'underline text'}</u>`;
+        else if (tag === 'ul') insert = `\n• ${selected || 'list item'}\n`;
+        else if (tag === 'ol') insert = `\n1. ${selected || 'list item'}\n`;
+        const newText = essayText.substring(0, start) + insert + essayText.substring(end);
+        setEssayText(newText);
+        setTimeout(() => { el.selectionStart = start + insert.length; el.selectionEnd = start + insert.length; el.focus(); }, 0);
+      };
+
+      return (
+        <div className="fixed inset-0 z-[9999] bg-white flex flex-col">
+          {/* Essay Editor TopBar */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-white shrink-0 gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center shrink-0">
+                <ClipboardList size={16} className="text-indigo-600" />
+              </div>
+              <div className="min-w-0">
+                <h2 className="font-black text-slate-900 text-sm truncate">{essayOpen.title}</h2>
+                <p className="text-[10px] text-slate-400 font-medium">{selectedCourse?.title}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {essaySaving && <span className="text-[10px] text-slate-400 font-medium animate-pulse">Saving…</span>}
+              {!isLocked && (
+                <>
+                  <button
+                    onClick={() => saveEssayDraft(essayOpen, true)}
+                    disabled={essaySaving}
+                    className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-black text-slate-600 hover:bg-slate-50 transition-all flex items-center gap-1.5"
+                  >
+                    <Save size={13} /> Save Draft
+                  </button>
+                  <button
+                    onClick={() => submitEssay(essayOpen)}
+                    disabled={essaySubmitting || !wordOk}
+                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-1.5 shadow-sm ${wordOk && !essaySubmitting ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
+                  >
+                    {essaySubmitting ? <Loader2 size={13} className="animate-spin" /> : <CheckCircle size={13} />}
+                    Submit Assignment
+                  </button>
+                </>
+              )}
+              {isLocked && (
+                <span className="px-3 py-2 bg-blue-50 text-blue-700 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                  <CheckCircle size={12} /> {submission?.status}
+                </span>
+              )}
+              <button
+                onClick={() => { setEssayOpen(null); if (autoSaveTimerRef.current) clearInterval(autoSaveTimerRef.current); }}
+                className="p-2 rounded-xl text-slate-500 hover:bg-slate-100 transition-all"
+              >
+                <X size={18} />
+              </button>
+            </div>
+          </div>
+
+          <div className="flex flex-1 overflow-hidden">
+            {/* Main Editor Column */}
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {/* Formatting Toolbar */}
+              {!isLocked && (
+                <div className="flex items-center gap-1 px-6 py-2.5 border-b border-slate-100 bg-slate-50 shrink-0 flex-wrap">
+                  <button onClick={() => applyFormat('bold')} className="p-2 rounded-lg text-slate-600 hover:bg-slate-200 transition-all" title="Bold"><Bold size={14} /></button>
+                  <button onClick={() => applyFormat('italic')} className="p-2 rounded-lg text-slate-600 hover:bg-slate-200 transition-all" title="Italic"><Italic size={14} /></button>
+                  <button onClick={() => applyFormat('underline')} className="p-2 rounded-lg text-slate-600 hover:bg-slate-200 transition-all" title="Underline"><Underline size={14} /></button>
+                  <div className="w-px h-5 bg-slate-200 mx-1" />
+                  <button onClick={() => applyFormat('ul')} className="p-2 rounded-lg text-slate-600 hover:bg-slate-200 transition-all" title="Bullet List"><List size={14} /></button>
+                  <button onClick={() => applyFormat('ol')} className="p-2 rounded-lg text-slate-600 hover:bg-slate-200 transition-all" title="Numbered List"><ListOrdered size={14} /></button>
+                  <div className="ml-auto flex items-center gap-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    <span className={wordCount < essayOpen.minWords ? 'text-red-500' : wordCount > essayOpen.maxWords ? 'text-red-500' : 'text-green-600'}>
+                      {wordCount} / {essayOpen.minWords} words min
+                    </span>
+                    <span className="text-slate-300">|</span>
+                    <span>{charCount} chars</span>
+                    <span className="text-slate-300">|</span>
+                    <span>~{readingTime} min read</span>
+                    <span className="text-slate-300">|</span>
+                    <span className="text-slate-400">Autosave every 30s</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Word count progress bar */}
+              <div className="h-1 bg-slate-100 shrink-0">
+                <div
+                  className={`h-full transition-all duration-300 ${wordCount > essayOpen.maxWords ? 'bg-red-400' : wordCount >= essayOpen.minWords ? 'bg-green-400' : 'bg-indigo-400'}`}
+                  style={{ width: `${wordPct}%` }}
+                />
+              </div>
+
+              {/* Textarea */}
+              <div className="flex-1 overflow-y-auto px-0 py-0">
+                <textarea
+                  ref={essayEditorRef}
+                  value={essayText}
+                  onChange={(e) => setEssayText(e.target.value)}
+                  readOnly={isLocked}
+                  placeholder={isLocked ? '' : `Start writing your essay here...\n\nTip: Your work is automatically saved every 30 seconds.`}
+                  className={`w-full h-full resize-none outline-none text-slate-800 text-base leading-relaxed font-normal px-16 py-10 ${isLocked ? 'bg-slate-50 text-slate-600 cursor-default' : 'bg-white'}`}
+                  style={{ minHeight: '100%', fontFamily: "'Georgia', serif", fontSize: '16px', lineHeight: '1.85' }}
+                />
+              </div>
+            </div>
+
+            {/* Right Sidebar: Instructions + Stats */}
+            <div className="w-72 border-l border-slate-200 bg-slate-50/80 flex flex-col shrink-0 overflow-y-auto">
+              <div className="p-5 space-y-6">
+
+                {/* Word Count Stats */}
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Progress</p>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs font-bold text-slate-700">
+                      <span>Words</span>
+                      <span className={wordCount < essayOpen.minWords ? 'text-amber-600' : wordCount > essayOpen.maxWords ? 'text-red-500' : 'text-green-600'}>{wordCount}</span>
+                    </div>
+                    <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full transition-all ${wordCount > essayOpen.maxWords ? 'bg-red-400' : wordCount >= essayOpen.minWords ? 'bg-green-400' : 'bg-indigo-400'}`} style={{ width: `${wordPct}%` }} />
+                    </div>
+                    <div className="flex justify-between text-[10px] text-slate-400 font-medium">
+                      <span>Min: {essayOpen.minWords}</span>
+                      <span>Max: {essayOpen.maxWords}</span>
+                    </div>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <div className="bg-white border border-slate-200 rounded-xl p-3 text-center">
+                      <p className="text-lg font-black text-slate-900">{charCount}</p>
+                      <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Chars</p>
+                    </div>
+                    <div className="bg-white border border-slate-200 rounded-xl p-3 text-center">
+                      <p className="text-lg font-black text-slate-900">{readingTime}m</p>
+                      <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Read Time</p>
+                    </div>
+                  </div>
+                  {!wordOk && !isLocked && (
+                    <div className="mt-3 p-2.5 bg-amber-50 border border-amber-100 rounded-xl text-[10px] text-amber-700 font-medium">
+                      {wordCount < essayOpen.minWords
+                        ? `Write ${essayOpen.minWords - wordCount} more words to meet the minimum.`
+                        : `Reduce by ${wordCount - essayOpen.maxWords} words — you've exceeded the limit.`}
+                    </div>
+                  )}
+                  {wordOk && !isLocked && (
+                    <div className="mt-3 p-2.5 bg-green-50 border border-green-100 rounded-xl text-[10px] text-green-700 font-medium flex items-center gap-1.5">
+                      <CheckCircle size={11} /> Word count is within range. Ready to submit!
+                    </div>
+                  )}
+                </div>
+
+                {/* Instructions */}
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Instructions</p>
+                  <div className="bg-white border border-slate-200 rounded-xl p-4 text-xs text-slate-600 font-medium leading-relaxed max-h-72 overflow-y-auto">
+                    {essayOpen.instructions}
+                  </div>
+                </div>
+
+                {/* Due Date */}
+                {essayOpen.dueDate && (
+                  <div className={`p-3 rounded-xl border text-xs font-medium flex items-start gap-2 ${new Date() > new Date(essayOpen.dueDate) ? 'bg-red-50 border-red-100 text-red-700' : 'bg-amber-50 border-amber-100 text-amber-700'}`}>
+                    <Calendar size={13} className="mt-0.5 shrink-0" />
+                    <span>Due: <strong>{new Date(essayOpen.dueDate).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</strong></span>
+                  </div>
+                )}
+
+                {/* Submission Details (if already submitted) */}
+                {isLocked && submission && (
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Submission</p>
+                    <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-2 text-xs font-medium text-slate-600">
+                      <div className="flex justify-between"><span className="text-slate-400">Status</span><span className="font-black text-slate-900">{submission.status}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-400">Words</span><span className="font-black">{submission.wordCount}</span></div>
+                      {submission.submittedAt && <div className="flex justify-between"><span className="text-slate-400">Submitted</span><span>{new Date(submission.submittedAt).toLocaleDateString()}</span></div>}
+                      {submission.score != null && <div className="flex justify-between"><span className="text-slate-400">Score</span><span className="font-black text-indigo-700">{submission.score}/100</span></div>}
+                    </div>
+                    {submission.adminFeedback && (
+                      <div className="mt-3 p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-xs text-indigo-800 font-medium">
+                        <p className="font-black text-[10px] uppercase tracking-widest mb-1">Feedback</p>
+                        {submission.adminFeedback}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    })()}
+    </>
   );
 };
 

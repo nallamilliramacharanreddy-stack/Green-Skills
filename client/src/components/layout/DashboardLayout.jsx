@@ -5,7 +5,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { 
   Home, BookOpen, Award, Briefcase, 
   Settings, LogOut, MessageSquare, Bell,
-  Menu, X, User, Users, Shield, Trophy, Sparkles, Crown, ShieldAlert, FileText, Headphones, Video
+  Menu, X, User, Users, Shield, Trophy, Sparkles, Crown, ShieldAlert, FileText, Headphones, Video, ClipboardList
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useRealTime } from '../../context/RealTimeContext';
@@ -240,6 +240,7 @@ const DashboardLayout = ({ children, role: propRole }) => {
         { icon: MessageSquare, label: 'Quiz Management', path: '/admin/quizzes' },
         { icon: Headphones, label: 'Support Tickets', path: '/support' },
         { icon: Video, label: 'Manage Videos', path: '/admin/videos' },
+        { icon: ClipboardList, label: 'Assignments', path: '/admin/assignments' },
       ]},
       { category: 'DATA & USERS', items: [
         { icon: Award, label: 'Leaderboard', path: '/admin/leaderboard' },

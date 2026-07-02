@@ -92,6 +92,7 @@ function App() {
             <Route path="/admin/name-changes" element={<ProtectedRoute allowedRoles={['admin', 'admin_course', 'admin_hiring', 'admin_exam', 'super-admin']}><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/hirers" element={<ProtectedRoute allowedRoles={['admin', 'admin_course', 'admin_hiring', 'admin_exam', 'super-admin']}><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/quizzes" element={<ProtectedRoute allowedRoles={['admin', 'admin_course', 'admin_hiring', 'admin_exam', 'super-admin']}><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin/assignments" element={<ProtectedRoute allowedRoles={['admin', 'admin_course', 'admin_hiring', 'admin_exam', 'super-admin']}><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/proctoring" element={<ProtectedRoute allowedRoles={['admin', 'admin_course', 'admin_hiring', 'admin_exam', 'super-admin']}><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/admins" element={<ProtectedRoute allowedRoles={['admin', 'admin_course', 'admin_hiring', 'admin_exam', 'super-admin']}><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/notifications" element={<ProtectedRoute allowedRoles={['admin', 'admin_course', 'admin_hiring', 'admin_exam', 'super-admin']}><AdminDashboard /></ProtectedRoute>} />
