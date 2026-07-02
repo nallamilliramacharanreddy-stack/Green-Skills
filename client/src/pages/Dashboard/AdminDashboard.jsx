@@ -472,45 +472,40 @@ const ManageCourses = ({ courses, onGenQuiz, onDeleteCourse, refresh, users }) =
                 </div>
               </div>
 
-                <button
-                  onClick={() => onGenQuiz(course._id)}
-                  className="w-full py-4 bg-emerald-50 text-emerald-600 rounded-[20px] border border-emerald-100 font-black uppercase tracking-widest text-[10px] hover:bg-emerald-600 hover:text-white transition-all flex items-center justify-center gap-3 mb-5"
-                >
-                  <Award size={16} /> Deploy 20 Lessons & 5 AI Tasks
-                </button>
 
-                <div className="pt-5 border-t border-slate-100">
-                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Registered Users</h4>
-                  <div className="space-y-2 max-h-32 overflow-y-auto pr-2 custom-scrollbar">
-                    {(() => {
-                      const enrolledUsers = users?.filter(u => {
-                        const cid = course._id?.toString();
-                        const inCurrent = u.progress?.currentCourses?.some(id => id?.toString() === cid);
-                        const inCompleted = u.progress?.completedCourses?.some(id => id?.toString() === cid);
-                        const inEnrolled = course.enrolledStudents?.some(id => id?.toString() === u._id?.toString());
-                        return inCurrent || inCompleted || inEnrolled;
-                      }) || [];
-                      
-                      if (enrolledUsers.length === 0) {
-                        return <p className="text-xs font-semibold text-slate-500 italic">No users registered yet.</p>;
-                      }
-                      
-                      return enrolledUsers.map(user => (
-                        <div key={user._id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100 hover:border-emerald-200 transition-colors">
-                          <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-xs flex-shrink-0">
-                            {user.name?.charAt(0) || '?'}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-xs font-bold text-slate-900 truncate">{user.name}</p>
-                            <p className="text-[9px] text-slate-400 uppercase tracking-widest truncate">{user.email}</p>
-                          </div>
+
+              <div className="pt-5 border-t border-slate-100">
+                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Registered Users</h4>
+                <div className="space-y-2 max-h-32 overflow-y-auto pr-2 custom-scrollbar">
+                  {(() => {
+                    const enrolledUsers = users?.filter(u => {
+                      const cid = course._id?.toString();
+                      const inCurrent = u.progress?.currentCourses?.some(id => id?.toString() === cid);
+                      const inCompleted = u.progress?.completedCourses?.some(id => id?.toString() === cid);
+                      const inEnrolled = course.enrolledStudents?.some(id => id?.toString() === u._id?.toString());
+                      return inCurrent || inCompleted || inEnrolled;
+                    }) || [];
+
+                    if (enrolledUsers.length === 0) {
+                      return <p className="text-xs font-semibold text-slate-500 italic">No users registered yet.</p>;
+                    }
+
+                    return enrolledUsers.map(user => (
+                      <div key={user._id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100 hover:border-emerald-200 transition-colors">
+                        <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-xs flex-shrink-0">
+                          {user.name?.charAt(0) || '?'}
                         </div>
-                      ));
-                    })()}
-                  </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-900 truncate">{user.name}</p>
+                          <p className="text-[9px] text-slate-400 uppercase tracking-widest truncate">{user.email}</p>
+                        </div>
+                      </div>
+                    ));
+                  })()}
                 </div>
               </div>
             </div>
+          </div>
         ))}
       </div>
 
@@ -729,7 +724,7 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200">
                     {formData.lessons.map((lesson, idx) => {
                       if (lesson.moduleTitle !== moduleTitle) return null;
-                      
+
                       const localIdx = formData.lessons.slice(0, idx).filter(l => l.moduleTitle === moduleTitle).length;
 
                       return (
@@ -775,7 +770,7 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
                                 placeholder="Direct Video URL (MP4/WebM)..."
                               />
                             </div>
-                            
+
                             <label className={`shrink-0 p-2 border border-slate-200 rounded-lg cursor-pointer transition-all flex items-center justify-center ${lesson.status === 'uploading' ? 'bg-primary/10 border-primary text-primary' : 'bg-white text-slate-400 hover:bg-slate-50'}`}>
                               {lesson.status === 'uploading' ? (
                                 <div className="flex items-center gap-1.5 text-[9px] font-black uppercase text-primary">
@@ -785,10 +780,10 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
                               ) : (
                                 <Video size={14} />
                               )}
-                              <input 
-                                type="file" 
-                                accept="video/mp4,video/webm" 
-                                className="hidden" 
+                              <input
+                                type="file"
+                                accept="video/mp4,video/webm"
+                                className="hidden"
                                 onChange={async (e) => {
                                   const file = e.target.files[0];
                                   if (!file) return;
@@ -804,23 +799,23 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
 
                                   try {
                                     const token = sessionStorage.getItem('token');
-                                    
+
                                     const uploadPromise = new Promise((resolve, reject) => {
                                       const xhr = new XMLHttpRequest();
                                       xhr.open('POST', `${API_URL}/videos/upload`);
                                       xhr.timeout = 10 * 60 * 1000; // 10 minutes for large video uploads
-                                      
+
                                       if (token) {
                                         xhr.setRequestHeader('Authorization', `Bearer ${token}`);
                                       }
-                                      
+
                                       xhr.upload.onprogress = (progressEvent) => {
                                         if (progressEvent.lengthComputable) {
                                           const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
                                           setUploadProgress(prev => ({ ...prev, [idx]: percentCompleted }));
                                         }
                                       };
-                                      
+
                                       xhr.onload = () => {
                                         if (xhr.status >= 200 && xhr.status < 300) {
                                           try {
@@ -837,8 +832,8 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
                                               errorMsg = responseJson.message + (responseJson.error ? `: ${responseJson.error}` : '');
                                             }
                                             errorData = responseJson;
-                                          } catch (e) {}
-                                          
+                                          } catch (e) { }
+
                                           const statusError = new Error(errorMsg);
                                           statusError.response = {
                                             status: xhr.status,
@@ -848,7 +843,7 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
                                           reject(statusError);
                                         }
                                       };
-                                      
+
                                       xhr.onerror = () => {
                                         const netError = new Error('Network Error during upload: Browser failed to send request or connection refused.');
                                         netError.request = xhr;
@@ -860,12 +855,12 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
                                         timeoutError.request = xhr;
                                         reject(timeoutError);
                                       };
-                                      
+
                                       xhr.send(formDataObj);
                                     });
 
                                     const resData = await uploadPromise;
-                                    
+
                                     const newLessons = [...formData.lessons];
                                     newLessons[idx].directVideoUrl = resData.directVideoUrl; // Use local server stream URL
                                     newLessons[idx].internalVideoUrl = resData.directVideoUrl;
@@ -882,12 +877,12 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
                                     console.error("Upload Error:", error);
 
                                     if (error.response) {
-                                        console.log(error.response.status);
-                                        console.log(error.response.data);
+                                      console.log(error.response.status);
+                                      console.log(error.response.data);
                                     }
 
                                     if (error.request) {
-                                        console.log(error.request);
+                                      console.log(error.request);
                                     }
 
                                     console.log(error.message);
@@ -903,10 +898,10 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
                                       return copy;
                                     });
                                   }
-                                }} 
+                                }}
                               />
                             </label>
-                            
+
                             {lesson.directVideoUrl && (
                               <button
                                 type="button"
@@ -922,7 +917,7 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
                               </button>
                             )}
                           </div>
-                          
+
                           {/* YouTube Link Option */}
                           <div className="relative flex items-center gap-2">
                             <div className="relative flex-1">
@@ -957,7 +952,7 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
                         </div>
                       );
                     })}
-                    
+
                     <button
                       type="button"
                       onClick={() => {
@@ -1450,7 +1445,7 @@ const HirerDataManagement = ({ data, onToggleStatus, onDelete, onApprove, onReje
    ================================================== */
 const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
   const [view, setView] = useState('dashboard'); // 'dashboard', 'create', 'review'
-  
+
   const [formData, setFormData] = useState({
     title: '',
     courseId: '',
@@ -1479,14 +1474,14 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
   useEffect(() => {
     // initialize from courses for published assessments
     const existingAssessments = courses.filter(c => c.quiz?.length > 0).map(c => ({
-        id: c._id,
-        title: `${c.title} Final Assessment`,
-        courseTitle: c.title,
-        status: 'Published',
-        questionsCount: c.quiz?.length || 50,
-        fullQuestions: c.quiz || [],
-        date: new Date().toLocaleDateString(),
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      id: c._id,
+      title: `${c.title} Final Assessment`,
+      courseTitle: c.title,
+      status: 'Published',
+      questionsCount: c.quiz?.length || 50,
+      fullQuestions: c.quiz || [],
+      date: new Date().toLocaleDateString(),
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }));
     setAssessments(existingAssessments);
   }, [courses]);
@@ -1575,8 +1570,8 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {[
-          { label: 'Published Assessments', value: assessments.filter(a=>a.status==='Published').length, icon: CheckCircle, color: 'emerald' },
-          { label: 'Draft Assessments', value: assessments.filter(a=>a.status==='Draft').length, icon: FileText, color: 'slate' },
+          { label: 'Published Assessments', value: assessments.filter(a => a.status === 'Published').length, icon: CheckCircle, color: 'emerald' },
+          { label: 'Draft Assessments', value: assessments.filter(a => a.status === 'Draft').length, icon: FileText, color: 'slate' },
           { label: 'Total Questions Gen', value: assessments.reduce((acc, curr) => acc + curr.questions, 0), icon: MessageSquare, color: 'blue' },
           { label: 'Avg Accuracy', value: '94%', icon: Activity, color: 'indigo' }
         ].map((s, i) => (
@@ -1608,8 +1603,8 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
               </div>
               <div className="flex items-center gap-4">
                 <span className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest ${a.status === 'Published' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-200 text-slate-600'}`}>{a.status}</span>
-                <button onClick={() => handleEditAssessment(a)} className="p-3 bg-white text-slate-900 rounded-2xl hover:bg-primary hover:text-white transition-all shadow-sm"><Edit size={16}/></button>
-                <button onClick={() => handleDeleteAssessment(a.id)} className="p-3 bg-white text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all shadow-sm"><Trash2 size={16}/></button>
+                <button onClick={() => handleEditAssessment(a)} className="p-3 bg-white text-slate-900 rounded-2xl hover:bg-primary hover:text-white transition-all shadow-sm"><Edit size={16} /></button>
+                <button onClick={() => handleDeleteAssessment(a.id)} className="p-3 bg-white text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all shadow-sm"><Trash2 size={16} /></button>
               </div>
             </div>
           ))}
@@ -1640,19 +1635,19 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
           <div className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-xl space-y-6">
             <div className="space-y-3">
               <label className="text-xs font-black uppercase tracking-widest text-slate-500">Assessment Title</label>
-              <input value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-primary" placeholder="e.g. Advanced Solar Installation Quiz" />
+              <input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-primary" placeholder="e.g. Advanced Solar Installation Quiz" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-3">
                 <label className="text-xs font-black uppercase tracking-widest text-slate-500">Target Course</label>
-                <select value={formData.courseId} onChange={e => setFormData({...formData, courseId: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-primary">
+                <select value={formData.courseId} onChange={e => setFormData({ ...formData, courseId: e.target.value })} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-primary">
                   <option value="">Select Course...</option>
                   {courses.map(c => <option key={c._id} value={c._id}>{c.title}</option>)}
                 </select>
               </div>
               <div className="space-y-3">
                 <label className="text-xs font-black uppercase tracking-widest text-slate-500">Duration (Minutes)</label>
-                <input type="number" value={formData.duration} onChange={e => setFormData({...formData, duration: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-primary" />
+                <input type="number" value={formData.duration} onChange={e => setFormData({ ...formData, duration: e.target.value })} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-primary" />
               </div>
             </div>
             {/* Banner Image */}
@@ -1660,7 +1655,7 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
               <label className="text-xs font-black uppercase tracking-widest text-slate-500">Banner / Cover Image URL</label>
               <input
                 value={formData.bannerImage || ''}
-                onChange={e => setFormData({...formData, bannerImage: e.target.value})}
+                onChange={e => setFormData({ ...formData, bannerImage: e.target.value })}
                 className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-primary"
                 placeholder="https://example.com/banner.jpg"
               />
@@ -1687,7 +1682,7 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
               className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-primary transition-all font-medium resize-none min-h-[90px]"
               placeholder="Enter the question here..."
               value={formData._qText || ''}
-              onChange={e => setFormData({...formData, _qText: e.target.value})}
+              onChange={e => setFormData({ ...formData, _qText: e.target.value })}
             />
             <div className="space-y-3">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Options — click the circle to mark correct answer</label>
@@ -1695,10 +1690,9 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
                 <div key={i} className="flex items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => setFormData({...formData, _qCorrect: i})}
-                    className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${
-                      (formData._qCorrect ?? 0) === i ? 'border-primary bg-primary text-white' : 'border-slate-300 hover:border-primary'
-                    }`}
+                    onClick={() => setFormData({ ...formData, _qCorrect: i })}
+                    className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${(formData._qCorrect ?? 0) === i ? 'border-primary bg-primary text-white' : 'border-slate-300 hover:border-primary'
+                      }`}
                   >
                     {(formData._qCorrect ?? 0) === i && <CheckCircle size={14} />}
                   </button>
@@ -1710,7 +1704,7 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
                     onChange={e => {
                       const newOpts = [...(formData._qOptions || ['', '', '', ''])];
                       newOpts[i] = e.target.value;
-                      setFormData({...formData, _qOptions: newOpts});
+                      setFormData({ ...formData, _qOptions: newOpts });
                     }}
                   />
                 </div>
@@ -1735,7 +1729,7 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
                   marks: 1
                 };
                 setQuestions([...questions, newQ]);
-                setFormData({...formData, _qText: '', _qOptions: ['', '', '', ''], _qCorrect: 0});
+                setFormData({ ...formData, _qText: '', _qOptions: ['', '', '', ''], _qCorrect: 0 });
                 toast.success('Question added!');
               }}
               className="w-full py-4 bg-primary/10 text-primary rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-2"
@@ -1821,7 +1815,7 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-white/10">
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Target Course</label>
-            <select value={formData.courseId} onChange={e => setFormData({...formData, courseId: e.target.value})} className="w-full p-3 bg-white/10 border border-white/20 rounded-2xl font-bold text-white outline-none focus:border-primary">
+            <select value={formData.courseId} onChange={e => setFormData({ ...formData, courseId: e.target.value })} className="w-full p-3 bg-white/10 border border-white/20 rounded-2xl font-bold text-white outline-none focus:border-primary">
               <option value="" className="text-slate-900">Select Course...</option>
               {courses.map(c => <option key={c._id} value={c._id} className="text-slate-900">{c.title}</option>)}
             </select>
@@ -1830,7 +1824,7 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Banner Image URL</label>
             <input
               value={formData.bannerImage || ''}
-              onChange={e => setFormData({...formData, bannerImage: e.target.value})}
+              onChange={e => setFormData({ ...formData, bannerImage: e.target.value })}
               className="w-full p-3 bg-white/10 border border-white/20 rounded-2xl font-bold text-white outline-none focus:border-primary placeholder:text-slate-500"
               placeholder="https://example.com/banner.jpg"
             />
@@ -1841,7 +1835,7 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
       <div className="flex justify-between items-center px-4">
         <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter italic">{questions.length} Questions</h3>
         <div className="flex gap-4">
-          <button onClick={handleAddQuestion} className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold uppercase hover:bg-slate-200 flex items-center gap-2"><Plus size={14}/> Add Question</button>
+          <button onClick={handleAddQuestion} className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold uppercase hover:bg-slate-200 flex items-center gap-2"><Plus size={14} /> Add Question</button>
         </div>
       </div>
 
@@ -1852,12 +1846,12 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
               <div key={q.id} className="bg-white p-8 rounded-[32px] border-2 border-primary/30 shadow-md relative space-y-6">
                 <div>
                   <label className="text-xs font-black uppercase tracking-widest text-slate-500 block mb-2">Question Text</label>
-                  <input 
-                    value={q.question || q.questionText || ''} 
+                  <input
+                    value={q.question || q.questionText || ''}
                     onChange={e => {
                       const text = e.target.value;
                       setQuestions(questions.map(item => item.id === q.id ? { ...item, question: text, questionText: text } : item));
-                    }} 
+                    }}
                     className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-primary"
                     placeholder="Enter question text..."
                   />
@@ -1867,17 +1861,17 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {q.options.map((opt, i) => (
                       <div key={i} className="flex items-center gap-3 p-2 bg-slate-50 rounded-xl border border-slate-200">
-                        <input 
-                          type="radio" 
-                          name={`correct-${q.id}`} 
-                          checked={q.options[i] === q.correctAnswer} 
+                        <input
+                          type="radio"
+                          name={`correct-${q.id}`}
+                          checked={q.options[i] === q.correctAnswer}
                           onChange={() => {
                             setQuestions(questions.map(item => item.id === q.id ? { ...item, correctAnswer: q.options[i] } : item));
                           }}
                           className="w-4 h-4 text-primary focus:ring-primary"
                         />
-                        <input 
-                          value={opt} 
+                        <input
+                          value={opt}
                           onChange={e => {
                             const val = e.target.value;
                             const newOpts = [...q.options];
@@ -1885,8 +1879,8 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
                             newOpts[i] = val;
                             const newCorrect = q.correctAnswer === oldOptVal ? val : q.correctAnswer;
                             setQuestions(questions.map(item => item.id === q.id ? { ...item, options: newOpts, correctAnswer: newCorrect } : item));
-                          }} 
-                          className="w-full bg-transparent font-medium text-slate-900 text-sm outline-none" 
+                          }}
+                          className="w-full bg-transparent font-medium text-slate-900 text-sm outline-none"
                           placeholder={`Option ${i + 1}`}
                         />
                       </div>
@@ -1895,11 +1889,11 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
                 </div>
                 <div>
                   <label className="text-xs font-black uppercase tracking-widest text-slate-500 block mb-2">Explanation</label>
-                  <textarea 
-                    value={q.explanation || ''} 
+                  <textarea
+                    value={q.explanation || ''}
                     onChange={e => {
                       setQuestions(questions.map(item => item.id === q.id ? { ...item, explanation: e.target.value } : item));
-                    }} 
+                    }}
                     className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-primary resize-y min-h-[80px]"
                     placeholder="Provide an explanation for the correct answer..."
                   />
@@ -1916,29 +1910,29 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
           return (
             <div key={q.id} className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm relative group">
               <div className="absolute top-8 right-8 flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                <button onClick={() => setEditingQuestionId(q.id)} className="p-2 bg-slate-50 text-slate-600 rounded-lg hover:bg-primary hover:text-white transition-all" title="Edit Question"><Edit size={16}/></button>
-                <button onClick={() => setQuestions(questions.filter(qu => qu.id !== q.id))} className="p-2 bg-slate-50 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all" title="Delete Question"><Trash2 size={16}/></button>
+                <button onClick={() => setEditingQuestionId(q.id)} className="p-2 bg-slate-50 text-slate-600 rounded-lg hover:bg-primary hover:text-white transition-all" title="Edit Question"><Edit size={16} /></button>
+                <button onClick={() => setQuestions(questions.filter(qu => qu.id !== q.id))} className="p-2 bg-slate-50 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all" title="Delete Question"><Trash2 size={16} /></button>
               </div>
-              
+
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center font-black">{index + 1}</div>
                 <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-md text-[10px] font-black uppercase tracking-widest">{q.difficulty || 'Medium'}</span>
               </div>
-              
+
               <h4 className="text-lg font-bold text-slate-900 mb-6">{q.question || q.questionText || q.text || "Question text unavailable"}</h4>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {q.options.map((opt, i) => {
                   const isCorrect = Number(i) === Number(q.correctAnswer) || opt === q.correctAnswer;
                   return (
                     <div key={i} className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between ${isCorrect ? 'border-emerald-500 bg-emerald-50 text-emerald-900' : 'border-slate-100 hover:border-slate-300'}`}>
-                       <span className="font-medium text-sm">{opt}</span>
-                       {isCorrect && <CheckCircle size={18} className="text-emerald-500" />}
+                      <span className="font-medium text-sm">{opt}</span>
+                      {isCorrect && <CheckCircle size={18} className="text-emerald-500" />}
                     </div>
                   );
                 })}
               </div>
-              
+
               <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
                 <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">Explanation</p>
                 <p className="text-sm text-blue-900 font-medium">{q.explanation || "No explanation provided."}</p>
@@ -2366,15 +2360,15 @@ const QuestionBankIntegrityReport = () => {
           <div className="space-y-6">
             <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter italic">Integrity Overview</h3>
             <p className="text-slate-600 text-sm max-w-3xl leading-relaxed">
-              The Question Bank Integrity & Anti-Repetition System audits all questions across standard assessments, courses, and lessons. 
+              The Question Bank Integrity & Anti-Repetition System audits all questions across standard assessments, courses, and lessons.
               It prevents identical fingerprints, wording permutations, or options cloning. A Quality Score of 90% or higher is recommended for secure testing environments.
             </p>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
               <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 space-y-2">
                 <h4 className="font-bold text-slate-900 uppercase text-xs tracking-wider">Fingerprint Match Algorithm</h4>
                 <p className="text-slate-500 text-xs leading-relaxed">
-                  Questions are normalized by stripping punctuation, removing capitalization, sorting the words alphabetically, and hashing. 
+                  Questions are normalized by stripping punctuation, removing capitalization, sorting the words alphabetically, and hashing.
                   This catches duplicates even if candidates or authors rearrange phrases or change letter casing.
                 </p>
               </div>
@@ -2382,7 +2376,7 @@ const QuestionBankIntegrityReport = () => {
               <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 space-y-2">
                 <h4 className="font-bold text-slate-900 uppercase text-xs tracking-wider">Jaccard Similarity Checking</h4>
                 <p className="text-slate-500 text-xs leading-relaxed">
-                  Calculates Jaccard intersection size over union size. Thresholds &gt;= 85% similarities are automatically blocked on create, 
+                  Calculates Jaccard intersection size over union size. Thresholds &gt;= 85% similarities are automatically blocked on create,
                   ensuring a diverse question pool.
                 </p>
               </div>
@@ -2557,10 +2551,9 @@ const NameChangeManagement = ({ data, onDecide, certRegenData, onRegenDecide }) 
                       </p>
                     </td>
                     <td className="px-10 py-6">
-                      <span className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                        req.status === 'pending' ? 'bg-amber-100 text-amber-600' :
+                      <span className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest ${req.status === 'pending' ? 'bg-amber-100 text-amber-600' :
                         req.status === 'approved' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'
-                      }`}>
+                        }`}>
                         {req.status}
                       </span>
                     </td>
@@ -2656,10 +2649,9 @@ const NameChangeManagement = ({ data, onDecide, certRegenData, onRegenDecide }) 
                       </p>
                     </td>
                     <td className="px-10 py-6">
-                      <span className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                        req.status === 'pending' ? 'bg-amber-100 text-amber-600' :
+                      <span className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest ${req.status === 'pending' ? 'bg-amber-100 text-amber-600' :
                         req.status === 'approved' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'
-                      }`}>
+                        }`}>
                         {req.status}
                       </span>
                     </td>
