@@ -2,11 +2,11 @@ const cloudinary = require('cloudinary').v2;
 const fs = require('fs');
 const path = require('path');
 
-// Configure Cloudinary SDK with environment variables
+// Configure Cloudinary SDK with environment variables after trimming them
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
+  cloud_name: (process.env.CLOUDINARY_CLOUD_NAME || '').trim(),
+  api_key: (process.env.CLOUDINARY_API_KEY || '').trim(),
+  api_secret: (process.env.CLOUDINARY_API_SECRET || '').trim()
 });
 
 /**
@@ -14,32 +14,40 @@ cloudinary.config({
  * Used as a fallback when signed API credentials are empty, invalid, or example placeholders.
  */
 const uploadUnsigned = async (filePath, folder, resourceType) => {
-  console.log(`[Cloudinary] Uploading ${path.basename(filePath)} using unsigned preset (single-request)...`);
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME || 'dkxww8bsy';
-  // Use 'auto' resource type in URL for unsigned uploads so Cloudinary auto-detects
-  const uploadType = (resourceType === 'auto' || !resourceType) ? 'auto' : resourceType;
-  const url = `https://api.cloudinary.com/v1_1/${cloudName}/${uploadType}/upload`;
+  console.log(`[Cloudinary] Uploading ${path.basename(filePath)} using Cloudinary SDK unsigned upload...`);
+  
+  const options = {
+    upload_preset: 'green_skills_preset',
+    resource_type: resourceType || 'auto'
+  };
 
-  const fileBuffer = fs.readFileSync(filePath);
-  const formData = new FormData();
-  formData.append('file', new Blob([fileBuffer], { type: 'video/mp4' }), path.basename(filePath));
-  formData.append('upload_preset', 'green_skills_preset');
   if (folder) {
-    formData.append('folder', folder);
+    options.folder = folder;
   }
 
-  console.log(`[Cloudinary] Sending ${Math.round(fileBuffer.length / 1024 / 1024)}MB to Cloudinary...`);
-  const response = await fetch(url, {
-    method: 'POST',
-    body: formData
-  });
-
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`Unsigned upload failed: ${response.status} ${errText}`);
+  // Use upload_large for videos or large files even when unsigned
+  const isVideo = resourceType === 'video' || path.extname(filePath).toLowerCase().match(/\.(mp4|mov|avi|webm)$/);
+  
+  try {
+    const result = await new Promise((resolve, reject) => {
+      if (isVideo) {
+        options.chunk_size = 6000000; // 6MB chunks
+        cloudinary.uploader.upload_large(filePath, options, (err, res) => {
+          if (err) reject(err);
+          else resolve(res);
+        });
+      } else {
+        cloudinary.uploader.unsigned_upload(filePath, 'green_skills_preset', options, (err, res) => {
+          if (err) reject(err);
+          else resolve(res);
+        });
+      }
+    });
+    return result;
+  } catch (error) {
+    console.error('[Cloudinary] SDK Unsigned upload failed:', error);
+    throw error;
   }
-
-  return await response.json();
 };
 
 /**

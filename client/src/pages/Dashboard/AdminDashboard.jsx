@@ -829,16 +829,36 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
                                             reject(new Error('Failed to parse server response'));
                                           }
                                         } else {
-                                          reject(new Error(`Upload failed with status ${xhr.status}`));
+                                          let errorMsg = `Upload failed with status ${xhr.status}`;
+                                          let errorData = xhr.responseText;
+                                          try {
+                                            const responseJson = JSON.parse(xhr.responseText);
+                                            if (responseJson && responseJson.message) {
+                                              errorMsg = responseJson.message + (responseJson.error ? `: ${responseJson.error}` : '');
+                                            }
+                                            errorData = responseJson;
+                                          } catch (e) {}
+                                          
+                                          const statusError = new Error(errorMsg);
+                                          statusError.response = {
+                                            status: xhr.status,
+                                            data: errorData
+                                          };
+                                          statusError.request = xhr;
+                                          reject(statusError);
                                         }
                                       };
                                       
                                       xhr.onerror = () => {
-                                        reject(new Error('Network Error during upload'));
+                                        const netError = new Error('Network Error during upload: Browser failed to send request or connection refused.');
+                                        netError.request = xhr;
+                                        reject(netError);
                                       };
 
                                       xhr.ontimeout = () => {
-                                        reject(new Error('Upload timed out. The video may be too large. Please try a smaller file.'));
+                                        const timeoutError = new Error('Upload timed out. The video may be too large. Please try a smaller file.');
+                                        timeoutError.request = xhr;
+                                        reject(timeoutError);
                                       };
                                       
                                       xhr.send(formDataObj);
@@ -859,7 +879,19 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
                                     });
                                     toast.success('Video uploaded to server successfully!');
                                   } catch (error) {
-                                    console.error('Upload failed:', error);
+                                    console.error("Upload Error:", error);
+
+                                    if (error.response) {
+                                        console.log(error.response.status);
+                                        console.log(error.response.data);
+                                    }
+
+                                    if (error.request) {
+                                        console.log(error.request);
+                                    }
+
+                                    console.log(error.message);
+
                                     const errorMsg = error.message || 'Video upload failed';
                                     toast.error(`Upload failed: ${errorMsg}`);
                                     const newLessons = [...formData.lessons];

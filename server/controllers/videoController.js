@@ -4,22 +4,29 @@ const fs = require('fs');
 
 // POST /api/admin/videos/upload
 const uploadVideo = async (req, res) => {
+  console.log('[VideoController] Incoming request originalUrl:', req.originalUrl);
+  console.log('[VideoController] req.body:', req.body);
+  console.log('[VideoController] req.file:', req.file);
+
   if (!req.file) {
-    return res.status(400).json({ message: 'No video file provided' });
+    console.error('[VideoController] No video file provided');
+    return res.status(400).json({ success: false, message: 'No video file provided' });
   }
 
   const { title, description } = req.body;
   if (!title || !title.trim()) {
+    console.error('[VideoController] Title is required but missing or empty');
     // Delete temp file before returning
     if (fs.existsSync(req.file.path)) {
       try { fs.unlinkSync(req.file.path); } catch (e) {}
     }
-    return res.status(400).json({ message: 'Title is required' });
+    return res.status(400).json({ success: false, message: 'Title is required' });
   }
 
   try {
     console.log(`[VideoController] Uploading video "${title}" to Cloudinary...`);
     const uploadRes = await uploadVideoDirect(req.file.path);
+    console.log('[VideoController] Cloudinary upload success:', uploadRes);
 
     // Generate thumbnail URL by changing extension to .jpg (Cloudinary feature)
     const thumbnailUrl = uploadRes.secure_url.replace(/\.[^/.]+$/, '.jpg');
@@ -36,8 +43,10 @@ const uploadVideo = async (req, res) => {
     });
 
     await video.save();
+    console.log('[VideoController] Video successfully saved to MongoDB:', video._id);
 
     res.status(201).json({
+      success: true,
       message: 'Video uploaded and saved successfully',
       video: {
         id: video._id,
@@ -50,7 +59,11 @@ const uploadVideo = async (req, res) => {
     });
   } catch (error) {
     console.error('[VideoController] Upload video failed:', error);
-    res.status(500).json({ message: 'Failed to upload video to Cloudinary or save to database', error: error.message });
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to upload video to Cloudinary or save to database', 
+      error: error.message 
+    });
   } finally {
     // Ensure local file is unlinked in all circumstances
     if (req.file && fs.existsSync(req.file.path)) {

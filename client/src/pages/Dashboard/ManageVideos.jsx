@@ -138,8 +138,24 @@ const ManageVideos = () => {
       setVideoPreview('');
       fetchVideos(1); // reload page 1
     } catch (error) {
-      console.error('Upload failed:', error);
-      toast.error(error.response?.data?.message || 'Video upload failed. Try again.');
+      console.error("Upload Error:", error);
+
+      if (error.response) {
+          console.log(error.response.status);
+          console.log(error.response.data);
+      }
+
+      if (error.request) {
+          console.log(error.request);
+      }
+
+      console.log(error.message);
+
+      const serverMessage = error.response?.data?.message;
+      const serverDetail = error.response?.data?.error;
+      const displayMessage = serverMessage ? `${serverMessage}${serverDetail ? `: ${serverDetail}` : ''}` : error.message || 'Video upload failed. Try again.';
+      
+      toast.error(`Upload failed: ${displayMessage}`);
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
@@ -180,8 +196,24 @@ const ManageVideos = () => {
       setEditPreview('');
       fetchVideos(page);
     } catch (error) {
-      console.error('Update failed:', error);
-      toast.error(error.response?.data?.message || 'Video update failed.');
+      console.error("Upload Error:", error);
+
+      if (error.response) {
+          console.log(error.response.status);
+          console.log(error.response.data);
+      }
+
+      if (error.request) {
+          console.log(error.request);
+      }
+
+      console.log(error.message);
+
+      const serverMessage = error.response?.data?.message;
+      const serverDetail = error.response?.data?.error;
+      const displayMessage = serverMessage ? `${serverMessage}${serverDetail ? `: ${serverDetail}` : ''}` : error.message || 'Video update failed.';
+
+      toast.error(`Update failed: ${displayMessage}`);
     } finally {
       setIsUpdating(false);
       setEditProgress(0);

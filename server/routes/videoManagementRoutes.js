@@ -32,12 +32,14 @@ const upload = multer({
 
 // Wrapper middleware to catch Multer errors gracefully
 const uploadSingleVideo = (req, res, next) => {
+  console.log(`[Multer videoManagement] Incoming upload request: ${req.originalUrl}`);
   upload.single('video')(req, res, (err) => {
     if (err) {
+      console.error('[Multer videoManagement] Error during video upload handling:', err);
       if (err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({ message: 'File size exceeds the 500MB limit.' });
+        return res.status(400).json({ success: false, message: 'File size exceeds the 500MB limit.' });
       }
-      return res.status(400).json({ message: err.message });
+      return res.status(400).json({ success: false, message: err.message });
     }
     next();
   });

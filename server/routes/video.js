@@ -12,6 +12,17 @@ if (!fs.existsSync(videosDir)) {
   fs.mkdirSync(videosDir, { recursive: true });
 }
 
+// Multer filter to accept only mp4, mov, avi, webm
+const fileFilter = (req, file, cb) => {
+  const allowedExts = ['.mp4', '.mov', '.avi', '.webm'];
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (allowedExts.includes(ext)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file type. Only mp4, mov, avi, and webm are allowed.'), false);
+  }
+};
+
 // Set up multer for direct video uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -22,30 +33,62 @@ const storage = multer.diskStorage({
     cb(null, 'direct-' + uniqueSuffix + path.extname(file.originalname));
   }
 });
+
 const upload = multer({ 
   storage: storage,
+  fileFilter: fileFilter,
   limits: { fileSize: 500 * 1024 * 1024 } // 500MB limit
 });
 
+const uploadSingleVideo = (req, res, next) => {
+  console.log(`[Multer Upload] Incoming upload request to ${req.originalUrl}`);
+  upload.single('video')(req, res, (err) => {
+    if (err) {
+      console.error('[Multer Upload] Error during file parsing:', err);
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ success: false, message: 'File size exceeds the 500MB limit.' });
+      }
+      return res.status(400).json({ success: false, message: err.message });
+    }
+    next();
+  });
+};
+
 // Endpoint for direct MP4 uploads from Admin Dashboard
-router.post('/upload', upload.single('video'), async (req, res) => {
+router.post('/upload', uploadSingleVideo, async (req, res) => {
   // Set a long timeout for large video uploads (10 minutes)
   req.setTimeout(10 * 60 * 1000);
   res.setTimeout(10 * 60 * 1000);
 
-  if (!req.file) return res.status(400).json({ message: 'No video file provided' });
+  console.log('[Upload Endpoint] Request body:', req.body);
+  console.log('[Upload Endpoint] Request file:', req.file);
+
+  if (!req.file) {
+    console.error('[Upload Endpoint] No video file provided');
+    return res.status(400).json({ success: false, message: 'No video file provided' });
+  }
+
   try {
+    console.log(`[Upload Endpoint] Starting Cloudinary upload for file: ${req.file.path}`);
     const uploadRes = await uploadToCloudinary(req.file.path, 'lessons', 'video');
+    console.log('[Upload Endpoint] Cloudinary upload successful:', uploadRes);
     res.json({ 
+      success: true,
+      message: 'Video uploaded successfully',
       directVideoUrl: uploadRes.secure_url, 
       videoPublicId: uploadRes.public_id,
       file_size: req.file.size 
     });
   } catch (err) {
     console.error('Cloudinary direct video upload failed:', err);
-    res.status(500).json({ message: 'Failed to upload video to Cloudinary', error: err.message });
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to upload video to Cloudinary', 
+      error: err.message 
+    });
   }
 });
+
 
 // Endpoint for assessment proctoring video recordings upload
 router.post('/upload-proctoring', upload.single('video'), async (req, res) => {
