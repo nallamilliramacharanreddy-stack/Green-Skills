@@ -924,7 +924,7 @@ const Courses = () => {
                     <div
                       ref={playerContainerRef}
                       onMouseMove={handleMouseMove}
-                      className="max-w-5xl w-full aspect-video bg-black flex items-center justify-center relative z-20 overflow-hidden group rounded-2xl border border-white/5 shadow-2xl"
+                      className="max-w-3xl w-full aspect-video bg-black flex items-center justify-center relative z-20 overflow-hidden group rounded-2xl border border-white/5 shadow-2xl"
                     >
                     {selectedCourse.lessons && selectedCourse.lessons[activeLessonIndex] ? (
                       (() => {
@@ -1266,7 +1266,7 @@ const Courses = () => {
                 </div>
 
                   {/* Course Video details */}
-                  <div className="p-6 md:p-8 space-y-6 max-w-4xl w-full mx-auto">
+                  <div className="p-6 md:p-8 space-y-6 max-w-3xl w-full mx-auto">
 
                     {/* Title and Save Note Row */}
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-100">
