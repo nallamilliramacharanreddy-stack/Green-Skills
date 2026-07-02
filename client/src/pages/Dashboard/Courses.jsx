@@ -779,6 +779,8 @@ const Courses = () => {
 
   // Determine if a lesson is completed by the user
   const isLessonCompletedForAssignment = (lessonId) => {
+    // 'none' or empty means always unlocked
+    if (!lessonId || lessonId === 'none') return true;
     if (!user || !selectedCourse) return false;
     const prog = user.progress?.courseProgress?.find(p => {
       const id = p.courseId?._id || p.courseId;

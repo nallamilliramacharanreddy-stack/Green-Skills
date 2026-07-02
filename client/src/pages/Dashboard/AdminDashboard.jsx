@@ -2789,24 +2789,30 @@ const AdminAssignments = ({ courses }) => {
   useEffect(() => { if (view === 'submissions') fetchSubmissions(); }, [view, filterCourse]);
 
   const handleSave = async () => {
-    if (!form.title || !form.courseId || !form.lessonId || !form.instructions) {
-      toast.error('Please fill all required fields'); return;
+    if (!form.title || !form.courseId || !form.instructions) {
+      toast.error('Please fill in title, course, and instructions'); return;
     }
+    const payload = {
+      ...form,
+      lessonId: form.lessonId || 'none', // 'none' = always unlocked
+    };
     try {
       const token = localStorage.getItem('token');
       if (editingAssignment) {
-        await axios.put(`${API_URL}/assignments/${editingAssignment._id}`, form, { headers: { Authorization: `Bearer ${token}` } });
+        await axios.put(`${API_URL}/assignments/${editingAssignment._id}`, payload, { headers: { Authorization: `Bearer ${token}` } });
         toast.success('Assignment updated!');
       } else {
-        await axios.post(`${API_URL}/assignments`, form, { headers: { Authorization: `Bearer ${token}` } });
-        toast.success('Assignment created and published!');
+        await axios.post(`${API_URL}/assignments`, payload, { headers: { Authorization: `Bearer ${token}` } });
+        toast.success('✅ Assignment created and published!');
       }
       setForm(defaultForm);
       setEditingAssignment(null);
       setView('list');
       fetchAssignments();
     } catch (e) {
-      toast.error(e.response?.data?.message || 'Save failed');
+      const errMsg = e.response?.data?.message || e.message || 'Save failed';
+      toast.error(`❌ ${errMsg}`);
+      console.error('Assignment save error:', e.response?.data || e);
     }
   };
 
@@ -2940,9 +2946,9 @@ const AdminAssignments = ({ courses }) => {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-1">After Lesson *</label>
+                <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-1">Unlocks After Lesson <span className="text-slate-300 normal-case font-medium">(optional)</span></label>
                 <select value={form.lessonId} onChange={e => setForm(p => ({ ...p, lessonId: e.target.value }))} className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none focus:bg-white" disabled={!form.courseId}>
-                  <option value="">-- Select Lesson --</option>
+                  <option value="">Always unlocked (no lesson gate)</option>
                   {selectedCourseLessons.map((l, idx) => <option key={l._id || idx} value={l._id || String(idx)}>{idx + 1}. {l.title}</option>)}
                 </select>
               </div>
