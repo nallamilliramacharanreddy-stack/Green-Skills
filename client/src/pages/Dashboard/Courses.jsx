@@ -919,13 +919,12 @@ const Courses = () => {
                 {/* COLUMN 2: CENTER MAIN CONTENT (Video Screen & Notes) */}
                 <div className="flex-1 flex flex-col h-full overflow-y-auto bg-white">
 
-                  {/* Video Player Box Wrapper */}
-                  <div className="w-full bg-[#111] flex items-center justify-center py-6 px-4 md:px-8 border-b border-slate-900 shrink-0">
-                    <div
-                      ref={playerContainerRef}
-                      onMouseMove={handleMouseMove}
-                      className="max-w-3xl w-full aspect-video bg-black flex items-center justify-center relative z-20 overflow-hidden group rounded-2xl border border-white/5 shadow-2xl"
-                    >
+                  {/* Video Player Box */}
+                  <div
+                    ref={playerContainerRef}
+                    onMouseMove={handleMouseMove}
+                    className="w-full aspect-video bg-black flex items-center justify-center relative z-20 overflow-hidden group"
+                  >
                     {selectedCourse.lessons && selectedCourse.lessons[activeLessonIndex] ? (
                       (() => {
                         const lesson = selectedCourse.lessons[activeLessonIndex];
@@ -1263,10 +1262,9 @@ const Courses = () => {
                       </div>
                     )}
                   </div>
-                </div>
 
                   {/* Course Video details */}
-                  <div className="p-6 md:p-8 space-y-6 max-w-3xl w-full mx-auto">
+                  <div className="p-6 md:p-8 space-y-6 max-w-4xl w-full mx-auto">
 
                     {/* Title and Save Note Row */}
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-100">
@@ -1517,6 +1515,8 @@ const Courses = () => {
                     )}
                   </div>
                 </div>
+                {/* COLUMN 3: Right Spacer to preserve exact layout width & ratio */}
+                <div className="w-[440px] border-l border-slate-200 bg-slate-50/10 shrink-0 h-full hidden lg:block" />
 
 
 
