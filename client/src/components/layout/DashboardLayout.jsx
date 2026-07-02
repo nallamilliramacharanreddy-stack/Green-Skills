@@ -239,7 +239,6 @@ const DashboardLayout = ({ children, role: propRole }) => {
         { icon: BookOpen, label: 'Manage Courses', path: '/admin/courses' },
         { icon: MessageSquare, label: 'Quiz Management', path: '/admin/quizzes' },
         { icon: Headphones, label: 'Support Tickets', path: '/support' },
-        { icon: Video, label: 'Manage Videos', path: '/admin/videos' },
         { icon: ClipboardList, label: 'Assignments', path: '/admin/assignments' },
       ]},
       { category: 'DATA & USERS', items: [
