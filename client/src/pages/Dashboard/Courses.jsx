@@ -1274,16 +1274,37 @@ const Courses = () => {
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-100">
                       <div>
                         <h2 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight leading-tight">
-                          {selectedCourse.lessons?.[activeLessonIndex]?.title || 'Untitled Lesson'}
+                          UPCOMING LESSONS
                         </h2>
                       </div>
                       
                       <button 
-                        onClick={() => setRightActiveTab('notes')}
-                        className="flex items-center gap-1.5 text-xs font-bold text-[#0056D2] hover:underline"
+                        onClick={() => handleCompleteLesson(selectedCourse._id, activeLessonIndex)}
+                        disabled={(!lessonWatched && !isLessonCompleted(selectedCourse._id, activeLessonIndex)) || enrolling}
+                        className={`flex items-center gap-1.5 text-xs font-bold transition-all ${
+                          isLessonCompleted(selectedCourse._id, activeLessonIndex)
+                            ? 'text-emerald-600 cursor-default'
+                            : lessonWatched
+                              ? 'text-[#0056D2] hover:underline'
+                              : 'text-slate-400 cursor-not-allowed'
+                        }`}
                       >
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-                        Save note
+                        {isLessonCompleted(selectedCourse._id, activeLessonIndex) ? (
+                          <>
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="4" className="text-emerald-600"><polyline points="20 6 9 17 4 12"/></svg>
+                            Completed ✓
+                          </>
+                        ) : enrolling ? (
+                          <>
+                            <Loader2 size={14} className="animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle size={14} />
+                            Mark as Completed
+                          </>
+                        )}
                       </button>
                     </div>
 
