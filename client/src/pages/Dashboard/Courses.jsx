@@ -484,14 +484,13 @@ const Courses = () => {
     }
   }, [selectedCourse, activeLessonIndex]);
 
-  const handleProgress = (state) => {
-    if (!playerRef.current) return;
-    const currentPlayed = state.playedSeconds;
-    if (currentPlayed > maxPlayed + 2) {
-      // User tried to fast-forward, revert to maxPlayed
-      playerRef.current.seekTo(maxPlayed, 'seconds');
-    } else {
-      setMaxPlayed(Math.max(maxPlayed, currentPlayed));
+  // Clean up any unused state/refs if necessary, but keep the space clear.
+  const checkVideoProgress = (currentTime, duration) => {
+    if (duration > 0 && currentTime >= duration - 0.5) {
+      if (!lessonWatched && !isLessonCompleted(selectedCourse?._id, activeLessonIndex)) {
+        setLessonWatched(true);
+        toast.success("You have watched 100% of this video! The 'Mark as Completed' button is now unlocked.");
+      }
     }
   };
 
@@ -948,7 +947,10 @@ const Courses = () => {
                                 src={activeVideoSrc}
                                 onPlay={() => setIsPlaying(true)}
                                 onPause={() => setIsPlaying(false)}
-                                onTimeUpdate={(e) => setCurrentTime(e.target.currentTime)}
+                                onTimeUpdate={(e) => {
+                                  setCurrentTime(e.target.currentTime);
+                                  checkVideoProgress(e.target.currentTime, e.target.duration);
+                                }}
                                 onDurationChange={(e) => setDuration(e.target.duration)}
                                 onEnded={() => {
                                   setLessonWatched(true);
