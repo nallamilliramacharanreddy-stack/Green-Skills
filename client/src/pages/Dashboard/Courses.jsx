@@ -901,12 +901,14 @@ const Courses = () => {
 
                         let ytVideoId = '';
                         if (lesson.youtubeLink) {
-                          const watchMatch = lesson.youtubeLink.match(/[?&]v=([^&#]+)/);
-                          const shortMatch = lesson.youtubeLink.match(/youtu\.be\/([^?&#]+)/);
-                          const embedMatch = lesson.youtubeLink.match(/youtube\.com\/embed\/([^?&#]+)/);
-                          if (watchMatch) ytVideoId = watchMatch[1];
-                          else if (shortMatch) ytVideoId = shortMatch[1];
-                          else if (embedMatch) ytVideoId = embedMatch[1];
+                          const watchMatch = lesson.youtubeLink.match(/(?:[?&]v=|\/watch\?v=|\/embed\/|\/v\/|youtu\.be\/)([^&#?]+)/);
+                          if (watchMatch) {
+                            ytVideoId = watchMatch[1];
+                          } else {
+                            // Last segment fallback
+                            const parts = lesson.youtubeLink.split('/');
+                            ytVideoId = parts[parts.length - 1].split('?')[0];
+                          }
                         }
 
                         let isYoutubeOnly = false;
