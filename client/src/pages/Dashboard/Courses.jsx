@@ -1319,7 +1319,115 @@ const Courses = () => {
 
 
 
-                    {/* Upcoming Lessons & Locked Lesson System Checklist */}
+                    {/* Main Area Notes Panel */}
+                    <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6 space-y-6">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-black text-slate-800 uppercase tracking-wider">Lesson Notes</h4>
+                        <span className="text-[10px] bg-[#0056D2]/10 text-[#0056D2] font-black uppercase tracking-widest px-2.5 py-1 rounded-full">Database Persistent</span>
+                      </div>
+
+                      <div className="space-y-3">
+                        <textarea
+                          value={noteInput}
+                          onChange={(e) => setNoteInput(e.target.value)}
+                          placeholder="Write key takeaways or notes from this lesson..."
+                          className="w-full h-28 bg-white border border-slate-200 rounded-2xl p-4 text-xs font-semibold text-slate-700 outline-none focus:border-[#0056D2] resize-none shadow-sm transition-all"
+                        />
+                        <div className="flex justify-end gap-2">
+                          {editingNoteId && (
+                            <button
+                              onClick={() => {
+                                setEditingNoteId(null);
+                                setNoteInput('');
+                              }}
+                              className="px-4 py-2 bg-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-300 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          )}
+                          <button
+                            onClick={async () => {
+                              if (!noteInput.trim()) return;
+                              const courseId = selectedCourse._id;
+                              const token = sessionStorage.getItem('token');
+                              const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+                              try {
+                                if (editingNoteId) {
+                                  const res = await axios.put(`${API_URL}/auth/users/${user._id}/notes/${editingNoteId}`, {
+                                    title: courseId,
+                                    content: noteInput
+                                  }, config);
+                                  const updatedUser = { ...user, notes: res.data.notes };
+                                  updateUser(updatedUser);
+                                  setEditingNoteId(null);
+                                  toast.success('Note updated');
+                                } else {
+                                  const res = await axios.post(`${API_URL}/auth/users/${user._id}/notes`, {
+                                    title: courseId,
+                                    content: noteInput
+                                  }, config);
+                                  const updatedUser = { ...user, notes: res.data.notes };
+                                  updateUser(updatedUser);
+                                  toast.success('Note saved');
+                                }
+                                setNoteInput('');
+                              } catch (e) {
+                                console.error("Failed to save note:", e);
+                                toast.error(e.response?.data?.message || "Failed to save note");
+                              }
+                            }}
+                            className="px-5 py-2.5 bg-[#0056D2] text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-colors shadow-md shadow-blue-500/10"
+                          >
+                            {editingNoteId ? 'Update Note' : 'Save Note'}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Notes list */}
+                      {(notes[selectedCourse._id] || []).length > 0 && (
+                        <div className="space-y-3 pt-4 border-t border-slate-200">
+                          <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Saved Notes</h5>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {(notes[selectedCourse._id] || []).map((note) => (
+                              <div key={note.id} className="p-4 bg-white border border-slate-200 rounded-2xl relative group text-left shadow-sm">
+                                <p className="text-xs font-semibold text-slate-700 whitespace-pre-wrap pr-12 leading-relaxed">{note.text}</p>
+                                <div className="absolute top-3 right-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button
+                                    onClick={() => {
+                                      setNoteInput(note.text);
+                                      setEditingNoteId(note.id);
+                                    }}
+                                    className="p-1.5 text-slate-400 hover:text-[#0056D2] bg-slate-50 hover:bg-white rounded-lg border border-slate-200 transition-colors"
+                                    title="Edit Note"
+                                  >
+                                    <Edit2 size={12} />
+                                  </button>
+                                  <button
+                                    onClick={async () => {
+                                      const token = sessionStorage.getItem('token');
+                                      const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+                                      try {
+                                        const res = await axios.delete(`${API_URL}/auth/users/${user._id}/notes/${note.id}`, config);
+                                        const updatedUser = { ...user, notes: res.data.notes };
+                                        updateUser(updatedUser);
+                                        toast.success('Note deleted');
+                                      } catch (e) {
+                                        console.error("Failed to delete note:", e);
+                                        toast.error(e.response?.data?.message || "Failed to delete note");
+                                      }
+                                    }}
+                                    className="p-1.5 text-slate-400 hover:text-red-500 bg-slate-50 hover:bg-white rounded-lg border border-slate-200 transition-colors"
+                                    title="Delete Note"
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                     <div className="mt-8 pt-8 border-t border-slate-200">
                       <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-4">Lessons Progression</h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
