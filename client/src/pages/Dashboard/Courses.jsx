@@ -1287,77 +1287,7 @@ const Courses = () => {
                       </button>
                     </div>
 
-                    {/* AI Sparkles Panel: "Dive deeper on this topic" */}
-                    <div className="bg-slate-50 border border-slate-200/60 rounded-2xl overflow-hidden">
-                      <button 
-                        onClick={() => setAiExpanded(!aiExpanded)}
-                        className="w-full flex items-center justify-between p-4 bg-[#F2F6FC] hover:bg-slate-100/80 transition-colors text-left"
-                      >
-                        <div className="flex items-center gap-2">
-                          <svg className="text-[#0056D2]" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275Z"/>
-                          </svg>
-                          <span className="text-sm font-bold text-slate-800">Dive deeper on this topic</span>
-                        </div>
-                        <svg className={`transform transition-transform ${aiExpanded ? 'rotate-180' : ''}`} viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                      </button>
 
-                      {aiExpanded && (
-                        <div className="p-4 space-y-4 border-t border-slate-200/60">
-                          {/* Options pills */}
-                          <div className="flex flex-wrap gap-2">
-                            <button 
-                              onClick={() => handleAiHelper('questions')}
-                              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                                aiSelection === 'questions' ? 'bg-[#0056D2] border-[#0056D2] text-white' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
-                              }`}
-                            >
-                              Give me practice questions
-                            </button>
-                            <button 
-                              onClick={() => handleAiHelper('explain')}
-                              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                                aiSelection === 'explain' ? 'bg-[#0056D2] border-[#0056D2] text-white' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
-                              }`}
-                            >
-                              Explain this topic in simple terms
-                            </button>
-                            <button 
-                              onClick={() => handleAiHelper('summary')}
-                              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                                aiSelection === 'summary' ? 'bg-[#0056D2] border-[#0056D2] text-white' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
-                              }`}
-                            >
-                              Give me a summary
-                            </button>
-                            <button 
-                              onClick={() => handleAiHelper('examples')}
-                              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                                aiSelection === 'examples' ? 'bg-[#0056D2] border-[#0056D2] text-white' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
-                              }`}
-                            >
-                              Give me real-life examples
-                            </button>
-                          </div>
-
-                          {/* Response Container */}
-                          {aiSelection && (
-                            <div className="bg-white rounded-xl border border-slate-200/80 p-4 min-h-[80px]">
-                              {aiLoading ? (
-                                <div className="flex flex-col items-center justify-center py-4 text-slate-400">
-                                  <Loader2 className="animate-spin text-[#0056D2] mb-2" size={20} />
-                                  <span className="text-[10px] uppercase font-bold tracking-widest">Querying AI Mentor...</span>
-                                </div>
-                              ) : (
-                                <div className="prose prose-sm max-w-none text-slate-700 text-xs leading-relaxed space-y-2 whitespace-pre-wrap">
-                                  {aiResult}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
 
                     {/* Mark as Completed Button Row */}
                     <div className="flex flex-col sm:flex-row items-center justify-between py-6 px-6 bg-slate-50 border border-slate-200 rounded-2xl gap-4">
