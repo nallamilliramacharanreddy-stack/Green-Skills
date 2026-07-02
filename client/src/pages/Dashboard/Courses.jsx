@@ -1317,43 +1317,7 @@ const Courses = () => {
 
 
 
-                    {/* Mark as Completed Button Row */}
-                    <div className="flex flex-col sm:flex-row items-center justify-between py-6 px-6 bg-slate-50 border border-slate-200 rounded-2xl gap-4">
-                      <div className="text-left">
-                        <h4 className="text-sm font-bold text-slate-800">Lesson Progression Status</h4>
-                        <p className="text-xs text-slate-500">
-                          {isLessonCompleted(selectedCourse._id, activeLessonIndex)
-                            ? "You have successfully finished this lesson!"
-                            : lessonWatched
-                              ? "Ready to finalize! Please click the button to mark as completed."
-                              : "Watch the video fully to enable progress synchronization."}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleCompleteLesson(selectedCourse._id, activeLessonIndex)}
-                        disabled={(!lessonWatched && !isLessonCompleted(selectedCourse._id, activeLessonIndex)) || enrolling}
-                        className={`px-6 py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-2 ${isLessonCompleted(selectedCourse._id, activeLessonIndex)
-                            ? 'bg-emerald-100 text-emerald-700 border border-emerald-200 cursor-default'
-                            : lessonWatched
-                              ? 'bg-[#0056D2] hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20 active:scale-95'
-                              : 'bg-slate-200 text-slate-400 cursor-not-allowed border border-transparent'
-                          }`}
-                      >
-                        {isLessonCompleted(selectedCourse._id, activeLessonIndex) ? (
-                          <>
-                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12" /></svg>
-                            Completed ✓
-                          </>
-                        ) : enrolling ? (
-                          <>
-                            <Loader2 size={14} className="animate-spin" />
-                            Saving...
-                          </>
-                        ) : (
-                          "Mark as Completed"
-                        )}
-                      </button>
-                    </div>
+
 
                     {/* Upcoming Lessons & Locked Lesson System Checklist */}
                     <div className="mt-8 pt-8 border-t border-slate-200">
