@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useRealTime } from '../../context/RealTimeContext';
+import { API_URL } from '../../utils/api';
 
 const TARGET_LANGUAGES = [
   'Telugu', 'Hindi', 'Tamil', 'Kannada', 'Malayalam', 'Bengali', 
@@ -102,7 +103,7 @@ const AITranslator = () => {
 
   const fetchHistory = async () => {
     try {
-      const res = await fetch('http://localhost:5001/api/videos/history');
+      const res = await fetch(`${API_URL}/videos/history`);
       if (res.ok) {
         const data = await res.json();
         setHistoryJobs(data);
@@ -126,7 +127,7 @@ const AITranslator = () => {
       formData.append('video', file);
 
       try {
-        const res = await fetch('http://localhost:5001/api/videos/upload', {
+        const res = await fetch(`${API_URL}/videos/upload`, {
           method: 'POST',
           body: formData
         });
@@ -184,7 +185,7 @@ const AITranslator = () => {
     const videoSrcUrl = inputMethod === 'youtube' ? youtubeUrl : directVideoUrl;
 
     try {
-      const response = await fetch('http://localhost:5001/api/videos/translate-video', {
+      const response = await fetch(`${API_URL}/videos/translate-video`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

@@ -71,14 +71,14 @@ async function syncToCloudinary() {
         try {
           const stats = fs.statSync(filePath);
           const cloudinaryUrl = await uploadToCloudinary(filePath, videoId);
-          
+
           lesson.internalVideoUrl = cloudinaryUrl;
           lesson.directVideoUrl = cloudinaryUrl;
           lesson.youtube_video_id = videoId;
           lesson.status = 'completed';
           lesson.file_size = stats.size;
           lesson.processed_at = new Date();
-          
+
           courseModified = true;
           uploadedCount++;
           console.log(`  ✅ Successfully uploaded and synced: ${course.title} → "${lesson.title}" → ${cloudinaryUrl}`);

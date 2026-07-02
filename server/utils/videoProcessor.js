@@ -2,6 +2,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const Course = require('../models/Course');
+const { uploadToCloudinary } = require('./cloudinary');
 
 const videosDir = path.resolve(__dirname, '../uploads/videos');
 if (!fs.existsSync(videosDir)) {
@@ -129,35 +130,25 @@ const processVideo = async (courseId, lessonId, youtubeLink) => {
 
     // 4. Upload to Cloudinary
     console.log(`[videoProcessor] Uploading ${videoId}.mp4 to Cloudinary...`);
-    const fileBuffer = fs.readFileSync(filePath);
-    const formData = new FormData();
-    formData.append('file', new Blob([fileBuffer], { type: 'video/mp4' }), `${videoId}.mp4`);
-    formData.append('upload_preset', 'green_skills_preset');
+    const stats = fs.existsSync(filePath) ? fs.statSync(filePath) : { size: 0 };
+    const fileSize = stats.size;
 
-    const uploadRes = await fetch('https://api.cloudinary.com/v1_1/dkxww8bsy/video/upload', {
-      method: 'POST',
-      body: formData
-    });
-
-    if (!uploadRes.ok) {
-      const errText = await uploadRes.text();
-      throw new Error(`Cloudinary upload failed: ${uploadRes.status} ${errText}`);
-    }
-
-    const uploadData = await uploadRes.json();
-    const cloudinaryUrl = uploadData.secure_url;
+    const uploadResult = await uploadToCloudinary(filePath, 'lessons', 'video');
+    const cloudinaryUrl = uploadResult.secure_url;
+    const publicId = uploadResult.public_id;
     console.log(`[videoProcessor] Cloudinary upload successful: ${cloudinaryUrl}`);
 
     // 5. Update Database on Success
-    const stats = fs.statSync(filePath);
     await Course.findOneAndUpdate(
       { _id: courseId, 'lessons._id': lessonId },
       {
         $set: {
           'lessons.$.status': 'completed',
           'lessons.$.internalVideoUrl': cloudinaryUrl,
+          'lessons.$.internalVideoPublicId': publicId,
           'lessons.$.directVideoUrl': cloudinaryUrl,
-          'lessons.$.file_size': stats.size,
+          'lessons.$.directVideoPublicId': publicId,
+          'lessons.$.file_size': fileSize,
           'lessons.$.processed_at': new Date()
         }
       }
@@ -166,6 +157,9 @@ const processVideo = async (courseId, lessonId, youtubeLink) => {
 
   } catch (error) {
     console.error('Video processing failed:', error);
+    if (fs.existsSync(filePath)) {
+      try { fs.unlinkSync(filePath); } catch (e) {}
+    }
     await Course.findOneAndUpdate(
       { _id: courseId, 'lessons._id': lessonId },
       { $set: { 'lessons.$.status': 'failed' } }

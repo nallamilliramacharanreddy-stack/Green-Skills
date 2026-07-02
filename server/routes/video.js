@@ -5,6 +5,7 @@ const path = require('path');
 const multer = require('multer');
 const Course = require('../models/Course');
 const { processVideo } = require('../utils/videoProcessor');
+const { uploadToCloudinary } = require('../utils/cloudinary');
 
 const videosDir = path.resolve(__dirname, '../uploads/videos');
 if (!fs.existsSync(videosDir)) {
@@ -27,21 +28,34 @@ const upload = multer({
 });
 
 // Endpoint for direct MP4 uploads from Admin Dashboard
-router.post('/upload', upload.single('video'), (req, res) => {
+router.post('/upload', upload.single('video'), async (req, res) => {
   if (!req.file) return res.status(400).json({ message: 'No video file provided' });
-  const host = req.get('host');
-  const protocol = req.protocol;
-  const internalUrl = `${protocol}://${host}/api/videos/stream/${req.file.filename}`;
-  res.json({ directVideoUrl: internalUrl, file_size: req.file.size });
+  try {
+    const uploadRes = await uploadToCloudinary(req.file.path, 'lessons', 'video');
+    res.json({ 
+      directVideoUrl: uploadRes.secure_url, 
+      videoPublicId: uploadRes.public_id,
+      file_size: req.file.size 
+    });
+  } catch (err) {
+    console.error('Cloudinary direct video upload failed:', err);
+    res.status(500).json({ message: 'Failed to upload video to Cloudinary', error: err.message });
+  }
 });
 
 // Endpoint for assessment proctoring video recordings upload
-router.post('/upload-proctoring', upload.single('video'), (req, res) => {
+router.post('/upload-proctoring', upload.single('video'), async (req, res) => {
   if (!req.file) return res.status(400).json({ message: 'No video file provided' });
-  const host = req.get('host');
-  const protocol = req.protocol;
-  const videoUrl = `${protocol}://${host}/uploads/videos/${req.file.filename}`;
-  res.json({ videoRecordingUrl: videoUrl });
+  try {
+    const uploadRes = await uploadToCloudinary(req.file.path, 'proctoring', 'video');
+    res.json({ 
+      videoRecordingUrl: uploadRes.secure_url,
+      videoRecordingPublicId: uploadRes.public_id
+    });
+  } catch (err) {
+    console.error('Cloudinary proctoring video upload failed:', err);
+    res.status(500).json({ message: 'Failed to upload proctoring video to Cloudinary', error: err.message });
+  }
 });
 
 // Serve the fully downloaded static video file via robust 206 Partial Content streaming
@@ -675,18 +689,53 @@ router.post('/translate-video', async (req, res) => {
       try { fs.unlinkSync(videoFilePath); } catch (e) {}
     }
 
+    await updateProgress(4, 95, 'Uploading dubbed assets and subtitles to Cloudinary...');
+    
+    let videoUrlCloud = '';
+    let videoPublicIdCloud = '';
+    let srtUrlCloud = '';
+    let srtPublicIdCloud = '';
+    let vttUrlCloud = '';
+    let vttPublicIdCloud = '';
+
+    if (fs.existsSync(outputVideoPath)) {
+      const vResult = await uploadToCloudinary(outputVideoPath, 'translations/videos', 'video');
+      videoUrlCloud = vResult.secure_url;
+      videoPublicIdCloud = vResult.public_id;
+    }
+
+    const srtPath = path.join(videosDir, srtFilename);
+    if (fs.existsSync(srtPath)) {
+      const sResult = await uploadToCloudinary(srtPath, 'translations/subtitles', 'raw');
+      srtUrlCloud = sResult.secure_url;
+      srtPublicIdCloud = sResult.public_id;
+    }
+
+    const vttPath = path.join(videosDir, vttFilename);
+    if (fs.existsSync(vttPath)) {
+      const vttResult = await uploadToCloudinary(vttPath, 'translations/subtitles', 'raw');
+      vttUrlCloud = vttResult.secure_url;
+      vttPublicIdCloud = vttResult.public_id;
+    }
+
+    // Clean up dubbed audio file as well
+    if (fs.existsSync(dubbedAudioPath)) {
+      try { fs.unlinkSync(dubbedAudioPath); } catch (e) {}
+    }
+
     await updateProgress(4, 100, 'Packaging downloads and completing job...');
 
-    const baseHost = `http://localhost:5001/api/videos`;
-    
     // Save details to database
     job.status = 'completed';
     job.originalLanguage = detectedLanguage;
     job.originalTranscript = originalTranscript;
     job.translatedTranscript = translatedTranscript;
-    job.translatedVideoUrl = `${baseHost}/stream/${outputVideoFilename}`;
-    job.srtUrl = `${baseHost}/stream/${srtFilename}`;
-    job.vttUrl = `${baseHost}/stream/${vttFilename}`;
+    job.translatedVideoUrl = videoUrlCloud;
+    job.translatedVideoPublicId = videoPublicIdCloud;
+    job.srtUrl = srtUrlCloud;
+    job.srtPublicId = srtPublicIdCloud;
+    job.vttUrl = vttUrlCloud;
+    job.vttPublicId = vttPublicIdCloud;
     await job.save();
 
     res.json({
@@ -696,10 +745,10 @@ router.post('/translate-video', async (req, res) => {
       translatedTranscript,
       srtContent,
       vttContent,
-      dubbedAudioUrl: `${baseHost}/stream/${dubbedAudioFilename}`,
-      translatedVideoUrl: `${baseHost}/stream/${outputVideoFilename}`,
-      subtitleUrl: `${baseHost}/stream/${srtFilename}`,
-      vttSubtitleUrl: `${baseHost}/stream/${vttFilename}`
+      dubbedAudioUrl: '', // unused in frontend
+      translatedVideoUrl: videoUrlCloud,
+      subtitleUrl: srtUrlCloud,
+      vttSubtitleUrl: vttUrlCloud
     });
 
   } catch (err) {

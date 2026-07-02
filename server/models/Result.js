@@ -54,6 +54,7 @@ const resultSchema = new mongoose.Schema({
     violationCountDuringQuestion: Number
   }],
   videoRecordingUrl: String,
+  videoRecordingPublicId: String,
   screenRecordingUrl: String,
   audioRecordingUrl: String,
   isInvalidated: { type: Boolean, default: false },

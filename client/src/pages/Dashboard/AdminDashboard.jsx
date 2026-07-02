@@ -1314,7 +1314,7 @@ const HirerDataManagement = ({ data, onToggleStatus, onDelete, onApprove, onReje
                 <td className="px-10 py-8">
                   {h.companyDetails?.companyDocument ? (
                     <a
-                      href={`${API_BASE_URL}${h.companyDetails.companyDocument}`}
+                      href={h.companyDetails.companyDocument.startsWith('http') ? h.companyDetails.companyDocument : `${API_BASE_URL}${h.companyDetails.companyDocument}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all shadow-sm"
@@ -1971,7 +1971,7 @@ const AdminProfile = ({ currentUser, refreshUser }) => {
               <div className="relative group">
                 <div className="w-32 h-32 bg-slate-900 rounded-[40px] flex items-center justify-center text-white text-5xl font-black uppercase italic overflow-hidden border-4 border-white shadow-xl">
                   {currentUser?.profilePicture ? (
-                    <img src={`${API_BASE_URL}${currentUser.profilePicture}`} className="w-full h-full object-cover" />
+                    <img src={currentUser.profilePicture.startsWith('http') ? currentUser.profilePicture : `${API_BASE_URL}${currentUser.profilePicture}`} className="w-full h-full object-cover" />
                   ) : (
                     currentUser?.name?.[0]
                   )}
@@ -2022,7 +2022,7 @@ const AdminProfile = ({ currentUser, refreshUser }) => {
                 className="w-32 h-32 bg-slate-50 border-4 border-dashed border-slate-200 rounded-[40px] flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-all overflow-hidden group relative"
               >
                 {previewUrl || currentUser?.profilePicture ? (
-                  <img src={previewUrl || `${API_BASE_URL}${currentUser.profilePicture}`} className="w-full h-full object-cover" />
+                  <img src={previewUrl || (currentUser.profilePicture.startsWith('http') ? currentUser.profilePicture : `${API_BASE_URL}${currentUser.profilePicture}`)} className="w-full h-full object-cover" />
                 ) : (
                   <Upload className="text-slate-300" size={32} />
                 )}

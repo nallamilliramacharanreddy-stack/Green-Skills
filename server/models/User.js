@@ -42,6 +42,7 @@ const userSchema = new mongoose.Schema({
     companyName: String,
     registrationNumber: String,
     companyDocument: String,
+    companyDocumentPublicId: { type: String, default: '' },
     verificationStatus: { type: String, enum: ['red', 'yellow', 'green'], default: 'red' },
     isVerified: { type: Boolean, default: false }
   },
@@ -59,6 +60,7 @@ const userSchema = new mongoose.Schema({
     requestedAt: Date
   },
   profilePicture: { type: String, default: '' },
+  profilePicturePublicId: { type: String, default: '' },
   
   // -- ADVANCED LEARNING ENHANCEMENTS & ANALYTICS --
   learningStreak: {

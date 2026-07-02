@@ -26,8 +26,11 @@ const translationHistorySchema = new mongoose.Schema({
     text: { type: String }
   }],
   translatedVideoUrl: { type: String },
+  translatedVideoPublicId: { type: String },
   srtUrl: { type: String },
+  srtPublicId: { type: String },
   vttUrl: { type: String },
+  vttPublicId: { type: String },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });

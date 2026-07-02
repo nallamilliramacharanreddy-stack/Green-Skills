@@ -15,11 +15,13 @@ const courseSchema = new mongoose.Schema({
     videoSource: { type: String, enum: ['youtube', 'direct', 'upload'], default: 'youtube' },
     youtubeLink: { type: String },
     directVideoUrl: { type: String },
+    directVideoPublicId: { type: String, default: '' },
     duration: { type: String, default: '10:00' },
     isMandatory: { type: Boolean, default: false },
     // AI Video Engine Fields
     youtube_video_id: { type: String },
     internalVideoUrl: { type: String },
+    internalVideoPublicId: { type: String, default: '' },
     thumbnail_url: { type: String },
     file_size: { type: Number },
     status: { type: String, enum: ['pending', 'processing', 'completed', 'failed', 'uploading'], default: 'pending' },

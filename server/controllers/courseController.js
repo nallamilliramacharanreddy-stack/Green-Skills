@@ -1,6 +1,7 @@
 const Course = require('../models/Course');
 const User = require('../models/User');
 const { processVideo } = require('../utils/videoProcessor');
+const { deleteFromCloudinary } = require('../utils/cloudinary');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const jwt = require('jsonwebtoken');
 
@@ -120,6 +121,17 @@ const updateCourse = async (req, res) => {
 
 const deleteCourse = async (req, res) => {
   try {
+    const course = await Course.findById(req.params.id);
+    if (course && course.lessons) {
+      for (const lesson of course.lessons) {
+        if (lesson.directVideoPublicId) {
+          await deleteFromCloudinary(lesson.directVideoPublicId, 'video').catch(console.error);
+        }
+        if (lesson.internalVideoPublicId) {
+          await deleteFromCloudinary(lesson.internalVideoPublicId, 'video').catch(console.error);
+        }
+      }
+    }
     await Course.findByIdAndDelete(req.params.id);
     res.json({ message: 'Course deleted successfully' });
   } catch (error) {

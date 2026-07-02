@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const Course = require('../models/Course');
 const jwt = require('jsonwebtoken');
+const { uploadToCloudinary, deleteFromCloudinary } = require('../utils/cloudinary');
 const nodemailer = require('nodemailer');
 const dns = require('dns');
 const crypto = require('crypto');
@@ -124,27 +125,44 @@ const signup = async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Handle Multiple Files
-    let profilePicPath = undefined;
-    let companyDocPath = undefined;
+    // Handle Multiple Files with Cloudinary
+    let profilePicUrl = '';
+    let profilePicPublicId = '';
+    let companyDocUrl = '';
+    let companyDocPublicId = '';
     
-    if (req.files) {
-      if (req.files['profilePicture']) {
-        profilePicPath = `/uploads/${req.files['profilePicture'][0].filename}`;
+    try {
+      if (req.files) {
+        if (req.files['profilePicture']) {
+          const file = req.files['profilePicture'][0];
+          const uploadRes = await uploadToCloudinary(file.path, 'profiles', 'image');
+          profilePicUrl = uploadRes.secure_url;
+          profilePicPublicId = uploadRes.public_id;
+        }
+        if (req.files['companyDocument']) {
+          const file = req.files['companyDocument'][0];
+          const resourceType = file.mimetype.startsWith('image/') ? 'image' : 'raw';
+          const uploadRes = await uploadToCloudinary(file.path, 'documents', resourceType);
+          companyDocUrl = uploadRes.secure_url;
+          companyDocPublicId = uploadRes.public_id;
+        }
+      } else if (req.file) {
+        // Fallback for older singular uploads
+        const uploadRes = await uploadToCloudinary(req.file.path, 'profiles', 'image');
+        profilePicUrl = uploadRes.secure_url;
+        profilePicPublicId = uploadRes.public_id;
       }
-      if (req.files['companyDocument']) {
-        companyDocPath = `/uploads/${req.files['companyDocument'][0].filename}`;
-      }
-    } else if (req.file) {
-      // Fallback for older singular uploads
-      profilePicPath = `/uploads/${req.file.filename}`;
+    } catch (uploadError) {
+      console.error('Cloudinary upload during signup failed:', uploadError);
+      return res.status(500).json({ message: 'Media upload failed', error: uploadError.message });
     }
 
     // Prepare company details
     const companyDetails = {
       companyName: profileData.companyName,
       registrationNumber: profileData.registrationNumber,
-      companyDocument: companyDocPath,
+      companyDocument: companyDocUrl,
+      companyDocumentPublicId: companyDocPublicId,
       verificationStatus: 'red',
       isVerified: false
     };
@@ -158,10 +176,23 @@ const signup = async (req, res) => {
       ...profileData,
       facialEmbedding: encryptedFace,
       companyDetails: role === 'employer' ? companyDetails : undefined,
-      profilePicture: profilePicPath
+      profilePicture: profilePicUrl,
+      profilePicturePublicId: profilePicPublicId
     });
 
-    await user.save();
+    try {
+      await user.save();
+    } catch (saveError) {
+      // Clean up uploaded Cloudinary assets to avoid orphan assets
+      if (profilePicPublicId) {
+        await deleteFromCloudinary(profilePicPublicId, 'image').catch(console.error);
+      }
+      if (companyDocPublicId) {
+        const isImage = req.files && req.files['companyDocument'] && req.files['companyDocument'][0].mimetype.startsWith('image/');
+        await deleteFromCloudinary(companyDocPublicId, isImage ? 'image' : 'raw').catch(console.error);
+      }
+      throw saveError;
+    }
 
     // Roles requiring approval
     const needsApproval = role === 'admin' || role === 'employer';
@@ -356,6 +387,17 @@ const approveHirer = async (req, res) => {
 const rejectHirer = async (req, res) => {
   try {
     const { id } = req.params;
+    const userToDelete = await User.findById(id);
+    if (userToDelete) {
+      if (userToDelete.profilePicturePublicId) {
+        await deleteFromCloudinary(userToDelete.profilePicturePublicId, 'image').catch(console.error);
+      }
+      if (userToDelete.companyDetails && userToDelete.companyDetails.companyDocumentPublicId) {
+        const docUrl = userToDelete.companyDetails.companyDocument;
+        const isImage = /\.(jpg|jpeg|png|webp)$/i.test(docUrl || '');
+        await deleteFromCloudinary(userToDelete.companyDetails.companyDocumentPublicId, isImage ? 'image' : 'raw').catch(console.error);
+      }
+    }
     await User.findByIdAndDelete(id);
     res.json({ message: 'Hirer application rejected and removed.' });
   } catch (error) {
@@ -386,6 +428,17 @@ const deleteUser = async (req, res) => {
     const userToDelete = await User.findById(id);
     if (userToDelete && userToDelete.email === 'nallamilliramacharanreddy@gmail.com') {
       return res.status(403).json({ message: 'STRICT PROTOCOL: Master Admin cannot be removed from the system.' });
+    }
+
+    if (userToDelete) {
+      if (userToDelete.profilePicturePublicId) {
+        await deleteFromCloudinary(userToDelete.profilePicturePublicId, 'image').catch(console.error);
+      }
+      if (userToDelete.companyDetails && userToDelete.companyDetails.companyDocumentPublicId) {
+        const docUrl = userToDelete.companyDetails.companyDocument;
+        const isImage = /\.(jpg|jpeg|png|webp)$/i.test(docUrl || '');
+        await deleteFromCloudinary(userToDelete.companyDetails.companyDocumentPublicId, isImage ? 'image' : 'raw').catch(console.error);
+      }
     }
 
     await User.findByIdAndDelete(id);
@@ -489,7 +542,18 @@ const updateProfile = async (req, res) => {
     }
     
     if (req.file) {
-      updateData.profilePicture = `/uploads/${req.file.filename}`;
+      const oldUser = await User.findById(id);
+      if (oldUser && oldUser.profilePicturePublicId) {
+        await deleteFromCloudinary(oldUser.profilePicturePublicId, 'image').catch(console.error);
+      }
+      try {
+        const uploadRes = await uploadToCloudinary(req.file.path, 'profiles', 'image');
+        updateData.profilePicture = uploadRes.secure_url;
+        updateData.profilePicturePublicId = uploadRes.public_id;
+      } catch (uploadError) {
+        console.error('Cloudinary profile picture upload failed:', uploadError);
+        return res.status(500).json({ message: 'Failed to upload profile picture', error: uploadError.message });
+      }
     }
 
     const user = await User.findByIdAndUpdate(id, updateData, { new: true })

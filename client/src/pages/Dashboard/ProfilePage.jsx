@@ -130,7 +130,7 @@ const ProfilePage = () => {
                   <div className="relative group">
                     <div className="w-32 h-32 bg-slate-900 rounded-[40px] flex items-center justify-center text-white text-5xl font-black uppercase italic overflow-hidden border-4 border-white shadow-xl">
                       {currentUser?.profilePicture ? (
-                        <img src={`${API_BASE_URL}${currentUser.profilePicture}`} className="w-full h-full object-cover" />
+                        <img src={currentUser.profilePicture.startsWith('http') ? currentUser.profilePicture : `${API_BASE_URL}${currentUser.profilePicture}`} className="w-full h-full object-cover" />
                       ) : (
                         currentUser?.name?.[0]
                       )}
@@ -200,7 +200,7 @@ const ProfilePage = () => {
                     className="w-32 h-32 bg-slate-50 border-4 border-dashed border-slate-200 rounded-[40px] flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-all overflow-hidden group relative"
                   >
                     {previewUrl || currentUser?.profilePicture ? (
-                      <img src={previewUrl || `${API_BASE_URL}${currentUser.profilePicture}`} className="w-full h-full object-cover" />
+                      <img src={previewUrl || (currentUser.profilePicture.startsWith('http') ? currentUser.profilePicture : `${API_BASE_URL}${currentUser.profilePicture}`)} className="w-full h-full object-cover" />
                     ) : (
                       <Upload className="text-slate-300" size={32} />
                     )}

@@ -5,7 +5,7 @@ import { ArrowLeft, Info, Share2, Shield, Trophy } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
-import { API_URL } from '../../utils/api';
+import { API_URL, API_BASE_URL } from '../../utils/api';
 
 const LeagueShield = ({ active, color, shadowColor, icon: Icon, locked }) => (
   <div className={`relative flex flex-col items-center justify-center transition-all duration-300 ${active ? 'scale-125 z-10 -translate-y-2' : 'scale-100 opacity-80 hover:opacity-100'}`}>
@@ -134,7 +134,7 @@ const LeaderboardPage = () => {
                     <div className="flex-1 flex items-center gap-4">
                       <div className={`w-10 h-10 rounded-full overflow-hidden flex items-center justify-center font-bold text-sm ${isTop1 ? 'bg-blue-100 text-blue-600' : isTop2 ? 'bg-fuchsia-100 text-fuchsia-600' : 'bg-slate-200 text-slate-600'}`}>
                         {user.profilePicture ? (
-                          <img src={user.profilePicture} alt={user.name} className="w-full h-full object-cover" />
+                          <img src={user.profilePicture.startsWith('http') ? user.profilePicture : `${API_BASE_URL}${user.profilePicture}`} alt={user.name} className="w-full h-full object-cover" />
                         ) : (
                           <span className="uppercase">{user.name.substring(0, 2)}</span>
                         )}

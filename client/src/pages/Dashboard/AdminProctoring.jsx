@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldAlert, Play, Video, Clock, CheckCircle, AlertTriangle, User, BrainCircuit, PlayCircle, Eye, Activity, Shield, FastForward, Rewind, Pause, Search, Trash2 } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
-import { API_URL } from '../../utils/api';
+import { API_URL, API_BASE_URL } from '../../utils/api';
 
 const getVideoUrl = (url) => {
   if (!url) return '';
@@ -306,7 +306,7 @@ const ReportViewer = ({ result, onBack, onInvalidate }) => {
       <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex items-center gap-6">
           <img 
-            src={result.user?.profilePicture || `https://ui-avatars.com/api/?name=${result.user?.name || 'Candidate'}&background=0f172a&color=fff&size=128`} 
+            src={result.user?.profilePicture ? (result.user.profilePicture.startsWith('http') ? result.user.profilePicture : `${API_BASE_URL}${result.user.profilePicture}`) : `https://ui-avatars.com/api/?name=${result.user?.name || 'Candidate'}&background=0f172a&color=fff&size=128`} 
             className="w-24 h-24 rounded-3xl object-cover border border-slate-100 shadow" 
           />
           <div>

@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useStreak } from '../../context/StreakContext';
-import { API_URL } from '../../utils/api';
+import { API_URL, API_BASE_URL } from '../../utils/api';
 
 const StudentDashboard = () => {
   const { user } = useAuth();
@@ -199,7 +199,7 @@ const StudentDashboard = () => {
                   <div className="w-20 h-20 bg-gradient-to-br from-fuchsia-500 to-cyan-500 rounded-2xl p-[1px] shadow-[0_0_30px_rgba(217,70,239,0.3)]">
                     <div className="w-full h-full bg-slate-950/80 backdrop-blur-md rounded-[15px] flex items-center justify-center overflow-hidden">
                       {user?.profilePicture ? (
-                        <img src={user.profilePicture} className="w-full h-full object-cover mix-blend-luminosity hover:mix-blend-normal transition-all" />
+                        <img src={user.profilePicture.startsWith('http') ? user.profilePicture : `${API_BASE_URL}${user.profilePicture}`} className="w-full h-full object-cover mix-blend-luminosity hover:mix-blend-normal transition-all" />
                       ) : (
                         <span className="text-3xl font-light text-fuchsia-300">{user?.name?.[0]}</span>
                       )}
@@ -458,7 +458,7 @@ const StudentDashboard = () => {
                         {/* Avatar */}
                         <div className={`w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border-2 ${isFirst ? 'border-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.5)]' : 'border-slate-600'}`}>
                           {lUser.profilePicture ? (
-                            <img src={lUser.profilePicture} alt={lUser.name} className="w-full h-full object-cover" />
+                            <img src={lUser.profilePicture.startsWith('http') ? lUser.profilePicture : `${API_BASE_URL}${lUser.profilePicture}`} alt={lUser.name} className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center font-bold text-white bg-slate-800">
                               {lUser.name?.charAt(0) || '?'}
