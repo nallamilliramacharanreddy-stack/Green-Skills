@@ -934,17 +934,27 @@ const Courses = () => {
                             ytVideoId = lesson.youtube_video_id || '';
                           }
                         }
-
                         let isYoutubeOnly = false;
-                        let ytEmbedUrl = '';
+                        let ytVideoUrl = '';
                         if (isYoutube && ytVideoId) {
                           isYoutubeOnly = true;
-                          ytEmbedUrl = `https://www.youtube.com/embed/${ytVideoId}`;
+                          const urls = [lesson.youtubeLink, lesson.directVideoUrl, lesson.internalVideoUrl];
+                          for (const url of urls) {
+                            if (isYoutubeUrl(url)) {
+                              ytVideoUrl = url;
+                              break;
+                            }
+                          }
+                          if (!ytVideoUrl) {
+                            ytVideoUrl = `https://www.youtube.com/watch?v=${ytVideoId}`;
+                          }
                         }
 
                         // Always play native via our proxy or internal URL
                         let sourceUrl = '';
-                        if (!isYoutubeOnly && internalUrl) {
+                        if (isYoutubeOnly) {
+                          sourceUrl = ytVideoUrl;
+                        } else if (internalUrl) {
                           sourceUrl = getVideoUrl(internalUrl);
                         }
 
@@ -967,18 +977,30 @@ const Courses = () => {
                             )}
 
                             {isYoutubeOnly ? (
-                              <iframe
-                                className="w-full h-full aspect-video"
-                                src={`${ytEmbedUrl}?autoplay=1&enablejsapi=1&rel=0`}
-                                title={lesson.title}
-                                frameBorder="0"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowFullScreen
-                                onLoad={() => {
-                                  // Mark as completed immediately or simulate completion status
-                                  setLessonWatched(true);
+                              <youtube-video
+                                ref={videoRef}
+                                id={`video-${lesson._id}`}
+                                className="w-full h-full aspect-video object-contain"
+                                src={activeVideoSrc}
+                                playsInline
+                                autoPlay
+                                muted={isMuted}
+                                crossOrigin="anonymous"
+                                onPlay={() => setIsPlaying(true)}
+                                onPause={() => setIsPlaying(false)}
+                                onTimeUpdate={(e) => {
+                                  setCurrentTime(e.target.currentTime);
+                                  checkVideoProgress(e.target.currentTime, e.target.duration);
                                 }}
-                              ></iframe>
+                                onDurationChange={(e) => setDuration(e.target.duration)}
+                                onEnded={() => {
+                                  setLessonWatched(true);
+                                  toast.success("You have watched 100% of this video! The 'Mark as Completed' button is now unlocked.");
+                                }}
+                                onError={(e) => {
+                                  console.error("YouTube playback error:", e);
+                                }}
+                              />
                             ) : activeVideoSrc ? (
                               <video
                                 ref={videoRef}
