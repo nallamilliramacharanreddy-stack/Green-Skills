@@ -80,19 +80,14 @@ router.post('/upload', uploadSingleVideo, async (req, res) => {
       file_size: req.file.size 
     });
   } catch (err) {
-    console.warn('[Upload Endpoint] Cloudinary upload failed. Falling back to local video streaming:', err.message);
-    
-    // Since the file is already stored in videosDir, we can just use the local stream URL
-    const filename = path.basename(req.file.path);
-    const localUrl = `${req.protocol}://${req.get('host')}/api/videos/stream/${filename}`;
-    
-    console.log(`[Upload Endpoint] Local streaming URL generated: ${localUrl}`);
-    res.json({
-      success: true,
-      message: 'Video uploaded and saved to local server storage (Cloudinary fallback)',
-      directVideoUrl: localUrl,
-      videoPublicId: `local-${filename}`,
-      file_size: req.file.size
+    console.error('[Upload Endpoint] Cloudinary upload failed:', err.message);
+    if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+      try { fs.unlinkSync(req.file.path); } catch (e) {}
+    }
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload video to Cloudinary. Local storage is not available.',
+      error: err.message
     });
   }
 });
@@ -109,9 +104,13 @@ router.post('/upload-proctoring', upload.single('video'), async (req, res) => {
     });
   } catch (err) {
     console.error('Cloudinary proctoring video upload failed:', err);
+    if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+      try { fs.unlinkSync(req.file.path); } catch (e) {}
+    }
     res.status(500).json({ message: 'Failed to upload proctoring video to Cloudinary', error: err.message });
   }
 });
+
 
 // Serve the fully downloaded static video file via robust 206 Partial Content streaming
 router.get('/stream/:videoId', (req, res) => {

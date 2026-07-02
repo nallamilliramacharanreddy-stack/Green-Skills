@@ -403,122 +403,43 @@ const completeLesson = async (req, res) => {
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    // 1. Validate watched status — must be 100%
+    // 1. Validate watched status
     if (watchedPercentage !== 100) {
-      return res.status(400).json({ message: 'Video must be 100% completed before marking as complete.' });
+      return res.status(400).json({ message: 'Video must be 100% completed' });
     }
 
-    // 2. Validate sequential unlock — cannot complete lesson if previous is not done
+    // 2. Validate sequential unlock (cannot complete lesson if previous lesson is not completed)
     if (lessonIndex > 0) {
       const prevLessonCompleted = user.progress?.courseProgress?.some(
         p => p.courseId.toString() === id && p.completedLessons.includes(lessonIndex - 1)
       );
       if (!prevLessonCompleted) {
-        return res.status(400).json({ message: 'Complete the previous lesson first.' });
+        return res.status(400).json({ message: 'Complete the previous lesson first' });
       }
     }
 
-    // 3. Ensure courseProgress entry exists
     let prog = user.progress.courseProgress.find(p => p.courseId.toString() === id);
     if (!prog) {
-      prog = { courseId: id, completedLessons: [], completedTasks: [], lessonProgress: [] };
+      prog = { courseId: id, completedLessons: [], completedTasks: [] };
       user.progress.courseProgress.push(prog);
-      // Re-fetch the reference after push
-      prog = user.progress.courseProgress[user.progress.courseProgress.length - 1];
     }
 
-    // 4. Add lessonIndex to completedLessons (if not already present)
     if (!prog.completedLessons.includes(lessonIndex)) {
       prog.completedLessons.push(lessonIndex);
     }
 
-    // 5. Update per-lesson granular progress (completedAt, watchedPercentage, completed flag)
-    if (!prog.lessonProgress) prog.lessonProgress = [];
-    const existingLessonProg = prog.lessonProgress.find(lp => lp.lessonIndex === lessonIndex);
-    const now = new Date();
-    if (existingLessonProg) {
-      existingLessonProg.watchedPercentage = 100;
-      existingLessonProg.completed = true;
-      existingLessonProg.completedAt = now;
-    } else {
-      prog.lessonProgress.push({
-        lessonIndex,
-        watchedPercentage: 100,
-        completed: true,
-        completedAt: now
-      });
-    }
-
     user.markModified('progress');
     await user.save();
-
-    // 6. Fetch the course to determine total lessons and next unlock
-    const course = await require('../models/Course').findById(id).select('lessons');
-    const totalLessons = course?.lessons?.length || 0;
-    const nextLessonIndex = lessonIndex + 1 < totalLessons ? lessonIndex + 1 : null;
 
     const populatedUser = await User.findById(userId)
       .populate('progress.currentCourses')
       .populate('progress.completedCourses');
 
-    res.json({
-      message: 'Lesson completed successfully! Next lesson unlocked.',
-      user: populatedUser,
-      completedLessonIndex: lessonIndex,
-      nextLessonIndex,
-      completedAt: now
-    });
+    res.json({ message: 'Lesson completed successfully! Next lesson unlocked.', user: populatedUser });
   } catch (error) {
-    console.error('completeLesson error:', error);
     res.status(500).json({ message: 'Error completing lesson' });
   }
 };
-
-// Update lesson watch progress (mid-session save, no completion requirement)
-const updateLessonProgress = async (req, res) => {
-  try {
-    const { id } = req.params; // courseId
-    const { userId, lessonIndex, watchedPercentage } = req.body;
-
-    if (watchedPercentage === undefined || lessonIndex === undefined || !userId) {
-      return res.status(400).json({ message: 'Missing required fields' });
-    }
-
-    const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-
-    let prog = user.progress?.courseProgress?.find(p => p.courseId.toString() === id);
-    if (!prog) {
-      // Initialize if missing
-      if (!user.progress) user.progress = { completedCourses: [], currentCourses: [], courseProgress: [] };
-      user.progress.courseProgress.push({ courseId: id, completedLessons: [], completedTasks: [], lessonProgress: [] });
-      prog = user.progress.courseProgress[user.progress.courseProgress.length - 1];
-    }
-
-    if (!prog.lessonProgress) prog.lessonProgress = [];
-
-    const existing = prog.lessonProgress.find(lp => lp.lessonIndex === lessonIndex);
-    // Only update if new percentage is higher (never regress)
-    const newPct = Math.min(100, Math.max(0, Number(watchedPercentage)));
-    if (existing) {
-      if (!existing.completed && newPct > (existing.watchedPercentage || 0)) {
-        existing.watchedPercentage = newPct;
-      }
-    } else {
-      prog.lessonProgress.push({ lessonIndex, watchedPercentage: newPct, completed: false });
-    }
-
-    user.markModified('progress');
-    await user.save();
-
-    res.json({ message: 'Progress saved', watchedPercentage: newPct });
-  } catch (error) {
-    console.error('updateLessonProgress error:', error);
-    res.status(500).json({ message: 'Error saving lesson progress' });
-  }
-};
-
-
 
 const completeTask = async (req, res) => {
   try {
@@ -1027,4 +948,4 @@ Ensure:
   }
 };
 
-module.exports = { getAllCourses, getCourseById, createCourse, updateCourse, deleteCourse, generateQuizFromYoutube, generateAIAssessment, enrollInCourse, unenrollInCourse, completeCourse, completeLesson, completeTask, updateLessonProgress, regenerateSingleQuestion };
+module.exports = { getAllCourses, getCourseById, createCourse, updateCourse, deleteCourse, generateQuizFromYoutube, generateAIAssessment, enrollInCourse, unenrollInCourse, completeCourse, completeLesson, completeTask, regenerateSingleQuestion };

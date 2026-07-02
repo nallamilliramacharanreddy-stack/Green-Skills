@@ -1,4 +1,14 @@
 require('dotenv').config();
+
+// Validate Cloudinary environment variables on startup
+const requiredEnvVars = ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'];
+for (const varName of requiredEnvVars) {
+  if (!process.env[varName] || !process.env[varName].trim()) {
+    console.error(`[CRITICAL] Missing required environment variable: ${varName}`);
+    process.exit(1);
+  }
+}
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -19,6 +29,7 @@ const contestRoutes = require('./routes/contestRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 
 const http = require('http');
+
 const { Server } = require('socket.io');
 
 // Security & Performance Packages
@@ -155,6 +166,7 @@ app.use('/api/videos', require('./routes/video'));
 app.use('/api/mentor-sessions', require('./routes/mentorSessionRoutes'));
 app.use('/api/certificates', require('./routes/certificateRoutes'));
 app.use('/api', require('./routes/videoManagementRoutes'));
+app.use('/api/lessons', require('./routes/lessonRoutes'));
 
 app.get('/', (req, res) => {
   res.send('Green Skills API is running...');

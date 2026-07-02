@@ -56,8 +56,6 @@ const Courses = () => {
   const [playerTab, setPlayerTab] = useState('lessons');
   const [lessonWatched, setLessonWatched] = useState(false);
   const [enrolling, setEnrolling] = useState(false);
-  const [newlyUnlockedLesson, setNewlyUnlockedLesson] = useState(null); // index of lesson just unlocked (for animation)
-  const [markingComplete, setMarkingComplete] = useState(false); // separate from enrolling to avoid conflicts
 
   const videoRef = React.useRef(null);
   const playerContainerRef = React.useRef(null);
@@ -480,12 +478,10 @@ const Courses = () => {
   }, [location.state, courses, user]);
 
   useEffect(() => {
-    // Reset per-lesson state whenever the active lesson changes
-    setLessonWatched(false);
-    setMaxPlayed(0);
-    setCurrentTime(0);
-    setDuration(0);
-    setIsPlaying(false);
+    if (selectedCourse) {
+      setLessonWatched(false);
+      setMaxPlayed(0);
+    }
   }, [selectedCourse, activeLessonIndex]);
 
   const handleProgress = (state) => {
@@ -554,39 +550,33 @@ const Courses = () => {
   const handleCompleteLesson = async (courseId, lessonIndex) => {
     if (!user) return;
 
-    // Strict completion check — must have watched 100%
+    // Strict completion check
     if (!lessonWatched && !isLessonCompleted(courseId, lessonIndex)) {
-      toast.error('Please watch the entire video before marking it complete.');
+      toast.error('Please watch 100% of the video before marking it complete.');
       return;
     }
 
-    // Prevent double clicks while request is in-flight
-    setMarkingComplete(true);
+    // Prevent double clicking / concurrent updates
+    setEnrolling(true);
 
     try {
-      const res = await axios.post(`${API_URL}/courses/${courseId}/complete-lesson`, {
-        userId: user._id,
+      const res = await axios.post(`${API_URL}/courses/${courseId}/complete-lesson`, { 
+        userId: user._id, 
         lessonIndex,
-        watchedPercentage: 100
+        watchedPercentage: 100 
       });
-
+      
       updateUser(res.data.user);
+      toast.success('Lesson completed successfully! Next lesson unlocked.');
       setLessonWatched(false); // Reset for the next video
 
-      // Animate the newly unlocked lesson
-      const nextIdx = res.data.nextLessonIndex;
-      if (nextIdx !== null && nextIdx !== undefined) {
-        setNewlyUnlockedLesson(nextIdx);
-        setTimeout(() => setNewlyUnlockedLesson(null), 1800);
-      }
-
       const course = courses.find(c => c._id === courseId);
-      const totalLessons = course?.lessons?.length || 0;
-      const totalTasks = course?.tasks?.length || 0;
+
+      // Auto complete the course if progress hits 100% after this lesson
+      const totalLessons = course.lessons?.length || 0;
+      const totalTasks = course.tasks?.length || 0;
       const totalItems = totalLessons + totalTasks;
-      const userProg = res.data.user?.progress?.courseProgress?.find(
-        p => p.courseId.toString() === courseId.toString()
-      );
+      const userProg = res.data.user?.progress?.courseProgress?.find(p => p.courseId.toString() === courseId.toString());
       const completedLessonsCount = [...new Set(userProg?.completedLessons || [])]
         .filter(idx => idx >= 0 && idx < totalLessons).length;
       const completedTasksCount = [...new Set(userProg?.completedTasks || [])]
@@ -594,21 +584,16 @@ const Courses = () => {
       const newCompletedItems = completedLessonsCount + completedTasksCount;
 
       if (newCompletedItems >= totalItems && totalItems > 0) {
-        toast.success('🎉 Course completed! Congratulations!');
         handleCompleteCourse(courseId);
-      } else if (nextIdx !== null && nextIdx !== undefined) {
-        toast.success('✅ Lesson completed! Next lesson unlocked.');
-        // Brief pause so user sees the icon change, then auto-navigate
-        setTimeout(() => setActiveLessonIndex(nextIdx), 900);
-      } else {
-        toast.success('✅ Lesson completed!');
+      } else if (course && lessonIndex < course.lessons.length - 1) {
+        setActiveLessonIndex(lessonIndex + 1);
       }
     } catch (error) {
-      console.error('handleCompleteLesson error:', error);
+      console.error(error);
       const errMsg = error.response?.data?.message || 'Lesson sync failed';
       toast.error(errMsg);
     } finally {
-      setMarkingComplete(false);
+      setEnrolling(false);
     }
   };
 
@@ -812,40 +797,28 @@ const Courses = () => {
                           const locked = isLessonLocked(selectedCourse._id, idx);
                           const completed = isLessonCompleted(selectedCourse._id, idx);
                           const active = activeLessonIndex === idx;
-                          const justUnlocked = newlyUnlockedLesson === idx;
 
                           return (
-                            <motion.div
+                            <div
                               key={idx}
-                              layout
-                              initial={false}
-                              animate={justUnlocked ? { scale: [1, 1.04, 1], backgroundColor: ['#fff', '#E6FAEA', '#fff'] } : {}}
-                              transition={{ duration: 0.5, ease: 'easeInOut' }}
                               onClick={() => {
                                 if (locked) {
-                                  toast.error('Complete the current lesson to unlock this lesson.');
+                                  toast.error('Complete previous lesson first');
                                   return;
                                 }
                                 setActiveLessonIndex(idx);
                               }}
-                              title={locked ? 'Complete the current lesson to unlock this lesson.' : ''}
-                              className={`p-3 rounded-xl border text-left transition-all flex items-start gap-3 ${
+                              className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-3 ${
                                 active
-                                  ? 'bg-[#E6EEFA] border-[#0056D2]/30 text-[#0056D2] cursor-pointer'
-                                  : locked
-                                    ? 'bg-slate-50/50 border-slate-100 opacity-60 cursor-not-allowed select-none'
-                                    : 'bg-transparent border-transparent hover:bg-slate-50 cursor-pointer'
+                                  ? 'bg-[#E6EEFA] border-[#0056D2]/30 text-[#0056D2]'
+                                  : locked ? 'bg-slate-50/50 border-slate-100 opacity-60' : 'bg-transparent border-transparent hover:bg-slate-50'
                               }`}
                             >
                               <div className="mt-0.5 shrink-0">
                                 {completed ? (
-                                  <motion.div
-                                    initial={{ scale: 0.7, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    className="w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-sm shadow-emerald-300"
-                                  >
+                                  <div className="w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center">
                                     <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12"/></svg>
-                                  </motion.div>
+                                  </div>
                                 ) : active ? (
                                   <div className="w-4 h-4 rounded-full border-2 border-[#0056D2] flex items-center justify-center">
                                     <div className="w-1.5 h-1.5 rounded-full bg-[#0056D2]"></div>
@@ -858,14 +831,12 @@ const Courses = () => {
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className={`text-[10px] font-bold uppercase tracking-wider ${active ? 'text-[#0056D2]' : 'text-slate-400'}`}>
-                                  Lesson {idx + 1}
+                                  Video {idx + 1}
                                 </p>
                                 <p className={`text-xs font-semibold leading-snug truncate ${active ? 'text-slate-900' : 'text-slate-700'}`}>{lesson.title}</p>
-                                <p className="text-[10px] text-slate-400 font-medium mt-0.5">
-                                  {completed ? '✓ Completed' : locked ? '🔒 Locked' : lesson.duration || '5 min'}
-                                </p>
+                                <p className="text-[10px] text-slate-400 font-medium mt-0.5">{lesson.duration || '5 min'}</p>
                               </div>
-                            </motion.div>
+                            </div>
                           );
                         })}
 
@@ -915,9 +886,16 @@ const Courses = () => {
                     {selectedCourse.lessons && selectedCourse.lessons[activeLessonIndex] ? (
                       (() => {
                         const lesson = selectedCourse.lessons[activeLessonIndex];
-                        let internalUrl = (lesson.directVideoUrl && lesson.directVideoUrl.includes('cloudinary.com'))
-                          ? lesson.directVideoUrl
-                          : (lesson.internalVideoUrl || lesson.directVideoUrl);
+                        let internalUrl = '';
+                        if (lesson.directVideoUrl && lesson.directVideoUrl.includes('cloudinary.com')) {
+                          internalUrl = lesson.directVideoUrl;
+                        } else if (lesson.internalVideoUrl && lesson.internalVideoUrl.includes('cloudinary.com')) {
+                          internalUrl = lesson.internalVideoUrl;
+                        } else if (lesson.directVideoUrl && (lesson.directVideoUrl.startsWith('http://') || lesson.directVideoUrl.startsWith('https://')) && !lesson.directVideoUrl.includes('/stream/') && !lesson.directVideoUrl.includes('/uploads/')) {
+                          internalUrl = lesson.directVideoUrl;
+                        } else if (lesson.internalVideoUrl && (lesson.internalVideoUrl.startsWith('http://') || lesson.internalVideoUrl.startsWith('https://')) && !lesson.internalVideoUrl.includes('/stream/') && !lesson.internalVideoUrl.includes('/uploads/')) {
+                          internalUrl = lesson.internalVideoUrl;
+                        }
 
                         let ytVideoId = '';
                         if (lesson.youtubeLink) {
@@ -963,53 +941,25 @@ const Courses = () => {
                                 className="w-full h-full aspect-video object-contain"
                                 playsInline
                                 preload="metadata"
-                                controlsList="nodownload nofullscreen"
+                                controlsList="nodownload"
                                 autoPlay
                                 muted={isMuted}
                                 crossOrigin="anonymous"
                                 src={activeVideoSrc}
                                 onPlay={() => setIsPlaying(true)}
                                 onPause={() => setIsPlaying(false)}
+                                onTimeUpdate={(e) => setCurrentTime(e.target.currentTime)}
                                 onDurationChange={(e) => setDuration(e.target.duration)}
-                                onTimeUpdate={(e) => {
-                                  const t = e.target.currentTime;
-                                  const dur = e.target.duration;
-                                  setCurrentTime(t);
-
-                                  // Track maximum watched position (anti-skip gate)
-                                  setMaxPlayed(prev => {
-                                    if (t > prev) return t;
-                                    return prev;
-                                  });
-
-                                  // 98% threshold — fires lessonWatched before onEnded
-                                  if (dur > 0 && !lessonWatched && (t / dur) >= 0.98) {
-                                    setLessonWatched(true);
-                                    toast.success("🎬 Video complete! You can now mark this lesson as done.");
-                                  }
-                                }}
-                                onSeeking={(e) => {
-                                  // Anti-skip: prevent seeking past the furthest point ever reached
-                                  const target = e.target;
-                                  if (target.currentTime > maxPlayed + 2) {
-                                    target.currentTime = maxPlayed;
-                                  }
-                                }}
                                 onEnded={() => {
-                                  // Fallback: ensure lessonWatched is set even if timeUpdate 98% fired first
-                                  if (!lessonWatched) {
-                                    setLessonWatched(true);
-                                    toast.success("🎬 Video complete! You can now mark this lesson as done.");
-                                  }
-                                  setIsPlaying(false);
+                                  setLessonWatched(true);
+                                  toast.success("You have watched 100% of this video! The 'Mark as Completed' button is now unlocked.");
                                 }}
                                 onError={(e) => {
                                   console.error("Video streaming failed, loading backup video:", e);
                                   const fallbackUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
                                   if (e.target.src !== fallbackUrl) {
-                                    const isDirectUpload = activeVideoSrc.includes('/stream/') || activeVideoSrc.includes('/uploads/');
-                                    if (isDirectUpload) {
-                                      toast.error("Local file missing (server may have restarted). Falling back to backup video...");
+                                    if (activeVideoSrc && activeVideoSrc.includes('cloudinary.com')) {
+                                      toast.error("This video is no longer available. Please contact the administrator.");
                                     } else {
                                       toast.error("YouTube stream rate-limited on server. Loading backup MP4...");
                                     }
@@ -1307,58 +1257,25 @@ const Courses = () => {
                     </div>
 
                     {/* Mark as Completed Button Row */}
-                    {/* Mark as Completed Button Row */}
-                    <motion.div
-                      layout
-                      className={`flex flex-col sm:flex-row items-center justify-between py-6 px-6 rounded-2xl gap-4 border transition-all duration-500 ${
-                        isLessonCompleted(selectedCourse._id, activeLessonIndex)
-                          ? 'bg-emerald-50 border-emerald-200'
-                          : lessonWatched
-                            ? 'bg-blue-50 border-[#0056D2]/30'
-                            : 'bg-slate-50 border-slate-200'
-                      }`}
-                    >
+                    <div className="flex flex-col sm:flex-row items-center justify-between py-6 px-6 bg-slate-50 border border-slate-200 rounded-2xl gap-4">
                       <div className="text-left">
-                        <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                          {isLessonCompleted(selectedCourse._id, activeLessonIndex) ? (
-                            <>
-                              <span className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center inline-flex shrink-0">
-                                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12"/></svg>
-                              </span>
-                              Lesson Completed
-                            </>
-                          ) : 'Lesson Progression Status'}
-                        </h4>
-                        <p className="text-xs text-slate-500 mt-1">
-                          {isLessonCompleted(selectedCourse._id, activeLessonIndex)
-                            ? 'You have successfully finished this lesson. Progress saved permanently.'
-                            : lessonWatched
-                              ? '✅ Video watched! Click the button to permanently mark this lesson complete.'
-                              : '⏳ Watch the entire video to unlock the "Mark as Completed" button.'}
+                        <h4 className="text-sm font-bold text-slate-800">Lesson Progression Status</h4>
+                        <p className="text-xs text-slate-500">
+                          {isLessonCompleted(selectedCourse._id, activeLessonIndex) 
+                            ? "You have successfully finished this lesson!" 
+                            : lessonWatched 
+                              ? "Ready to finalize! Please click the button to mark as completed." 
+                              : "Watch the video fully to enable progress synchronization."}
                         </p>
-                        {!isLessonCompleted(selectedCourse._id, activeLessonIndex) && duration > 0 && (
-                          <div className="mt-2 flex items-center gap-2">
-                            <div className="flex-1 h-1 bg-slate-200 rounded-full overflow-hidden max-w-[140px]">
-                              <div
-                                className="h-full bg-[#0056D2] rounded-full transition-all duration-300"
-                                style={{ width: `${Math.min(100, (currentTime / duration) * 100)}%` }}
-                              />
-                            </div>
-                            <span className="text-[10px] font-bold text-slate-400">
-                              {Math.round(Math.min(100, (currentTime / duration) * 100))}% watched
-                            </span>
-                          </div>
-                        )}
                       </div>
-                      <motion.button
-                        whileTap={(!markingComplete && lessonWatched && !isLessonCompleted(selectedCourse._id, activeLessonIndex)) ? { scale: 0.95 } : {}}
+                      <button
                         onClick={() => handleCompleteLesson(selectedCourse._id, activeLessonIndex)}
-                        disabled={(!lessonWatched && !isLessonCompleted(selectedCourse._id, activeLessonIndex)) || markingComplete}
-                        className={`px-6 py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-2 shrink-0 ${
+                        disabled={(!lessonWatched && !isLessonCompleted(selectedCourse._id, activeLessonIndex)) || enrolling}
+                        className={`px-6 py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-2 ${
                           isLessonCompleted(selectedCourse._id, activeLessonIndex)
-                            ? 'bg-emerald-500 text-white border border-emerald-500 cursor-default shadow-lg shadow-emerald-200'
+                            ? 'bg-emerald-100 text-emerald-700 border border-emerald-200 cursor-default'
                             : lessonWatched
-                              ? 'bg-[#0056D2] hover:bg-blue-700 text-white shadow-lg shadow-blue-500/30 cursor-pointer'
+                              ? 'bg-[#0056D2] hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20 active:scale-95'
                               : 'bg-slate-200 text-slate-400 cursor-not-allowed border border-transparent'
                         }`}
                       >
@@ -1367,46 +1284,30 @@ const Courses = () => {
                             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12"/></svg>
                             Completed ✓
                           </>
-                        ) : markingComplete ? (
+                        ) : enrolling ? (
                           <>
                             <Loader2 size={14} className="animate-spin" />
-                            Saving…
+                            Saving...
                           </>
                         ) : (
-                          <>
-                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
-                            Mark as Completed
-                          </>
+                          "Mark as Completed"
                         )}
-                      </motion.button>
-                    </motion.div>
+                      </button>
+                    </div>
 
-                    {/* Lessons Progression Grid */}
+                    {/* Upcoming Lessons & Locked Lesson System Checklist */}
                     <div className="mt-8 pt-8 border-t border-slate-200">
-                      <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
-                        Lessons Progression
-                        <span className="text-[10px] font-bold text-slate-400 normal-case tracking-normal">
-                          {selectedCourse.lessons?.filter((_, idx) => isLessonCompleted(selectedCourse._id, idx)).length || 0} / {selectedCourse.lessons?.length || 0} completed
-                        </span>
-                      </h3>
+                      <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-4">Lessons Progression</h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {selectedCourse.lessons?.map((lesson, idx) => {
                           const locked = isLessonLocked(selectedCourse._id, idx);
                           const completed = isLessonCompleted(selectedCourse._id, idx);
                           const active = activeLessonIndex === idx;
-                          const justUnlocked = newlyUnlockedLesson === idx;
 
                           return (
-                            <motion.div
+                            <div
                               key={idx}
-                              layout
-                              initial={false}
-                              animate={justUnlocked
-                                ? { scale: [1, 1.03, 1], boxShadow: ['0 0 0px rgba(0,86,210,0)', '0 0 16px rgba(0,86,210,0.3)', '0 0 0px rgba(0,86,210,0)'] }
-                                : {}
-                              }
-                              transition={{ duration: 0.6, ease: 'easeInOut' }}
-                              title={locked ? 'Complete the current lesson to unlock this lesson.' : ''}
+                              title={locked ? "Complete the current lesson to unlock this lesson." : ""}
                               onClick={() => {
                                 if (locked) {
                                   toast.error('Complete the current lesson to unlock this lesson.');
@@ -1416,48 +1317,42 @@ const Courses = () => {
                               }}
                               className={`p-4 rounded-2xl border text-left transition-all relative flex items-start gap-4 select-none ${
                                 active
-                                  ? 'bg-[#E6EEFA] border-[#0056D2] text-[#0056D2] shadow-sm cursor-pointer'
-                                  : completed
-                                    ? 'bg-emerald-50/60 border-emerald-200 cursor-pointer hover:bg-emerald-50'
-                                    : locked
-                                      ? 'bg-slate-50/50 border-slate-200 opacity-60 cursor-not-allowed'
-                                      : 'bg-white border-slate-200 hover:bg-slate-50 hover:border-slate-300 cursor-pointer'
+                                  ? 'bg-[#E6EEFA] border-[#0056D2] text-[#0056D2] shadow-sm'
+                                  : locked 
+                                    ? 'bg-slate-50/50 border-slate-200 opacity-60 cursor-not-allowed' 
+                                    : 'bg-white border-slate-200 hover:bg-slate-50 hover:border-slate-300 cursor-pointer'
                               }`}
                             >
                               <div className="mt-1 shrink-0">
                                 {completed ? (
-                                  <motion.div
-                                    initial={{ scale: 0, rotate: -15 }}
-                                    animate={{ scale: 1, rotate: 0 }}
-                                    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                                    className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md shadow-emerald-200"
-                                  >
-                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12"/></svg>
-                                  </motion.div>
+                                  <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-sm">
+                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12"/></svg>
+                                  </div>
                                 ) : active ? (
-                                  <div className="w-6 h-6 rounded-full bg-[#0056D2] text-white flex items-center justify-center shadow-sm">
-                                    <Play size={11} fill="currentColor" />
+                                  <div className="w-5 h-5 rounded-full bg-[#0056D2] text-white flex items-center justify-center shadow-sm">
+                                    <Play size={10} fill="currentColor" />
                                   </div>
                                 ) : locked ? (
-                                  <div className="w-6 h-6 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center">
-                                    <Lock size={11} />
+                                  <div className="w-5 h-5 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center">
+                                    <Lock size={10} />
                                   </div>
                                 ) : (
-                                  <div className="w-6 h-6 rounded-full bg-blue-50 text-[#0056D2] flex items-center justify-center hover:bg-[#0056D2] hover:text-white transition-colors">
-                                    <Play size={11} fill="currentColor" />
+                                  <div className="w-5 h-5 rounded-full bg-blue-50 text-[#0056D2] flex items-center justify-center hover:bg-[#0056D2] hover:text-white transition-colors">
+                                    <Play size={10} fill="currentColor" />
                                   </div>
                                 )}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className={`text-[10px] font-bold uppercase tracking-widest ${active ? 'text-[#0056D2]' : completed ? 'text-emerald-600' : 'text-slate-400'}`}>
-                                  {completed ? '✓ Lesson ' : locked ? '🔒 Lesson ' : '▶ Lesson '}{idx + 1}
+                                <p className={`text-[10px] font-bold uppercase tracking-widest ${active ? 'text-[#0056D2]' : 'text-slate-400'}`}>
+                                  Lesson {idx + 1}
                                 </p>
-                                <h4 className={`text-sm font-bold truncate ${active ? 'text-slate-900' : completed ? 'text-slate-700' : 'text-slate-700'}`}>{lesson.title}</h4>
-                                <p className={`text-[10px] font-medium mt-1 ${completed ? 'text-emerald-500' : 'text-slate-400'}`}>
-                                  {completed ? 'Completed ✓' : locked ? 'Locked — complete previous lesson' : active ? 'Currently playing' : lesson.duration || '5 mins'}
-                                </p>
+                                <h4 className={`text-sm font-bold truncate ${active ? 'text-slate-900' : 'text-slate-700'}`}>{lesson.title}</h4>
+                                <p className="text-[10px] text-slate-400 font-medium mt-1">{lesson.duration || '5 mins'}</p>
                               </div>
-                            </motion.div>
+                              {locked && (
+                                <div className="absolute inset-0 bg-transparent" />
+                              )}
+                            </div>
                           );
                         })}
                       </div>
