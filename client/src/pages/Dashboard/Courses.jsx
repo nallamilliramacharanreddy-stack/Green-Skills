@@ -919,13 +919,12 @@ const Courses = () => {
                 {/* COLUMN 2: CENTER MAIN CONTENT (Video Screen & Notes) */}
                 <div className="flex-1 flex flex-col h-full overflow-y-auto bg-white">
 
-                  {/* Video Player Box Wrapper */}
-                  <div className="w-full bg-slate-50 border-b border-slate-200 py-6 px-4 flex items-center justify-center shrink-0">
-                    <div
-                      ref={playerContainerRef}
-                      onMouseMove={handleMouseMove}
-                      className="max-w-5xl w-full aspect-video bg-black flex items-center justify-center relative z-20 overflow-hidden group rounded-2xl shadow-lg border border-slate-200/80"
-                    >
+                  {/* Video Player Box */}
+                  <div
+                    ref={playerContainerRef}
+                    onMouseMove={handleMouseMove}
+                    className="w-full aspect-video bg-black flex items-center justify-center relative z-20 overflow-hidden group"
+                  >
                     {selectedCourse.lessons && selectedCourse.lessons[activeLessonIndex] ? (
                       (() => {
                         const lesson = selectedCourse.lessons[activeLessonIndex];
@@ -1262,11 +1261,10 @@ const Courses = () => {
                         <p className="font-black uppercase tracking-widest text-xs opacity-50">No video data found in this node</p>
                       </div>
                     )}
-                    </div>
                   </div>
 
                   {/* Course Video details */}
-                  <div className="p-6 md:p-8 space-y-6 max-w-5xl w-full mx-auto">
+                  <div className="p-6 md:p-8 space-y-6 max-w-4xl w-full mx-auto">
 
                     {/* Title and Save Note Row */}
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-100">
@@ -1517,6 +1515,8 @@ const Courses = () => {
                     )}
                   </div>
                 </div>
+                {/* Right Spacer to preserve exact layout width & ratio */}
+                <div className="w-14 bg-white shrink-0 h-full hidden lg:block" />
 
 
 
