@@ -957,18 +957,8 @@ const Courses = () => {
                                   toast.success("You have watched 100% of this video! The 'Mark as Completed' button is now unlocked.");
                                 }}
                                 onError={(e) => {
-                                  console.error("Video streaming failed, loading backup video:", e);
-                                  const fallbackUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
-                                  if (e.target.src !== fallbackUrl) {
-                                    if (activeVideoSrc && activeVideoSrc.includes('cloudinary.com')) {
-                                      toast.error("This video is no longer available. Please contact the administrator.");
-                                    } else {
-                                      toast.error("YouTube stream rate-limited on server. Loading backup MP4...");
-                                    }
-                                    e.target.src = fallbackUrl;
-                                    e.target.load();
-                                    e.target.play().catch(err => console.log("Playback failed:", err));
-                                  }
+                                  console.error("Video streaming failed:", e);
+                                  toast.error("This video is no longer available. Please contact the administrator.");
                                 }}
                               >
                                 {showSubtitles && (selectedLang !== 'en' && translatedVttUrl ? (
