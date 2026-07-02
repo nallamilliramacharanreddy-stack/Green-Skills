@@ -2912,7 +2912,7 @@ const AdminAssignments = ({ courses }) => {
                 <button onClick={() => handleToggleActive(a)} className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 transition-all" title={a.isActive ? 'Unpublish' : 'Publish'}>
                   {a.isActive ? <Eye size={15} /> : <Eye size={15} className="opacity-40" />}
                 </button>
-                <button onClick={() => { setForm({ title: a.title, instructions: a.instructions, courseId: a.courseId, lessonId: a.lessonId, minWords: a.minWords, maxWords: a.maxWords, dueDate: a.dueDate ? a.dueDate.slice(0,10) : '', isActive: a.isActive }); setEditingAssignment(a); setView('edit'); }} className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-blue-50 hover:text-blue-600 transition-all">
+                <button onClick={() => { setForm({ title: a.title, instructions: a.instructions, courseId: a.courseId, lessonId: a.lessonId, minWords: a.minWords, maxWords: a.maxWords, dueDate: a.dueDate ? a.dueDate.slice(0, 10) : '', isActive: a.isActive }); setEditingAssignment(a); setView('edit'); }} className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-blue-50 hover:text-blue-600 transition-all">
                   <Edit size={15} />
                 </button>
                 <button onClick={() => handleDelete(a._id)} className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-red-50 hover:text-red-500 transition-all">

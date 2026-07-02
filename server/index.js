@@ -166,6 +166,7 @@ app.use('/api/videos', require('./routes/video'));
 app.use('/api/mentor-sessions', require('./routes/mentorSessionRoutes'));
 app.use('/api/certificates', require('./routes/certificateRoutes'));
 app.use('/api', require('./routes/videoManagementRoutes'));
+app.use('/api/assignments', require('./routes/assignmentRoutes'));
 app.use('/api/lessons', require('./routes/lessonRoutes'));
 
 app.get('/', (req, res) => {

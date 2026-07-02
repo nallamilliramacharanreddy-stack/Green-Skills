@@ -703,10 +703,29 @@ const Courses = () => {
   };
 
   // ── Essay Assignment Functions ──────────────────────────────────────────────
+  // ── Multilingual Word Counter ────────────────────────────────────────────
+  // Works for: English, Hindi, Telugu, Tamil, Arabic, Chinese, Japanese,
+  // Korean, Spanish, French, German, etc.
   const countWords = (text) => {
-    const trimmed = text.trim();
-    if (!trimmed) return 0;
-    return trimmed.split(/\s+/).filter(Boolean).length;
+    if (!text || !text.trim()) return 0;
+
+    // Strip markdown formatting markers so they don't inflate word count
+    let cleaned = text
+      .replace(/\*\*(.*?)\*\*/g, '$1')   // **bold**
+      .replace(/_(.*?)_/g, '$1')          // _italic_
+      .replace(/<u>(.*?)<\/u>/g, '$1')    // <u>underline</u>
+      .replace(/^[•\-\d]+\.\s*/gm, '');  // bullet / numbered list markers
+
+    // CJK character ranges: Chinese, Japanese (Hiragana/Katakana), Korean
+    // Each CJK character counts as one word
+    const cjkRegex = /[\u4e00-\u9fff\u3400-\u4dbf\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af\uf900-\ufaff]/g;
+    const cjkChars = (cleaned.match(cjkRegex) || []).length;
+
+    // Remove CJK chars and count remaining space-separated tokens
+    const withoutCJK = cleaned.replace(cjkRegex, ' ');
+    const spaceWords = withoutCJK.trim().split(/\s+/).filter(w => w.length > 0).length;
+
+    return cjkChars + spaceWords;
   };
 
   const openEssayEditor = async (assignment) => {

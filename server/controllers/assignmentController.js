@@ -3,6 +3,29 @@ const AssignmentSubmission = require('../models/AssignmentSubmission');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 
+// ── Multilingual Word Counter (mirrors client-side logic) ──────────────────
+// Supports: English, Hindi, Telugu, Tamil, Arabic, Chinese, Japanese,
+// Korean, Spanish, French, German, and any Unicode space-separated language.
+const countWordsMultilingual = (text) => {
+  if (!text || !text.trim()) return 0;
+
+  // Strip markdown formatting so markers don't inflate the count
+  let cleaned = text
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/_(.*?)_/g, '$1')
+    .replace(/<u>(.*?)<\/u>/g, '$1')
+    .replace(/^[•\-\d]+\.\s*/gm, '');
+
+  // CJK: each character = 1 word
+  const cjkRegex = /[\u4e00-\u9fff\u3400-\u4dbf\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af\uf900-\ufaff]/g;
+  const cjkCount = (cleaned.match(cjkRegex) || []).length;
+
+  const withoutCJK = cleaned.replace(cjkRegex, ' ');
+  const spaceCount = withoutCJK.trim().split(/\s+/).filter(w => w.length > 0).length;
+
+  return cjkCount + spaceCount;
+};
+
 // Admin: Create Assignment
 exports.createAssignment = async (req, res) => {
   try {
