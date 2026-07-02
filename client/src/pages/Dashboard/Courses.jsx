@@ -669,13 +669,20 @@ const Courses = () => {
       // Auto complete the course if progress hits 100% after this lesson
       const totalLessons = course.lessons?.length || 0;
       const totalTasks = course.tasks?.length || 0;
-      const totalItems = totalLessons + totalTasks;
+      const totalAssignments = courseAssignments.length;
+      const totalItems = totalLessons + totalTasks + totalAssignments;
+
       const userProg = res.data.user?.progress?.courseProgress?.find(p => p.courseId.toString() === courseId.toString());
       const completedLessonsCount = [...new Set(userProg?.completedLessons || [])]
         .filter(idx => idx >= 0 && idx < totalLessons).length;
       const completedTasksCount = [...new Set(userProg?.completedTasks || [])]
         .filter(idx => idx >= 0 && idx < totalTasks).length;
-      const newCompletedItems = completedLessonsCount + completedTasksCount;
+      const completedAssignmentsCount = courseAssignments.filter(a => {
+        const sub = mySubmissions[a._id];
+        return sub && ['Submitted', 'Reviewed', 'Approved'].includes(sub.status);
+      }).length;
+
+      const newCompletedItems = completedLessonsCount + completedTasksCount + completedAssignmentsCount;
 
       if (newCompletedItems >= totalItems && totalItems > 0) {
         handleCompleteCourse(courseId);
@@ -697,6 +704,29 @@ const Courses = () => {
       const res = await axios.post(`${API_URL}/courses/${courseId}/complete-task`, { userId: user._id, taskIndex });
       updateUser(res.data.user);
       toast.success(`Task ${taskIndex + 1} marked complete`);
+
+      // Check if course is now fully complete
+      const course = courses.find(c => c._id === courseId);
+      if (course) {
+        const totalLessons = course.lessons?.length || 0;
+        const totalTasks = course.tasks?.length || 0;
+        const totalAssignments = courseAssignments.length;
+        const totalItems = totalLessons + totalTasks + totalAssignments;
+
+        const userProg = res.data.user?.progress?.courseProgress?.find(p => p.courseId.toString() === courseId.toString());
+        const completedLessonsCount = [...new Set(userProg?.completedLessons || [])].filter(idx => idx >= 0 && idx < totalLessons).length;
+        const completedTasksCount = [...new Set(userProg?.completedTasks || [])].filter(idx => idx >= 0 && idx < totalTasks).length;
+        
+        const completedAssignmentsCount = courseAssignments.filter(a => {
+          const sub = mySubmissions[a._id];
+          return sub && ['Submitted', 'Reviewed', 'Approved'].includes(sub.status);
+        }).length;
+
+        const newCompletedItems = completedLessonsCount + completedTasksCount + completedAssignmentsCount;
+        if (newCompletedItems >= totalItems && totalItems > 0) {
+          handleCompleteCourse(courseId);
+        }
+      }
     } catch (error) {
       toast.error('Task sync failed');
     }
@@ -789,6 +819,27 @@ const Courses = () => {
       if (autoSaveTimerRef.current) clearInterval(autoSaveTimerRef.current);
       // Refresh assignments to show updated status
       fetchCourseAssignments(selectedCourse._id);
+
+      // Check if course is now fully complete
+      const totalLessons = selectedCourse.lessons?.length || 0;
+      const totalTasks = selectedCourse.tasks?.length || 0;
+      const totalAssignments = courseAssignments.length;
+      const totalItems = totalLessons + totalTasks + totalAssignments;
+
+      const userProg = user?.progress?.courseProgress?.find(p => p.courseId.toString() === selectedCourse._id.toString());
+      const completedLessonsCount = [...new Set(userProg?.completedLessons || [])].filter(idx => idx >= 0 && idx < totalLessons).length;
+      const completedTasksCount = [...new Set(userProg?.completedTasks || [])].filter(idx => idx >= 0 && idx < totalTasks).length;
+      
+      let completedAssignmentsCount = courseAssignments.filter(a => {
+        if (a._id === assignment._id) return true; // Account for the one just submitted
+        const sub = mySubmissions[a._id];
+        return sub && ['Submitted', 'Reviewed', 'Approved'].includes(sub.status);
+      }).length;
+
+      const newCompletedItems = completedLessonsCount + completedTasksCount + completedAssignmentsCount;
+      if (newCompletedItems >= totalItems && totalItems > 0) {
+        handleCompleteCourse(selectedCourse._id);
+      }
     } catch (e) {
       toast.error(e.response?.data?.message || 'Submission failed. Please try again.');
     } finally {
