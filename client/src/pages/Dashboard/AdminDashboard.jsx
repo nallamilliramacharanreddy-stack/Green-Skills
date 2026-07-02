@@ -18,6 +18,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useStreak } from '../../context/StreakContext';
 import { getStreakRank } from '../../utils/streakRank';
 import AdminProctoring from './AdminProctoring';
+import ManageVideos from './ManageVideos';
 import { API_URL, API_BASE_URL } from '../../utils/api';
 
 const getYoutubeEmbedUrl = (url) => {
@@ -268,6 +269,7 @@ const AdminDashboard = () => {
               {activeTab === 'hirers' && <HirerDataManagement data={hirers} onToggleStatus={toggleUserStatus} onDelete={deleteUser} onApprove={handleApproveHirer} onReject={handleRejectHirer} />}
               {activeTab === 'quizzes' && <QuizManagement courses={courses} onGenQuiz={generateCourseContent} refresh={fetchData} />}
               {activeTab === 'proctoring' && <AdminProctoring />}
+              {activeTab === 'videos' && <ManageVideos />}
               {activeTab === 'admins' && <AdminApproval data={admins} onApprove={handleApproveAdmin} onToggleStatus={toggleUserStatus} onDelete={deleteUser} />}
               {activeTab === 'integrity' && <QuestionBankIntegrityReport />}
               {activeTab === 'profile' && <AdminProfile currentUser={currentUser} refreshUser={fetchData} />}
@@ -765,6 +767,7 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
                                 onChange={(e) => {
                                   const newLessons = [...formData.lessons];
                                   newLessons[idx].directVideoUrl = e.target.value;
+                                  newLessons[idx].internalVideoUrl = e.target.value;
                                   newLessons[idx].youtubeLink = ''; // Clear youtube link
                                   setFormData(p => ({ ...p, lessons: newLessons }));
                                 }}
@@ -805,6 +808,7 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
                                     const uploadPromise = new Promise((resolve, reject) => {
                                       const xhr = new XMLHttpRequest();
                                       xhr.open('POST', `${API_URL}/videos/upload`);
+                                      xhr.timeout = 10 * 60 * 1000; // 10 minutes for large video uploads
                                       
                                       if (token) {
                                         xhr.setRequestHeader('Authorization', `Bearer ${token}`);
@@ -832,6 +836,10 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
                                       xhr.onerror = () => {
                                         reject(new Error('Network Error during upload'));
                                       };
+
+                                      xhr.ontimeout = () => {
+                                        reject(new Error('Upload timed out. The video may be too large. Please try a smaller file.'));
+                                      };
                                       
                                       xhr.send(formDataObj);
                                     });
@@ -840,6 +848,7 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
                                     
                                     const newLessons = [...formData.lessons];
                                     newLessons[idx].directVideoUrl = resData.directVideoUrl; // Use local server stream URL
+                                    newLessons[idx].internalVideoUrl = resData.directVideoUrl;
                                     newLessons[idx].youtubeLink = ''; // Clear youtube link since we have direct file
                                     newLessons[idx].status = 'completed';
                                     setFormData(p => ({ ...p, lessons: newLessons }));
@@ -872,6 +881,7 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
                                 onClick={() => {
                                   const newLessons = [...formData.lessons];
                                   newLessons[idx].directVideoUrl = '';
+                                  newLessons[idx].internalVideoUrl = '';
                                   setFormData(p => ({ ...p, lessons: newLessons }));
                                 }}
                                 className="shrink-0 p-2 text-red-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"

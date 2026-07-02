@@ -135,7 +135,9 @@ const Courses = () => {
 
     try {
       const lesson = selectedCourse.lessons[activeLessonIndex];
-      const videoSrcUrl = lesson.internalVideoUrl || lesson.directVideoUrl || lesson.youtubeLink;
+      const videoSrcUrl = (lesson.directVideoUrl && lesson.directVideoUrl.includes('cloudinary.com'))
+        ? lesson.directVideoUrl
+        : (lesson.internalVideoUrl || lesson.directVideoUrl || lesson.youtubeLink);
 
       const res = await fetch(`${API_BASE_URL}/api/videos/translate-video`, {
         method: 'POST',
@@ -871,7 +873,9 @@ const Courses = () => {
                     {selectedCourse.lessons && selectedCourse.lessons[activeLessonIndex] ? (
                       (() => {
                         const lesson = selectedCourse.lessons[activeLessonIndex];
-                        let internalUrl = lesson.internalVideoUrl || lesson.directVideoUrl;
+                        let internalUrl = (lesson.directVideoUrl && lesson.directVideoUrl.includes('cloudinary.com'))
+                          ? lesson.directVideoUrl
+                          : (lesson.internalVideoUrl || lesson.directVideoUrl);
 
                         let ytVideoId = '';
                         if (lesson.youtubeLink) {

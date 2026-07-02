@@ -29,6 +29,10 @@ const upload = multer({
 
 // Endpoint for direct MP4 uploads from Admin Dashboard
 router.post('/upload', upload.single('video'), async (req, res) => {
+  // Set a long timeout for large video uploads (10 minutes)
+  req.setTimeout(10 * 60 * 1000);
+  res.setTimeout(10 * 60 * 1000);
+
   if (!req.file) return res.status(400).json({ message: 'No video file provided' });
   try {
     const uploadRes = await uploadToCloudinary(req.file.path, 'lessons', 'video');

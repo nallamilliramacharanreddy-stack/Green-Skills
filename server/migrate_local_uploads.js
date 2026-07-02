@@ -16,28 +16,46 @@ const MONGO_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/green_sk
 
 /**
  * Resolves database local paths (e.g. /uploads/file.png or /api/videos/stream/video.mp4) to local file paths on disk.
+ * Handles full URLs containing local dev domains (e.g. http://localhost:5001).
+ * Automatically tries appending .mp4 or .mp3 extensions if the file is stored with an extension on disk.
  */
 function resolveLocalPath(dbUrl) {
-  if (!dbUrl || dbUrl.startsWith('http://') || dbUrl.startsWith('https://')) return null;
+  if (!dbUrl) return null;
+  if (dbUrl.includes('cloudinary.com')) return null;
 
-  if (dbUrl.includes('/uploads/videos/')) {
-    const filename = dbUrl.split('/uploads/videos/')[1];
-    return path.join(videosDir, filename);
-  }
-  if (dbUrl.includes('/api/videos/stream/')) {
-    const filename = dbUrl.split('/api/videos/stream/')[1];
-    return path.join(videosDir, filename);
-  }
-  if (dbUrl.includes('/uploads/')) {
-    const filename = dbUrl.split('/uploads/')[1];
-    return path.join(uploadsDir, filename);
+  let pathOnly = dbUrl;
+  if (dbUrl.startsWith('http://') || dbUrl.startsWith('https://')) {
+    try {
+      const urlObj = new URL(dbUrl);
+      pathOnly = urlObj.pathname + urlObj.search;
+    } catch (e) {
+      console.error(`[resolveLocalPath] Failed to parse URL: ${dbUrl}`);
+    }
   }
 
-  // fallback if path is just the filename
-  const p1 = path.join(uploadsDir, dbUrl);
-  if (fs.existsSync(p1)) return p1;
-  const p2 = path.join(videosDir, dbUrl);
-  if (fs.existsSync(p2)) return p2;
+  let resolved = null;
+  if (pathOnly.includes('/uploads/videos/')) {
+    const filename = pathOnly.split('/uploads/videos/')[1];
+    resolved = path.join(videosDir, filename);
+  } else if (pathOnly.includes('/api/videos/stream/')) {
+    const filename = pathOnly.split('/api/videos/stream/')[1];
+    resolved = path.join(videosDir, filename);
+  } else if (pathOnly.includes('/uploads/')) {
+    const filename = pathOnly.split('/uploads/')[1];
+    resolved = path.join(uploadsDir, filename);
+  } else {
+    // fallback if path is just the filename
+    const p1 = path.join(uploadsDir, pathOnly);
+    if (fs.existsSync(p1)) return p1;
+    const p2 = path.join(videosDir, pathOnly);
+    if (fs.existsSync(p2)) return p2;
+  }
+
+  if (resolved) {
+    if (fs.existsSync(resolved)) return resolved;
+    if (fs.existsSync(resolved + '.mp4')) return resolved + '.mp4';
+    if (fs.existsSync(resolved + '.mp3')) return resolved + '.mp3';
+  }
 
   return null;
 }
@@ -58,7 +76,7 @@ async function runMigration() {
     let updated = false;
 
     // Profile Picture
-    if (user.profilePicture && !user.profilePicture.includes('cloudinary.com') && !user.profilePicture.startsWith('http')) {
+    if (user.profilePicture && !user.profilePicture.includes('cloudinary.com')) {
       const localFile = resolveLocalPath(user.profilePicture);
       if (localFile && fs.existsSync(localFile)) {
         try {
@@ -80,7 +98,7 @@ async function runMigration() {
     }
 
     // Company Document
-    if (user.companyDetails && user.companyDetails.companyDocument && !user.companyDetails.companyDocument.includes('cloudinary.com') && !user.companyDetails.companyDocument.startsWith('http')) {
+    if (user.companyDetails && user.companyDetails.companyDocument && !user.companyDetails.companyDocument.includes('cloudinary.com')) {
       const localFile = resolveLocalPath(user.companyDetails.companyDocument);
       if (localFile && fs.existsSync(localFile)) {
         try {
@@ -117,7 +135,7 @@ async function runMigration() {
     if (course.lessons && course.lessons.length > 0) {
       for (const lesson of course.lessons) {
         // Direct Video
-        if (lesson.directVideoUrl && !lesson.directVideoUrl.includes('cloudinary.com') && !lesson.directVideoUrl.startsWith('http')) {
+        if (lesson.directVideoUrl && !lesson.directVideoUrl.includes('cloudinary.com')) {
           const localFile = resolveLocalPath(lesson.directVideoUrl);
           if (localFile && fs.existsSync(localFile)) {
             try {
@@ -139,7 +157,7 @@ async function runMigration() {
         }
 
         // Internal Video
-        if (lesson.internalVideoUrl && !lesson.internalVideoUrl.includes('cloudinary.com') && !lesson.internalVideoUrl.startsWith('http')) {
+        if (lesson.internalVideoUrl && !lesson.internalVideoUrl.includes('cloudinary.com')) {
           const localFile = resolveLocalPath(lesson.internalVideoUrl);
           if (localFile && fs.existsSync(localFile)) {
             try {
@@ -175,7 +193,7 @@ async function runMigration() {
   for (const resItem of results) {
     let updated = false;
 
-    if (resItem.videoRecordingUrl && !resItem.videoRecordingUrl.includes('cloudinary.com') && !resItem.videoRecordingUrl.startsWith('http')) {
+    if (resItem.videoRecordingUrl && !resItem.videoRecordingUrl.includes('cloudinary.com')) {
       const localFile = resolveLocalPath(resItem.videoRecordingUrl);
       if (localFile && fs.existsSync(localFile)) {
         try {
@@ -209,7 +227,7 @@ async function runMigration() {
     let updated = false;
 
     // Translated Video
-    if (hist.translatedVideoUrl && !hist.translatedVideoUrl.includes('cloudinary.com') && !hist.translatedVideoUrl.startsWith('http')) {
+    if (hist.translatedVideoUrl && !hist.translatedVideoUrl.includes('cloudinary.com')) {
       const localFile = resolveLocalPath(hist.translatedVideoUrl);
       if (localFile && fs.existsSync(localFile)) {
         try {
@@ -231,7 +249,7 @@ async function runMigration() {
     }
 
     // SRT Subtitles
-    if (hist.srtUrl && !hist.srtUrl.includes('cloudinary.com') && !hist.srtUrl.startsWith('http')) {
+    if (hist.srtUrl && !hist.srtUrl.includes('cloudinary.com')) {
       const localFile = resolveLocalPath(hist.srtUrl);
       if (localFile && fs.existsSync(localFile)) {
         try {
@@ -253,7 +271,7 @@ async function runMigration() {
     }
 
     // VTT Subtitles
-    if (hist.vttUrl && !hist.vttUrl.includes('cloudinary.com') && !hist.vttUrl.startsWith('http')) {
+    if (hist.vttUrl && !hist.vttUrl.includes('cloudinary.com')) {
       const localFile = resolveLocalPath(hist.vttUrl);
       if (localFile && fs.existsSync(localFile)) {
         try {

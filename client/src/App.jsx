@@ -32,6 +32,7 @@ const EmployerDashboard = React.lazy(() => import('./pages/Dashboard/EmployerDas
 const SupportDashboard = React.lazy(() => import('./pages/Dashboard/SupportDashboard'));
 const SuperAdmin = React.lazy(() => import('./pages/Dashboard/SuperAdmin'));
 const PremiumEcosystem = React.lazy(() => import('./pages/Premium/PremiumEcosystem'));
+const Videos = React.lazy(() => import('./pages/Dashboard/Videos'));
 
 import { ProtectedRoute, PublicRoute } from './components/auth/AuthRoutes';
 import Navbar from './components/layout/Navbar';
@@ -80,10 +81,12 @@ function App() {
             <Route path="/dashboard/leaderboard" element={<ProtectedRoute><LeaderboardPage /></ProtectedRoute>} />
             <Route path="/dashboard/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/dashboard/premium" element={<ProtectedRoute allowedRoles={['student']}><PremiumEcosystem /></ProtectedRoute>} />
+            <Route path="/dashboard/videos" element={<ProtectedRoute><Videos /></ProtectedRoute>} />
             
             {/* Protected Role-Based Routes */}
             <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin', 'admin_course', 'admin_hiring', 'admin_exam', 'super-admin']}><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/courses" element={<ProtectedRoute allowedRoles={['admin', 'admin_course', 'admin_hiring', 'admin_exam', 'super-admin']}><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin/videos" element={<ProtectedRoute allowedRoles={['admin', 'admin_course', 'admin_hiring', 'admin_exam', 'super-admin']}><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/leaderboard" element={<ProtectedRoute allowedRoles={['admin', 'admin_course', 'admin_hiring', 'admin_exam', 'super-admin']}><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin', 'admin_course', 'admin_hiring', 'admin_exam', 'super-admin']}><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/name-changes" element={<ProtectedRoute allowedRoles={['admin', 'admin_course', 'admin_hiring', 'admin_exam', 'super-admin']}><AdminDashboard /></ProtectedRoute>} />

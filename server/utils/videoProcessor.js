@@ -10,9 +10,10 @@ if (!fs.existsSync(videosDir)) {
 }
 
 const processVideo = async (courseId, lessonId, youtubeLink) => {
+  let videoId = '';
+  let filePath = '';
   try {
     // 1. Extract Video ID
-    let videoId = '';
     const watchMatch = youtubeLink.match(/[?&]v=([^&#]+)/);
     const shortMatch = youtubeLink.match(/youtu\.be\/([^?&#]+)/);
     const embedMatch = youtubeLink.match(/youtube\.com\/embed\/([^?&#]+)/);
@@ -27,7 +28,7 @@ const processVideo = async (courseId, lessonId, youtubeLink) => {
 
     if (!videoId) throw new Error('Invalid YouTube URL');
 
-    const filePath = path.join(videosDir, `${videoId}.mp4`);
+    filePath = path.join(videosDir, `${videoId}.mp4`);
     const internalUrl = `http://localhost:5001/api/videos/stream/${videoId}`;
 
     // 2. Mark as processing in DB

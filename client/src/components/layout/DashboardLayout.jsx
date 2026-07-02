@@ -5,7 +5,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { 
   Home, BookOpen, Award, Briefcase, 
   Settings, LogOut, MessageSquare, Bell,
-  Menu, X, User, Users, Shield, Trophy, Sparkles, Crown, ShieldAlert, FileText, Headphones
+  Menu, X, User, Users, Shield, Trophy, Sparkles, Crown, ShieldAlert, FileText, Headphones, Video
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useRealTime } from '../../context/RealTimeContext';
@@ -201,6 +201,7 @@ const DashboardLayout = ({ children, role: propRole }) => {
         { icon: BookOpen, label: 'My Journey', path: '/dashboard/journey' },
         { icon: Award, label: 'Courses', path: '/dashboard/courses' },
         { icon: MessageSquare, label: 'Quiz', path: '/dashboard/quiz' },
+        { icon: Video, label: 'Videos', path: '/dashboard/videos' },
       ]},
       { category: 'ACHIEVEMENTS', items: [
         { icon: Crown, label: 'Premium Hub', path: '/dashboard/premium' },
@@ -239,6 +240,7 @@ const DashboardLayout = ({ children, role: propRole }) => {
         { icon: BookOpen, label: 'Manage Courses', path: '/admin/courses' },
         { icon: MessageSquare, label: 'Quiz Management', path: '/admin/quizzes' },
         { icon: Headphones, label: 'Support Tickets', path: '/support' },
+        { icon: Video, label: 'Manage Videos', path: '/admin/videos' },
       ]},
       { category: 'DATA & USERS', items: [
         { icon: Award, label: 'Leaderboard', path: '/admin/leaderboard' },

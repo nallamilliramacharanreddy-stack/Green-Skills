@@ -154,6 +154,7 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/videos', require('./routes/video'));
 app.use('/api/mentor-sessions', require('./routes/mentorSessionRoutes'));
 app.use('/api/certificates', require('./routes/certificateRoutes'));
+app.use('/api', require('./routes/videoManagementRoutes'));
 
 app.get('/', (req, res) => {
   res.send('Green Skills API is running...');
