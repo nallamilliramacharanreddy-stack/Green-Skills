@@ -279,11 +279,11 @@ const Courses = () => {
   const handleAiHelper = async (type) => {
     if (!selectedCourse || !selectedCourse.lessons?.[activeLessonIndex]) return;
     const lessonTitle = selectedCourse.lessons[activeLessonIndex].title;
-    
+
     setAiExpanded(true);
     setAiSelection(type);
     setAiLoading(true);
-    
+
     let text = "";
     if (type === 'questions') {
       text = `Please generate exactly 3 practice questions with options A, B, C, D for this lesson: "${lessonTitle}". Provide the correct answer and a brief explanation in markdown.`;
@@ -392,16 +392,26 @@ const Courses = () => {
   }, []);
 
   // Notes state
-  const [notes, setNotes] = useState(() => {
-    const saved = localStorage.getItem('course_notes');
-    try {
-      return saved && saved !== 'undefined' ? JSON.parse(saved) : {};
-    } catch (e) {
-      console.error("Failed to parse course_notes from localStorage:", e);
-      localStorage.removeItem('course_notes');
-      return {};
+  const [notes, setNotes] = useState({});
+
+  // Sync notes from database (user.notes)
+  useEffect(() => {
+    if (user?.notes) {
+      const notesMap = {};
+      user.notes.forEach(note => {
+        const courseId = note.title; // title is used as courseId
+        if (!notesMap[courseId]) {
+          notesMap[courseId] = [];
+        }
+        notesMap[courseId].push({
+          id: note._id,
+          text: note.content,
+          createdAt: note.createdAt
+        });
+      });
+      setNotes(notesMap);
     }
-  });
+  }, [user]);
   const [noteInput, setNoteInput] = useState('');
   const [editingNoteId, setEditingNoteId] = useState(null);
 
@@ -605,12 +615,12 @@ const Courses = () => {
     setEnrolling(true);
 
     try {
-      const res = await axios.post(`${API_URL}/courses/${courseId}/complete-lesson`, { 
-        userId: user._id, 
+      const res = await axios.post(`${API_URL}/courses/${courseId}/complete-lesson`, {
+        userId: user._id,
         lessonIndex,
-        watchedPercentage: 100 
+        watchedPercentage: 100
       });
-      
+
       updateUser(res.data.user);
       toast.success('Lesson completed successfully! Next lesson unlocked.');
       setLessonWatched(false); // Reset for the next video
@@ -779,7 +789,7 @@ const Courses = () => {
         <AnimatePresence>
           {selectedCourse && (
             <div className="fixed inset-0 z-[100] bg-[#FFFFFF] flex flex-col h-screen w-screen overflow-hidden text-slate-700 font-sans">
-              
+
               {/* 1. TOP NAVBAR */}
               <div className="h-16 flex items-center justify-between px-6 border-b border-slate-200 bg-white z-50 shrink-0">
                 <div className="flex items-center">
@@ -790,7 +800,7 @@ const Courses = () => {
                   <div className="w-px h-5 bg-slate-300 mx-4"></div>
                   <span className="text-xs font-semibold text-slate-800 line-clamp-1">{selectedCourse.title}</span>
                 </div>
-                
+
                 <div className="flex items-center gap-6">
                   {/* Target Goal Mock */}
                   <div className="hidden md:flex items-center gap-1.5 px-3 py-1 bg-slate-50 border border-slate-200 rounded-full text-xs text-slate-600 cursor-pointer hover:bg-slate-100 transition-colors">
@@ -798,14 +808,14 @@ const Courses = () => {
                     <span>Set up a weekly learning target</span>
                     <Star size={12} className="text-amber-400 fill-amber-400" />
                   </div>
-                  
+
                   {/* Icons */}
                   <button className="text-slate-500 hover:text-[#0056D2] transition-colors text-xs font-semibold" title="Help Centre">
                     ? Help
                   </button>
-                  
+
                   {/* Close Player */}
-                  <button 
+                  <button
                     onClick={() => {
                       setSelectedCourse(null);
                       setRightActiveTab(null);
@@ -819,7 +829,7 @@ const Courses = () => {
 
               {/* 2. THREE COLUMN LAYOUT */}
               <div className="flex-1 flex overflow-hidden w-full relative">
-                
+
                 {/* COLUMN 1: LEFT SIDEBAR (Syllabus/Lessons Checklist) */}
                 <div className="w-80 border-r border-slate-200 bg-white flex flex-col shrink-0 h-full overflow-y-auto">
                   <div className="p-5 border-b border-slate-200 bg-slate-50/50">
@@ -853,16 +863,15 @@ const Courses = () => {
                                 }
                                 setActiveLessonIndex(idx);
                               }}
-                              className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-3 ${
-                                active
+                              className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-3 ${active
                                   ? 'bg-[#E6EEFA] border-[#0056D2]/30 text-[#0056D2]'
                                   : locked ? 'bg-slate-50/50 border-slate-100 opacity-60' : 'bg-transparent border-transparent hover:bg-slate-50'
-                              }`}
+                                }`}
                             >
                               <div className="mt-0.5 shrink-0">
                                 {completed ? (
                                   <div className="w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center">
-                                    <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12"/></svg>
+                                    <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12" /></svg>
                                   </div>
                                 ) : active ? (
                                   <div className="w-4 h-4 rounded-full border-2 border-[#0056D2] flex items-center justify-center">
@@ -900,7 +909,7 @@ const Courses = () => {
                               <div className="mt-0.5 shrink-0">
                                 {completed ? (
                                   <div className="w-4 h-4 rounded-full bg-[#0056D2] text-white flex items-center justify-center">
-                                    <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12"/></svg>
+                                    <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12" /></svg>
                                   </div>
                                 ) : (
                                   <div className="w-4 h-4 rounded-full border-2 border-[#0056D2] flex items-center justify-center"></div>
@@ -921,9 +930,9 @@ const Courses = () => {
 
                 {/* COLUMN 2: CENTER MAIN CONTENT (Video Screen & Notes) */}
                 <div className="flex-1 flex flex-col h-full overflow-y-auto bg-white">
-                  
+
                   {/* Video Player Box */}
-                  <div 
+                  <div
                     ref={playerContainerRef}
                     onMouseMove={handleMouseMove}
                     className="w-full aspect-video bg-black flex items-center justify-center relative z-20 overflow-hidden group"
@@ -931,14 +940,14 @@ const Courses = () => {
                     {selectedCourse.lessons && selectedCourse.lessons[activeLessonIndex] ? (
                       (() => {
                         const lesson = selectedCourse.lessons[activeLessonIndex];
-                        
+
                         const isYoutubeUrl = (url) => {
                           return url && (url.includes('youtube.com') || url.includes('youtu.be'));
                         };
 
-                        const isYoutube = lesson.videoSource === 'youtube' || 
-                          isYoutubeUrl(lesson.youtubeLink) || 
-                          isYoutubeUrl(lesson.directVideoUrl) || 
+                        const isYoutube = lesson.videoSource === 'youtube' ||
+                          isYoutubeUrl(lesson.youtubeLink) ||
+                          isYoutubeUrl(lesson.directVideoUrl) ||
                           isYoutubeUrl(lesson.internalVideoUrl);
 
                         let internalUrl = '';
@@ -1005,7 +1014,7 @@ const Courses = () => {
 
                         return (
                           <div className="w-full h-full relative flex items-center justify-center">
-                            
+
                             {/* On-The-Fly Translation Loader Overlay */}
                             {isTranslatingOnFly && (
                               <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md z-[60] flex flex-col items-center justify-center p-8 text-center">
@@ -1091,10 +1100,9 @@ const Courses = () => {
 
                             {/* Coursera Stylized Controls Overlay */}
                             {activeVideoSrc && (
-                              <div 
-                                className={`absolute inset-x-0 bottom-0 bg-slate-900/90 flex flex-col justify-end p-4 z-30 transition-opacity duration-300 pointer-events-none ${
-                                  showControls ? 'opacity-100' : 'opacity-0'
-                                }`}
+                              <div
+                                className={`absolute inset-x-0 bottom-0 bg-slate-900/90 flex flex-col justify-end p-4 z-30 transition-opacity duration-300 pointer-events-none ${showControls ? 'opacity-100' : 'opacity-0'
+                                  }`}
                               >
                                 {/* Progress timeline track */}
                                 <div className="w-full flex items-center gap-3 mb-3 pointer-events-auto group/timeline">
@@ -1149,9 +1157,9 @@ const Courses = () => {
                                     </div>
 
                                     {/* Rewind 10s */}
-                                    <button 
-                                      onClick={handleRewind10} 
-                                      className="hover:text-[#0056D2] transition-colors flex items-center justify-center" 
+                                    <button
+                                      onClick={handleRewind10}
+                                      className="hover:text-[#0056D2] transition-colors flex items-center justify-center"
                                       title="Rewind 10s"
                                     >
                                       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1167,9 +1175,9 @@ const Courses = () => {
                                     </span>
 
                                     {/* Forward 10s */}
-                                    <button 
-                                      onClick={handleForward10} 
-                                      className="hover:text-[#0056D2] transition-colors flex items-center justify-center" 
+                                    <button
+                                      onClick={handleForward10}
+                                      className="hover:text-[#0056D2] transition-colors flex items-center justify-center"
                                       title="Forward 10s"
                                     >
                                       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1200,7 +1208,7 @@ const Courses = () => {
                                     </button>
 
                                     {/* CC Subtitles Button */}
-                                    <button 
+                                    <button
                                       onClick={() => setShowSubtitles(!showSubtitles)}
                                       className={`text-xs font-bold border px-1 rounded-sm transition-colors ${showSubtitles ? 'text-[#0056D2] border-[#0056D2] bg-white/10' : 'text-white border-white/40'}`}
                                       title="Toggle Subtitles"
@@ -1224,7 +1232,7 @@ const Courses = () => {
                                     </div>
 
                                     {/* Picture in Picture */}
-                                    <button 
+                                    <button
                                       onClick={async () => {
                                         try {
                                           if (document.pictureInPictureElement) {
@@ -1269,7 +1277,7 @@ const Courses = () => {
 
                   {/* Course Video details */}
                   <div className="p-6 md:p-8 space-y-6 max-w-4xl w-full mx-auto">
-                    
+
                     {/* Title and Save Note Row */}
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-100">
                       <div>
@@ -1277,21 +1285,20 @@ const Courses = () => {
                           UPCOMING LESSONS
                         </h2>
                       </div>
-                      
-                      <button 
+
+                      <button
                         onClick={() => handleCompleteLesson(selectedCourse._id, activeLessonIndex)}
                         disabled={(!lessonWatched && !isLessonCompleted(selectedCourse._id, activeLessonIndex)) || enrolling}
-                        className={`flex items-center gap-1.5 text-xs font-bold transition-all ${
-                          isLessonCompleted(selectedCourse._id, activeLessonIndex)
+                        className={`flex items-center gap-1.5 text-xs font-bold transition-all ${isLessonCompleted(selectedCourse._id, activeLessonIndex)
                             ? 'text-emerald-600 cursor-default'
                             : lessonWatched
                               ? 'text-[#0056D2] hover:underline'
                               : 'text-slate-400 cursor-not-allowed'
-                        }`}
+                          }`}
                       >
                         {isLessonCompleted(selectedCourse._id, activeLessonIndex) ? (
                           <>
-                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="4" className="text-emerald-600"><polyline points="20 6 9 17 4 12"/></svg>
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="4" className="text-emerald-600"><polyline points="20 6 9 17 4 12" /></svg>
                             Completed ✓
                           </>
                         ) : enrolling ? (
@@ -1315,27 +1322,26 @@ const Courses = () => {
                       <div className="text-left">
                         <h4 className="text-sm font-bold text-slate-800">Lesson Progression Status</h4>
                         <p className="text-xs text-slate-500">
-                          {isLessonCompleted(selectedCourse._id, activeLessonIndex) 
-                            ? "You have successfully finished this lesson!" 
-                            : lessonWatched 
-                              ? "Ready to finalize! Please click the button to mark as completed." 
+                          {isLessonCompleted(selectedCourse._id, activeLessonIndex)
+                            ? "You have successfully finished this lesson!"
+                            : lessonWatched
+                              ? "Ready to finalize! Please click the button to mark as completed."
                               : "Watch the video fully to enable progress synchronization."}
                         </p>
                       </div>
                       <button
                         onClick={() => handleCompleteLesson(selectedCourse._id, activeLessonIndex)}
                         disabled={(!lessonWatched && !isLessonCompleted(selectedCourse._id, activeLessonIndex)) || enrolling}
-                        className={`px-6 py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-2 ${
-                          isLessonCompleted(selectedCourse._id, activeLessonIndex)
+                        className={`px-6 py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-2 ${isLessonCompleted(selectedCourse._id, activeLessonIndex)
                             ? 'bg-emerald-100 text-emerald-700 border border-emerald-200 cursor-default'
                             : lessonWatched
                               ? 'bg-[#0056D2] hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20 active:scale-95'
                               : 'bg-slate-200 text-slate-400 cursor-not-allowed border border-transparent'
-                        }`}
+                          }`}
                       >
                         {isLessonCompleted(selectedCourse._id, activeLessonIndex) ? (
                           <>
-                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12"/></svg>
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12" /></svg>
                             Completed ✓
                           </>
                         ) : enrolling ? (
@@ -1369,18 +1375,17 @@ const Courses = () => {
                                 }
                                 setActiveLessonIndex(idx);
                               }}
-                              className={`p-4 rounded-2xl border text-left transition-all relative flex items-start gap-4 select-none ${
-                                active
+                              className={`p-4 rounded-2xl border text-left transition-all relative flex items-start gap-4 select-none ${active
                                   ? 'bg-[#E6EEFA] border-[#0056D2] text-[#0056D2] shadow-sm'
-                                  : locked 
-                                    ? 'bg-slate-50/50 border-slate-200 opacity-60 cursor-not-allowed' 
+                                  : locked
+                                    ? 'bg-slate-50/50 border-slate-200 opacity-60 cursor-not-allowed'
                                     : 'bg-white border-slate-200 hover:bg-slate-50 hover:border-slate-300 cursor-pointer'
-                              }`}
+                                }`}
                             >
                               <div className="mt-1 shrink-0">
                                 {completed ? (
                                   <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-sm">
-                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12"/></svg>
+                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12" /></svg>
                                   </div>
                                 ) : active ? (
                                   <div className="w-5 h-5 rounded-full bg-[#0056D2] text-white flex items-center justify-center shadow-sm">
@@ -1436,11 +1441,10 @@ const Courses = () => {
                                 <button
                                   onClick={() => handleCompleteTask(selectedCourse._id, idx)}
                                   disabled={isTaskCompleted(selectedCourse._id, idx)}
-                                  className={`px-4 py-2 rounded-lg font-bold text-[10px] tracking-wider transition-all ${
-                                    isTaskCompleted(selectedCourse._id, idx)
+                                  className={`px-4 py-2 rounded-lg font-bold text-[10px] tracking-wider transition-all ${isTaskCompleted(selectedCourse._id, idx)
                                       ? 'bg-slate-200 text-slate-400 cursor-not-allowed border border-transparent'
                                       : 'bg-[#0056D2] hover:bg-blue-700 text-white'
-                                  }`}
+                                    }`}
                                 >
                                   {isTaskCompleted(selectedCourse._id, idx) ? 'Task Submitted' : 'Submit Assignment'}
                                 </button>
@@ -1493,7 +1497,7 @@ const Courses = () => {
                                         videoRef.current.currentTime = line.start;
                                         setCurrentTime(line.start);
                                         if (isPlaying === false) {
-                                          videoRef.current.play().catch(e => {});
+                                          videoRef.current.play().catch(e => { });
                                         }
                                       }
                                     }}
@@ -1520,28 +1524,35 @@ const Courses = () => {
                             />
                             <div className="flex justify-end">
                               <button
-                                onClick={() => {
+                                onClick={async () => {
                                   if (!noteInput.trim()) return;
                                   const courseId = selectedCourse._id;
-                                  const courseNotes = notes[courseId] || [];
-                                  let newNotesMap;
-                                  if (editingNoteId) {
-                                    newNotesMap = {
-                                      ...notes,
-                                      [courseId]: courseNotes.map(n => n.id === editingNoteId ? { ...n, text: noteInput } : n)
-                                    };
-                                    setEditingNoteId(null);
-                                    toast.success('Note updated');
-                                  } else {
-                                    newNotesMap = {
-                                      ...notes,
-                                      [courseId]: [...courseNotes, { id: Date.now(), text: noteInput }]
-                                    };
-                                    toast.success('Note saved');
+                                  const token = sessionStorage.getItem('token');
+                                  const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+                                  try {
+                                    if (editingNoteId) {
+                                      const res = await axios.put(`${API_URL}/auth/users/${user._id}/notes/${editingNoteId}`, {
+                                        title: courseId,
+                                        content: noteInput
+                                      }, config);
+                                      const updatedUser = { ...user, notes: res.data.notes };
+                                      updateUser(updatedUser);
+                                      setEditingNoteId(null);
+                                      toast.success('Note updated');
+                                    } else {
+                                      const res = await axios.post(`${API_URL}/auth/users/${user._id}/notes`, {
+                                        title: courseId,
+                                        content: noteInput
+                                      }, config);
+                                      const updatedUser = { ...user, notes: res.data.notes };
+                                      updateUser(updatedUser);
+                                      toast.success('Note saved');
+                                    }
+                                    setNoteInput('');
+                                  } catch (e) {
+                                    console.error("Failed to save note:", e);
+                                    toast.error(e.response?.data?.message || "Failed to save note");
                                   }
-                                  setNotes(newNotesMap);
-                                  localStorage.setItem('course_notes', JSON.stringify(newNotesMap));
-                                  setNoteInput('');
                                 }}
                                 className="px-4 py-2 bg-[#0056D2] text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors"
                               >
@@ -1566,13 +1577,18 @@ const Courses = () => {
                                     <Edit2 size={10} />
                                   </button>
                                   <button
-                                    onClick={() => {
-                                      const courseId = selectedCourse._id;
-                                      const courseNotes = notes[courseId] || [];
-                                      const newNotesMap = { ...notes, [courseId]: courseNotes.filter(n => n.id !== note.id) };
-                                      setNotes(newNotesMap);
-                                      localStorage.setItem('course_notes', JSON.stringify(newNotesMap));
-                                      toast.success('Note deleted');
+                                    onClick={async () => {
+                                      const token = sessionStorage.getItem('token');
+                                      const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+                                      try {
+                                        const res = await axios.delete(`${API_URL}/auth/users/${user._id}/notes/${note.id}`, config);
+                                        const updatedUser = { ...user, notes: res.data.notes };
+                                        updateUser(updatedUser);
+                                        toast.success('Note deleted');
+                                      } catch (e) {
+                                        console.error("Failed to delete note:", e);
+                                        toast.error(e.response?.data?.message || "Failed to delete note");
+                                      }
                                     }}
                                     className="p-1 text-slate-400 hover:text-red-500 bg-white rounded border border-slate-200"
                                   >
@@ -1588,14 +1604,14 @@ const Courses = () => {
                           <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Available downloads</p>
                           <div className="p-3.5 border border-slate-200/80 rounded-xl flex items-center justify-between hover:bg-slate-50 cursor-pointer">
                             <div className="flex items-center gap-2">
-                              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-slate-400"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-slate-400"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /></svg>
                               <span className="text-xs font-bold text-slate-700">Course Syllabus.pdf</span>
                             </div>
                             <span className="text-[10px] text-slate-400 font-bold uppercase">1.2 MB</span>
                           </div>
                           <div className="p-3.5 border border-slate-200/80 rounded-xl flex items-center justify-between hover:bg-slate-50 cursor-pointer">
                             <div className="flex items-center gap-2">
-                              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-slate-400"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-slate-400"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /></svg>
                               <span className="text-xs font-bold text-slate-700">Cloud Setup Guide.pdf</span>
                             </div>
                             <span className="text-[10px] text-slate-400 font-bold uppercase">950 KB</span>
@@ -1608,27 +1624,27 @@ const Courses = () => {
 
                 {/* 3. VERTICAL ICON DRAWER COLUMN ON THE RIGHT */}
                 <div className="w-14 bg-white border-l border-slate-200 flex flex-col items-center py-4 gap-6 shrink-0 h-full">
-                  <button 
+                  <button
                     onClick={() => setRightActiveTab(rightActiveTab === 'transcript' ? null : 'transcript')}
                     className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all ${rightActiveTab === 'transcript' ? 'text-[#0056D2] bg-blue-50/50' : 'text-slate-400 hover:text-slate-600'}`}
                   >
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><line x1="4" y1="22" x2="4" y2="15" /></svg>
                     <span className="text-[8px] font-bold mt-1">Transcript</span>
                   </button>
-                  
-                  <button 
+
+                  <button
                     onClick={() => setRightActiveTab(rightActiveTab === 'notes' ? null : 'notes')}
                     className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all ${rightActiveTab === 'notes' ? 'text-[#0056D2] bg-blue-50/50' : 'text-slate-400 hover:text-slate-600'}`}
                   >
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
                     <span className="text-[8px] font-bold mt-1">Notes</span>
                   </button>
-                  
-                  <button 
+
+                  <button
                     onClick={() => setRightActiveTab(rightActiveTab === 'files' ? null : 'files')}
                     className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all ${rightActiveTab === 'files' ? 'text-[#0056D2] bg-blue-50/50' : 'text-slate-400 hover:text-slate-600'}`}
                   >
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>
                     <span className="text-[8px] font-bold mt-1">Files</span>
                   </button>
                 </div>

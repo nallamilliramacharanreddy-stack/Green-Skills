@@ -60,6 +60,7 @@ router.get('/users/:id/face-descriptor', getFaceDescriptor);
 
 // Notes Routes
 router.post('/users/:id/notes', addNote);
+router.put('/users/:id/notes/:noteId', editNote);
 router.delete('/users/:id/notes/:noteId', deleteNote);
 
 module.exports = router;
