@@ -161,14 +161,8 @@ const uploadToCloudinary = async (filePath, folder = 'green_skills', resourceTyp
       }
     }
 
-    // Clean up local file even in case of failure to keep local storage clean
-    if (fs.existsSync(filePath)) {
-      try {
-        fs.unlinkSync(filePath);
-      } catch (err) {
-        console.error(`[Cloudinary] Failed to delete local temp file on error fallback ${filePath}:`, err.message);
-      }
-    }
+    // Keep local file on failure to allow local streaming fallback
+    console.log(`[Cloudinary] Preserving local file at ${filePath} for local fallback streaming`);
     throw error;
   }
 };

@@ -80,11 +80,19 @@ router.post('/upload', uploadSingleVideo, async (req, res) => {
       file_size: req.file.size 
     });
   } catch (err) {
-    console.error('Cloudinary direct video upload failed:', err);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to upload video to Cloudinary', 
-      error: err.message 
+    console.warn('[Upload Endpoint] Cloudinary upload failed. Falling back to local video streaming:', err.message);
+    
+    // Since the file is already stored in videosDir, we can just use the local stream URL
+    const filename = path.basename(req.file.path);
+    const localUrl = `${req.protocol}://${req.get('host')}/api/videos/stream/${filename}`;
+    
+    console.log(`[Upload Endpoint] Local streaming URL generated: ${localUrl}`);
+    res.json({
+      success: true,
+      message: 'Video uploaded and saved to local server storage (Cloudinary fallback)',
+      directVideoUrl: localUrl,
+      videoPublicId: `local-${filename}`,
+      file_size: req.file.size
     });
   }
 });

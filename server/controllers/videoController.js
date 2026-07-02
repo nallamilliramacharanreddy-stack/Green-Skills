@@ -58,15 +58,65 @@ const uploadVideo = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('[VideoController] Upload video failed:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to upload video to Cloudinary or save to database', 
-      error: error.message 
-    });
+    console.warn('[VideoController] Cloudinary upload failed. Attempting local storage fallback:', error.message);
+    try {
+      const videosDir = path.resolve(__dirname, '../uploads/videos');
+      if (!fs.existsSync(videosDir)) {
+        fs.mkdirSync(videosDir, { recursive: true });
+      }
+      
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const filename = 'direct-' + uniqueSuffix + path.extname(req.file.originalname);
+      const newPath = path.join(videosDir, filename);
+      
+      // Move the file from temp dir to permanent uploads/videos dir
+      fs.copyFileSync(req.file.path, newPath);
+      try { fs.unlinkSync(req.file.path); } catch (e) {}
+      
+      // Override req.file.path to prevent the finally block from throwing an error trying to delete it
+      const tempPath = req.file.path;
+      req.file.path = null;
+      
+      const localUrl = `${req.protocol}://${req.get('host')}/api/videos/stream/${filename}`;
+      console.log(`[VideoController] Local fallback streaming URL generated: ${localUrl}`);
+
+      const video = new Video({
+        title: title.trim(),
+        description: description ? description.trim() : '',
+        cloudinaryPublicId: `local-${filename}`,
+        videoUrl: localUrl,
+        thumbnailUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=640', // default thumbnail
+        duration: 0,
+        fileSize: req.file.size,
+        uploadedBy: req.user.id
+      });
+
+      await video.save();
+      console.log('[VideoController] Local fallback video successfully saved to MongoDB:', video._id);
+
+      return res.status(201).json({
+        success: true,
+        message: 'Video uploaded and saved to local server storage (Cloudinary fallback)',
+        video: {
+          id: video._id,
+          title: video.title,
+          description: video.description,
+          videoUrl: video.videoUrl,
+          thumbnailUrl: video.thumbnailUrl,
+          duration: video.duration
+        }
+      });
+    } catch (fallbackError) {
+      console.error('[VideoController] Fallback to local storage also failed:', fallbackError);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to upload video to Cloudinary and local fallback failed', 
+        error: error.message 
+      });
+    }
   } finally {
     // Ensure local file is unlinked in all circumstances
-    if (req.file && fs.existsSync(req.file.path)) {
+    if (req.file && req.file.path && fs.existsSync(req.file.path)) {
       try { fs.unlinkSync(req.file.path); } catch (e) {}
     }
   }
