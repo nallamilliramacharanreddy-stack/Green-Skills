@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Minus, UserCheck, Shield, Lock,
   GraduationCap, Bell, Settings, MessageSquare,
   TrendingUp, FileText, Share2, Activity,
-  Upload, Video, Clock, Tag, Zap, Crown, Flame, ChevronLeft, ChevronRight, Building, ShieldAlert, Cpu
+  Upload, Video, Clock, Tag, Zap, Crown, Flame, ChevronLeft, ChevronRight, Building, ShieldAlert, Cpu, Globe
 } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
