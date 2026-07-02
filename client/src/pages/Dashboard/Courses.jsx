@@ -906,6 +906,13 @@ const Courses = () => {
                           else if (embedMatch) ytVideoId = embedMatch[1];
                         }
 
+                        let isYoutubeOnly = false;
+                        let ytEmbedUrl = '';
+                        if (!internalUrl && ytVideoId) {
+                          isYoutubeOnly = true;
+                          ytEmbedUrl = `https://www.youtube.com/embed/${ytVideoId}`;
+                        }
+
                         // Always play native via our proxy or internal URL
                         let sourceUrl = '';
                         if (internalUrl) {
@@ -933,7 +940,20 @@ const Courses = () => {
                               </div>
                             )}
 
-                            {activeVideoSrc ? (
+                            {isYoutubeOnly ? (
+                              <iframe
+                                className="w-full h-full aspect-video"
+                                src={`${ytEmbedUrl}?autoplay=1&enablejsapi=1&rel=0`}
+                                title={lesson.title}
+                                frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                                onLoad={() => {
+                                  // Mark as completed immediately or simulate completion status
+                                  setLessonWatched(true);
+                                }}
+                              ></iframe>
+                            ) : activeVideoSrc ? (
                               <video
                                 ref={videoRef}
                                 id={`video-${lesson._id}`}

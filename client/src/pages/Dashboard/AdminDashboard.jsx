@@ -922,6 +922,38 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
                               </button>
                             )}
                           </div>
+                          
+                          {/* YouTube Link Option */}
+                          <div className="relative flex items-center gap-2">
+                            <div className="relative flex-1">
+                              <Globe className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={12} />
+                              <input
+                                value={lesson.youtubeLink || ''}
+                                onChange={(e) => {
+                                  const newLessons = [...formData.lessons];
+                                  newLessons[idx].youtubeLink = e.target.value;
+                                  newLessons[idx].directVideoUrl = ''; // Clear direct video link
+                                  newLessons[idx].internalVideoUrl = '';
+                                  setFormData(p => ({ ...p, lessons: newLessons }));
+                                }}
+                                className="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-[10px] font-medium outline-none focus:border-primary transition-all placeholder:text-slate-300"
+                                placeholder="YouTube Link (Option)..."
+                              />
+                            </div>
+                            {lesson.youtubeLink && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newLessons = [...formData.lessons];
+                                  newLessons[idx].youtubeLink = '';
+                                  setFormData(p => ({ ...p, lessons: newLessons }));
+                                }}
+                                className="shrink-0 p-2 text-red-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            )}
+                          </div>
                         </div>
                       );
                     })}
