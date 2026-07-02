@@ -440,16 +440,19 @@ const Courses = () => {
   const openCoursePlayer = (course) => {
     if (!course) return;
 
+    // Use fresh course data from state to ensure admin changes like youtubeLink are reflected
+    const freshCourse = courses.find(c => c._id.toString() === course._id.toString()) || course;
+
     // Auto-select first uncompleted lesson
     let nextIndex = 0;
-    if (user && course.lessons) {
-      const targetId = course._id.toString();
+    if (user && freshCourse.lessons) {
+      const targetId = freshCourse._id.toString();
       const prog = user.progress?.courseProgress?.find(p => {
         const id = p.courseId?._id || p.courseId;
         return id && id.toString() === targetId;
       });
 
-      const firstUncompleted = course.lessons.findIndex((_, idx) => {
+      const firstUncompleted = freshCourse.lessons.findIndex((_, idx) => {
         return !(prog?.completedLessons?.includes(idx));
       });
 
@@ -459,7 +462,7 @@ const Courses = () => {
     }
 
     setActiveLessonIndex(nextIndex);
-    setSelectedCourse(course);
+    setSelectedCourse(freshCourse);
   };
 
   // Handle opening course from My Journey redirect
