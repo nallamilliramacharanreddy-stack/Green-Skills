@@ -52,7 +52,14 @@ const userSchema = new mongoose.Schema({
     courseProgress: [{
       courseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Course' },
       completedLessons: [Number], // array of lesson indices
-      completedTasks: [Number] // array of task indices
+      completedTasks: [Number],   // array of task indices
+      // Per-lesson granular tracking (watchedPercentage, completedAt, etc.)
+      lessonProgress: [{
+        lessonIndex: { type: Number, required: true },
+        watchedPercentage: { type: Number, default: 0 },
+        completed: { type: Boolean, default: false },
+        completedAt: { type: Date }
+      }]
     }]
   },
   suspensionRequest: {
@@ -61,7 +68,7 @@ const userSchema = new mongoose.Schema({
   },
   profilePicture: { type: String, default: '' },
   profilePicturePublicId: { type: String, default: '' },
-  
+
   // -- ADVANCED LEARNING ENHANCEMENTS & ANALYTICS --
   learningStreak: {
     current: { type: Number, default: 0 },
@@ -132,13 +139,13 @@ const userSchema = new mongoose.Schema({
 });
 
 // Hash password before saving
-userSchema.pre('save', async function() {
+userSchema.pre('save', async function () {
   if (!this.isModified('password')) return;
   this.password = await bcrypt.hash(this.password, 10);
 });
 
 // Compare password
-userSchema.methods.comparePassword = async function(candidatePassword) {
+userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 

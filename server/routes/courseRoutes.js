@@ -1,5 +1,5 @@
 const express = require('express');
-const { getAllCourses, getCourseById, createCourse, updateCourse, deleteCourse, generateQuizFromYoutube, generateAIAssessment, enrollInCourse, unenrollInCourse, completeCourse, completeLesson, completeTask } = require('../controllers/courseController');
+const { getAllCourses, getCourseById, createCourse, updateCourse, deleteCourse, generateQuizFromYoutube, generateAIAssessment, enrollInCourse, unenrollInCourse, completeCourse, completeLesson, completeTask, updateLessonProgress } = require('../controllers/courseController');
 const router = express.Router();
 
 router.get('/', getAllCourses);
@@ -15,5 +15,7 @@ router.post('/:id/unenroll', unenrollInCourse);
 router.post('/:id/complete', completeCourse);
 router.post('/:id/complete-lesson', completeLesson);
 router.post('/:id/complete-task', completeTask);
+router.post('/:id/lesson-progress', updateLessonProgress);
 
 module.exports = router;
+
