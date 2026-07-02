@@ -923,7 +923,7 @@ const Courses = () => {
                   <div
                     ref={playerContainerRef}
                     onMouseMove={handleMouseMove}
-                    className="w-full aspect-video max-h-[380px] mx-auto bg-black flex items-center justify-center relative z-20 overflow-hidden group"
+                    className="w-full aspect-video bg-black flex items-center justify-center relative z-20 overflow-hidden group"
                   >
                     {selectedCourse.lessons && selectedCourse.lessons[activeLessonIndex] ? (
                       (() => {
@@ -1515,8 +1515,29 @@ const Courses = () => {
                     )}
                   </div>
                 </div>
-                {/* Right Spacer to preserve exact layout width & ratio */}
-                <div className="w-14 bg-white shrink-0 h-full hidden lg:block" />
+                {/* 3. VERTICAL ICON DRAWER COLUMN ON THE RIGHT */}
+                <div className="w-14 bg-white border-l border-slate-200 flex flex-col items-center py-4 gap-6 shrink-0 h-full hidden lg:flex">
+                  <button
+                    className="flex flex-col items-center justify-center p-2 rounded-xl transition-all text-slate-400 hover:text-slate-600"
+                  >
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><line x1="4" y1="22" x2="4" y2="15" /></svg>
+                    <span className="text-[8px] font-bold mt-1 text-slate-400">Transcript</span>
+                  </button>
+
+                  <button
+                    className="flex flex-col items-center justify-center p-2 rounded-xl transition-all text-slate-400 hover:text-slate-600"
+                  >
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+                    <span className="text-[8px] font-bold mt-1 text-slate-400">Notes</span>
+                  </button>
+
+                  <button
+                    className="flex flex-col items-center justify-center p-2 rounded-xl transition-all text-slate-400 hover:text-slate-600"
+                  >
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>
+                    <span className="text-[8px] font-bold mt-1 text-slate-400">Files</span>
+                  </button>
+                </div>
 
 
 
