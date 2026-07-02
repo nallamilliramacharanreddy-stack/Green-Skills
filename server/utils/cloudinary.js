@@ -187,28 +187,66 @@ const deleteFromCloudinary = async (publicId, resourceType = 'auto') => {
 
 /**
  * Uploads a video file directly to Cloudinary using the required options.
+ * Falls back to unsigned upload preset if signed credentials are disabled or invalid.
+ * Throws only if BOTH signed and unsigned uploads fail.
  */
 const uploadVideoDirect = async (filePath) => {
-  const options = {
+  const cloudName = (process.env.CLOUDINARY_CLOUD_NAME || '').trim();
+  const apiKey    = (process.env.CLOUDINARY_API_KEY    || '').trim();
+  const apiSecret = (process.env.CLOUDINARY_API_SECRET || '').trim();
+
+  const hasCredentials = cloudName && apiKey && apiSecret;
+
+  // ── 1. Try signed upload ──────────────────────────────────────────────────
+  if (hasCredentials) {
+    console.log('[Cloudinary] Attempting signed video upload...');
+    const options = {
+      resource_type: 'video',
+      folder: 'videos',
+      overwrite: false,
+      unique_filename: true,
+      invalidate: true,
+      chunk_size: 6000000 // 6 MB chunks
+    };
+
+    try {
+      const result = await new Promise((resolve, reject) => {
+        cloudinary.uploader.upload_large(filePath, options, (err, res) => {
+          if (err) reject(err);
+          else resolve(res);
+        });
+      });
+      console.log('[Cloudinary] Signed video upload succeeded.');
+      return result;
+    } catch (signedError) {
+      console.warn('[Cloudinary] Signed upload failed:', signedError.message);
+      console.warn('[Cloudinary] Trying unsigned upload preset as fallback...');
+    }
+  }
+
+  // ── 2. Try unsigned upload preset ────────────────────────────────────────
+  console.log('[Cloudinary] Attempting unsigned upload with preset "green_skills_preset"...');
+  const unsignedOptions = {
+    upload_preset: 'green_skills_preset',
     resource_type: 'video',
     folder: 'videos',
-    overwrite: false,
-    unique_filename: true,
-    invalidate: true,
-    chunk_size: 6000000 // 6MB chunks
+    chunk_size: 6000000
   };
 
   try {
     const result = await new Promise((resolve, reject) => {
-      cloudinary.uploader.upload_large(filePath, options, (err, res) => {
+      cloudinary.uploader.upload_large(filePath, unsignedOptions, (err, res) => {
         if (err) reject(err);
         else resolve(res);
       });
     });
+    console.log('[Cloudinary] Unsigned video upload succeeded.');
     return result;
-  } catch (error) {
-    console.error('[Cloudinary] Video upload failed:', error.message);
-    throw error;
+  } catch (unsignedError) {
+    console.error('[Cloudinary] Both signed and unsigned uploads failed.');
+    console.error('[Cloudinary] Final error:', unsignedError.message);
+    // Preserve the local file so the caller can serve it locally
+    throw unsignedError;
   }
 };
 

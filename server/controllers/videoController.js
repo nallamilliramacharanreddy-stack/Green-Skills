@@ -1,34 +1,38 @@
 const Video = require('../models/Video');
 const { uploadVideoDirect, deleteFromCloudinary } = require('../utils/cloudinary');
 const fs = require('fs');
+const path = require('path');
 
 // POST /api/admin/videos/upload
 const uploadVideo = async (req, res) => {
-  console.log('[VideoController] Incoming request originalUrl:', req.originalUrl);
+  console.log('[VideoController] Incoming request:', req.originalUrl);
   console.log('[VideoController] req.body:', req.body);
   console.log('[VideoController] req.file:', req.file);
 
   if (!req.file) {
-    console.error('[VideoController] No video file provided');
     return res.status(400).json({ success: false, message: 'No video file provided' });
   }
 
   const { title, description } = req.body;
   if (!title || !title.trim()) {
-    console.error('[VideoController] Title is required but missing or empty');
-    // Delete temp file before returning
-    if (fs.existsSync(req.file.path)) {
-      try { fs.unlinkSync(req.file.path); } catch (e) {}
-    }
+    try { fs.unlinkSync(req.file.path); } catch (e) {}
     return res.status(400).json({ success: false, message: 'Title is required' });
   }
 
-  try {
-    console.log(`[VideoController] Uploading video "${title}" to Cloudinary...`);
-    const uploadRes = await uploadVideoDirect(req.file.path);
-    console.log('[VideoController] Cloudinary upload success:', uploadRes);
+  // Capture file info before any async operation modifies req.file
+  const tempFilePath  = req.file.path;
+  const fileSize      = req.file.size;
+  const origName      = req.file.originalname || 'video.mp4';
 
-    // Generate thumbnail URL by changing extension to .jpg (Cloudinary feature)
+  // ── Try Cloudinary first ───────────────────────────────────────────────────
+  try {
+    console.log(`[VideoController] Uploading "${title}" to Cloudinary...`);
+    const uploadRes = await uploadVideoDirect(tempFilePath);
+    console.log('[VideoController] Cloudinary upload success:', uploadRes.secure_url);
+
+    // Clean up temp file
+    try { fs.unlinkSync(tempFilePath); } catch (e) {}
+
     const thumbnailUrl = uploadRes.secure_url.replace(/\.[^/.]+$/, '.jpg');
 
     const video = new Video({
@@ -38,87 +42,74 @@ const uploadVideo = async (req, res) => {
       videoUrl: uploadRes.secure_url,
       thumbnailUrl,
       duration: Math.round(uploadRes.duration || 0),
-      fileSize: uploadRes.bytes || req.file.size,
+      fileSize: uploadRes.bytes || fileSize,
       uploadedBy: req.user.id
     });
-
     await video.save();
-    console.log('[VideoController] Video successfully saved to MongoDB:', video._id);
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: 'Video uploaded and saved successfully',
       video: {
-        id: video._id,
-        title: video.title,
-        description: video.description,
-        videoUrl: video.videoUrl,
-        thumbnailUrl: video.thumbnailUrl,
-        duration: video.duration
+        id: video._id, title: video.title, description: video.description,
+        videoUrl: video.videoUrl, thumbnailUrl: video.thumbnailUrl, duration: video.duration
       }
     });
-  } catch (error) {
-    console.warn('[VideoController] Cloudinary upload failed. Attempting local storage fallback:', error.message);
-    try {
-      const videosDir = path.resolve(__dirname, '../uploads/videos');
-      if (!fs.existsSync(videosDir)) {
-        fs.mkdirSync(videosDir, { recursive: true });
+  } catch (cloudinaryError) {
+    console.warn('[VideoController] Cloudinary failed:', cloudinaryError.message);
+    console.warn('[VideoController] Falling back to local server storage...');
+  }
+
+  // ── Local streaming fallback ───────────────────────────────────────────────
+  try {
+    const videosDir = path.resolve(__dirname, '../uploads/videos');
+    if (!fs.existsSync(videosDir)) {
+      fs.mkdirSync(videosDir, { recursive: true });
+    }
+
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext          = path.extname(origName).toLowerCase() || '.mp4';
+    const filename     = 'direct-' + uniqueSuffix + ext;
+    const destPath     = path.join(videosDir, filename);
+
+    fs.copyFileSync(tempFilePath, destPath);
+    try { fs.unlinkSync(tempFilePath); } catch (e) {}
+
+    // Build a URL that works on both local dev and production (Render)
+    const baseUrl  = process.env.RENDER_EXTERNAL_URL || `${req.protocol}://${req.get('host')}`;
+    const localUrl = `${baseUrl}/api/videos/stream/${filename}`;
+    console.log(`[VideoController] Local streaming URL: ${localUrl}`);
+
+    const video = new Video({
+      title: title.trim(),
+      description: description ? description.trim() : '',
+      cloudinaryPublicId: `local-${filename}`,
+      videoUrl: localUrl,
+      thumbnailUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=640',
+      duration: 0,
+      fileSize,
+      uploadedBy: req.user.id
+    });
+    await video.save();
+    console.log('[VideoController] Local fallback video saved to DB:', video._id);
+
+    return res.status(201).json({
+      success: true,
+      message: 'Video saved to local server storage (Cloudinary unavailable)',
+      video: {
+        id: video._id, title: video.title, description: video.description,
+        videoUrl: video.videoUrl, thumbnailUrl: video.thumbnailUrl, duration: video.duration
       }
-      
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      const filename = 'direct-' + uniqueSuffix + path.extname(req.file.originalname);
-      const newPath = path.join(videosDir, filename);
-      
-      // Move the file from temp dir to permanent uploads/videos dir
-      fs.copyFileSync(req.file.path, newPath);
-      try { fs.unlinkSync(req.file.path); } catch (e) {}
-      
-      // Override req.file.path to prevent the finally block from throwing an error trying to delete it
-      const tempPath = req.file.path;
-      req.file.path = null;
-      
-      const localUrl = `${req.protocol}://${req.get('host')}/api/videos/stream/${filename}`;
-      console.log(`[VideoController] Local fallback streaming URL generated: ${localUrl}`);
-
-      const video = new Video({
-        title: title.trim(),
-        description: description ? description.trim() : '',
-        cloudinaryPublicId: `local-${filename}`,
-        videoUrl: localUrl,
-        thumbnailUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=640', // default thumbnail
-        duration: 0,
-        fileSize: req.file.size,
-        uploadedBy: req.user.id
-      });
-
-      await video.save();
-      console.log('[VideoController] Local fallback video successfully saved to MongoDB:', video._id);
-
-      return res.status(201).json({
-        success: true,
-        message: 'Video uploaded and saved to local server storage (Cloudinary fallback)',
-        video: {
-          id: video._id,
-          title: video.title,
-          description: video.description,
-          videoUrl: video.videoUrl,
-          thumbnailUrl: video.thumbnailUrl,
-          duration: video.duration
-        }
-      });
-    } catch (fallbackError) {
-      console.error('[VideoController] Fallback to local storage also failed:', fallbackError);
-      res.status(500).json({ 
-        success: false, 
-        message: 'Failed to upload video to Cloudinary and local fallback failed', 
-        error: error.message 
-      });
-    }
-  } finally {
-    // Ensure local file is unlinked in all circumstances
-    if (req.file && req.file.path && fs.existsSync(req.file.path)) {
-      try { fs.unlinkSync(req.file.path); } catch (e) {}
-    }
+    });
+  } catch (localError) {
+    console.error('[VideoController] Local fallback also failed:', localError.message);
+    // Clean up temp file if still present
+    try { if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath); } catch (e) {}
+    return res.status(500).json({
+      success: false,
+      message: 'Video upload failed. Both Cloudinary and local storage are unavailable.',
+      error: localError.message
+    });
   }
 };
 

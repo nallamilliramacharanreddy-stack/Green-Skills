@@ -1007,9 +1007,9 @@ const Courses = () => {
                                   console.error("Video streaming failed, loading backup video:", e);
                                   const fallbackUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
                                   if (e.target.src !== fallbackUrl) {
-                                    const isDirectUpload = activeVideoSrc.includes('/stream/direct-') || activeVideoSrc.includes('/uploads/');
+                                    const isDirectUpload = activeVideoSrc.includes('/stream/') || activeVideoSrc.includes('/uploads/');
                                     if (isDirectUpload) {
-                                      toast.error("Direct video file not found on the server (it may have been deleted due to a server restart). Please re-upload the video.");
+                                      toast.error("Local file missing (server may have restarted). Falling back to backup video...");
                                     } else {
                                       toast.error("YouTube stream rate-limited on server. Loading backup MP4...");
                                     }
