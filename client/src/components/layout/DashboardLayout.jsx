@@ -5,7 +5,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { 
   Home, BookOpen, Award, Briefcase, 
   Settings, LogOut, MessageSquare, Bell,
-  Menu, X, User, Users, Shield, Trophy, Sparkles, Crown, ShieldAlert, FileText, Headphones, Video, ClipboardList
+  Menu, X, User, Users, Shield, Trophy, Sparkles, Crown, ShieldAlert, FileText, Headphones, Video, ClipboardList, MapPin
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useRealTime } from '../../context/RealTimeContext';
