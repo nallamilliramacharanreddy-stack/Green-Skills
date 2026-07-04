@@ -60,9 +60,50 @@ const getNearbyJobs = async (req, res) => {
       pipeline.push({ $sort: { matchScore: -1, calculatedDistance: 1 } });
     }
 
-    const jobs = await Job.aggregate(pipeline);
+    let jobs;
+    try {
+      jobs = await Job.aggregate(pipeline);
+    } catch (aggError) {
+      console.warn('GeoNear aggregation failed (likely missing 2dsphere index). Falling back to JS calculation.', aggError);
+      
+      // Fallback: fetch all jobs and calculate in JS
+      const allJobs = await Job.find().lean();
+      
+      jobs = allJobs.map(job => {
+        if (!job.geoLocation || !job.geoLocation.coordinates || job.geoLocation.coordinates.length < 2) {
+          return null;
+        }
+        
+        const jobLng = job.geoLocation.coordinates[0];
+        const jobLat = job.geoLocation.coordinates[1];
+        
+        // Haversine formula
+        const R = 6371e3; // metres
+        const φ1 = latitude * Math.PI/180;
+        const φ2 = jobLat * Math.PI/180;
+        const Δφ = (jobLat-latitude) * Math.PI/180;
+        const Δλ = (jobLng-longitude) * Math.PI/180;
+
+        const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                  Math.cos(φ1) * Math.cos(φ2) *
+                  Math.sin(Δλ/2) * Math.sin(Δλ/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const distance = R * c;
+
+        if (distance > distanceLimit) return null;
+        
+        return {
+          ...job,
+          calculatedDistance: distance,
+          matchScore: 0 // Simplistic fallback
+        };
+      }).filter(Boolean);
+
+      // Sort by distance
+      jobs.sort((a, b) => a.calculatedDistance - b.calculatedDistance);
+    }
     
-    // Populate postedBy after aggregation
+    // Populate postedBy after aggregation or fallback
     await Job.populate(jobs, { path: 'postedBy', select: 'name email profilePicture' });
 
     res.json(jobs);
