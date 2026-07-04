@@ -101,6 +101,7 @@ function App() {
             <Route path="/guide" element={<ProtectedRoute><GuideDashboard /></ProtectedRoute>} />
             <Route path="/guide/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/employer" element={<ProtectedRoute allowedRoles={['employer']}><EmployerDashboard /></ProtectedRoute>} />
+            <Route path="/employer/tracker" element={<ProtectedRoute allowedRoles={['employer']}><EmployerDashboard /></ProtectedRoute>} />
             <Route path="/employer/jobs" element={<ProtectedRoute allowedRoles={['employer']}><EmployerDashboard /></ProtectedRoute>} />
             <Route path="/employer/exams" element={<ProtectedRoute allowedRoles={['employer']}><EmployerDashboard /></ProtectedRoute>} />
             <Route path="/employer/candidates" element={<ProtectedRoute allowedRoles={['employer']}><EmployerDashboard /></ProtectedRoute>} />

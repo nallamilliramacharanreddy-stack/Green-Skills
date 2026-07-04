@@ -218,6 +218,7 @@ const DashboardLayout = ({ children, role: propRole }) => {
         { icon: Trophy, label: 'Leaderboard', path: '/employer' },
       ]},
       { category: 'RECRUITMENT', items: [
+        { icon: MapPin, label: 'Geo Tracker', path: '/employer/tracker' },
         { icon: Briefcase, label: 'Job Details', path: '/employer/jobs' },
         { icon: MessageSquare, label: 'Applications', path: '/employer/applications' },
         { icon: Users, label: 'Shortlisted Users', path: '/employer/shortlisted' },

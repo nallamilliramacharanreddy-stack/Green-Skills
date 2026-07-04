@@ -21,6 +21,7 @@ import CandidateList from './CandidateList';
 import ApplicationsList from './ApplicationsList';
 import HiredUsers from './HiredUsers';
 import ShortlistedUsers from './ShortlistedUsers';
+import LiveGeoTracker from '../../components/LiveGeoTracker';
 
 const EmployerDashboard = () => {
   const { user } = useAuth();
@@ -797,7 +798,15 @@ const EmployerDashboard = () => {
       )}
 
       {activeTab === 'jobs' && <JobManagement />}
-
+      {activeTab === 'tracker' && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <LiveGeoTracker />
+        </motion.div>
+      )}
       {activeTab === 'exams' && <ExamCreator />}
 
       {activeTab === 'candidates' && <CandidateList />}
