@@ -27,6 +27,7 @@ const ticketRoutes = require('./routes/ticketRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const contestRoutes = require('./routes/contestRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
+const geoRoutes = require('./routes/geo');
 
 const http = require('http');
 
@@ -168,6 +169,7 @@ app.use('/api/certificates', require('./routes/certificateRoutes'));
 app.use('/api', require('./routes/videoManagementRoutes'));
 app.use('/api/assignments', require('./routes/assignmentRoutes'));
 app.use('/api/lessons', require('./routes/lessonRoutes'));
+app.use('/api/geo', geoRoutes);
 
 app.get('/', (req, res) => {
   res.send('Green Skills API is running...');

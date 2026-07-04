@@ -9,6 +9,69 @@ const getAllJobs = async (req, res) => {
   }
 };
 
+const getNearbyJobs = async (req, res) => {
+  try {
+    const { lat, lng, maxDistance = 50000, skills = '' } = req.query; // maxDistance in meters (default 50km)
+    
+    if (!lat || !lng) {
+      return res.status(400).json({ message: 'Latitude and longitude are required' });
+    }
+
+    const latitude = parseFloat(lat);
+    const longitude = parseFloat(lng);
+    const distanceLimit = parseInt(maxDistance, 10);
+    const skillsArray = skills ? skills.split(',').map(s => s.trim().toLowerCase()) : [];
+
+    const pipeline = [
+      {
+        $geoNear: {
+          near: {
+            type: 'Point',
+            coordinates: [longitude, latitude]
+          },
+          distanceField: 'calculatedDistance',
+          maxDistance: distanceLimit,
+          spherical: true
+        }
+      }
+    ];
+
+    // If skills are provided, calculate a matching score
+    if (skillsArray.length > 0) {
+      pipeline.push({
+        $addFields: {
+          matchScore: {
+            $size: {
+              $setIntersection: [
+                {
+                  $map: {
+                    input: { $ifNull: ['$requiredSkills', []] },
+                    as: 'skill',
+                    in: { $toLower: '$$skill' }
+                  }
+                },
+                skillsArray
+              ]
+            }
+          }
+        }
+      });
+      // Sort by matchScore descending, then by distance ascending
+      pipeline.push({ $sort: { matchScore: -1, calculatedDistance: 1 } });
+    }
+
+    const jobs = await Job.aggregate(pipeline);
+    
+    // Populate postedBy after aggregation
+    await Job.populate(jobs, { path: 'postedBy', select: 'name email profilePicture' });
+
+    res.json(jobs);
+  } catch (error) {
+    console.error('Error in getNearbyJobs:', error);
+    res.status(500).json({ message: 'Error fetching nearby jobs' });
+  }
+};
+
 const createJob = async (req, res) => {
   try {
     const job = new Job({
@@ -73,4 +136,4 @@ const deleteJob = async (req, res) => {
   }
 };
 
-module.exports = { getAllJobs, createJob, approveJob, getEmployerJobs, getJobById, updateJob, deleteJob };
+module.exports = { getAllJobs, getNearbyJobs, createJob, approveJob, getEmployerJobs, getJobById, updateJob, deleteJob };

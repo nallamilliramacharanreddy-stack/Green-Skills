@@ -10,6 +10,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useStreak } from '../../context/StreakContext';
 import { API_URL, API_BASE_URL } from '../../utils/api';
+import LiveGeoTracker from '../../components/LiveGeoTracker';
 
 const StudentDashboard = () => {
   const { user } = useAuth();
@@ -496,6 +497,16 @@ const StudentDashboard = () => {
           </div>
         </div>
       </div>
+        
+        {/* Live Geo Job Tracker Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="relative z-10 mx-8 mb-12"
+        >
+          <LiveGeoTracker userSkills={user?.skillsInterested?.join(', ')} />
+        </motion.div>
     </DashboardLayout>
   );
 };

@@ -128,8 +128,19 @@ const userSchema = new mongoose.Schema({
     jobType: { type: String, enum: ['remote', 'onsite', 'hybrid'] }
   },
 
+  // -- LIVE GEO TRACKING --
+  liveLocation: {
+    type: { type: String, enum: ['Point'], default: 'Point' },
+    coordinates: { type: [Number], default: [0, 0] } // [longitude, latitude]
+  },
+  lastLocationUpdatedAt: { type: Date },
+  locationTrackingEnabled: { type: Boolean, default: false },
+
   createdAt: { type: Date, default: Date.now }
 });
+
+// Create geospatial index
+userSchema.index({ liveLocation: '2dsphere' });
 
 // Hash password before saving
 userSchema.pre('save', async function() {

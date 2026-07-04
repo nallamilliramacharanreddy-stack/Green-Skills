@@ -1,7 +1,8 @@
 const express = require('express');
-const { getAllJobs, createJob, approveJob, getEmployerJobs, getJobById, updateJob, deleteJob } = require('../controllers/jobController');
+const { getAllJobs, getNearbyJobs, createJob, approveJob, getEmployerJobs, getJobById, updateJob, deleteJob } = require('../controllers/jobController');
 const router = express.Router();
 
+router.get('/nearby', getNearbyJobs); // Make sure this is above /:id
 router.get('/', getAllJobs);
 router.get('/:id', getJobById);
 router.get('/employer/:employerId', getEmployerJobs);

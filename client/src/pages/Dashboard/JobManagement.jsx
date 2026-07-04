@@ -9,6 +9,7 @@ import {
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import { API_URL } from '../../utils/api';
+import geoAPI from '../../api/geoAPI';
 
 const JobManagement = () => {
   const { user } = useAuth();
@@ -24,7 +25,8 @@ const JobManagement = () => {
     requirements: '',
     requiredSkills: '',
     companyName: user?.companyName || user?.name || '',
-    image: ''
+    image: '',
+    pincode: ''
   });
 
   const fetchJobs = async () => {
@@ -68,7 +70,8 @@ const JobManagement = () => {
       requirements: Array.isArray(job.requirements) ? job.requirements.join(', ') : (job.requirements || ''),
       requiredSkills: Array.isArray(job.requiredSkills) ? job.requiredSkills.join(', ') : (job.requiredSkills || ''),
       companyName: job.companyName || '',
-      image: job.image || ''
+      image: job.image || '',
+      pincode: job.pincode || ''
     });
     setShowForm(true);
   };
@@ -87,9 +90,33 @@ const JobManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      setLoading(true);
+      toast.loading('Geocoding location and processing...', { id: 'jobSubmit' });
+      
+      let geoData = {};
+      if (formData.pincode) {
+        try {
+          const loc = await geoAPI.geocodePincode(formData.pincode);
+          geoData = {
+            geoLocation: {
+              type: 'Point',
+              coordinates: [loc.longitude, loc.latitude]
+            },
+            city: loc.city,
+            state: loc.state,
+            country: loc.country,
+            locationSource: 'pincode',
+            lastVerifiedAt: new Date()
+          };
+        } catch (err) {
+          console.warn('Geocoding failed, proceeding without geo coordinates');
+        }
+      }
+
       const existingJob = editingJobId ? jobs.find(j => j._id === editingJobId) : null;
       const formattedData = {
         ...formData,
+        ...geoData,
         requirements: typeof formData.requirements === 'string' ? formData.requirements.split(',').map(r => r.trim()).filter(Boolean) : formData.requirements,
         requiredSkills: typeof formData.requiredSkills === 'string' ? formData.requiredSkills.split(',').map(s => s.trim()).filter(Boolean) : formData.requiredSkills,
         postedBy: user._id,
@@ -98,10 +125,10 @@ const JobManagement = () => {
 
       if (editingJobId) {
         await axios.put(`${API_URL}/jobs/${editingJobId}`, formattedData);
-        toast.success('Job updated successfully');
+        toast.success('Job updated successfully', { id: 'jobSubmit' });
       } else {
         await axios.post(`${API_URL}/jobs`, formattedData);
-        toast.success('Job Recruitment Notice Sent for Admin Approval');
+        toast.success('Job Recruitment Notice Sent for Admin Approval', { id: 'jobSubmit' });
       }
 
       setShowForm(false);
@@ -111,10 +138,12 @@ const JobManagement = () => {
         title: '', description: '', location: '', 
         salary: '', requirements: '', requiredSkills: '',
         companyName: user?.companyName || user?.name || '',
-        image: ''
+        image: '', pincode: ''
       });
     } catch (error) {
-      toast.error(editingJobId ? 'Failed to update job' : 'Failed to create job');
+      toast.error(editingJobId ? 'Failed to update job' : 'Failed to create job', { id: 'jobSubmit' });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -133,7 +162,7 @@ const JobManagement = () => {
                 title: '', description: '', location: '', 
                 salary: '', requirements: '', requiredSkills: '',
                 companyName: user?.companyName || user?.name || '',
-                image: ''
+                image: '', pincode: ''
               });
             }
             setShowForm(!showForm);
@@ -167,14 +196,25 @@ const JobManagement = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1">Location</label>
+                  <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1">Location Address</label>
                   <input 
                     type="text"
                     required
                     className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-primary/50 transition-all font-medium"
-                    placeholder="e.g. Remote / Bangalore"
+                    placeholder="e.g. 123 Tech Park, Bangalore"
                     value={formData.location}
                     onChange={(e) => setFormData({...formData, location: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1">Pincode (For GeoTracking)</label>
+                  <input 
+                    type="text"
+                    required
+                    className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-primary/50 transition-all font-medium"
+                    placeholder="e.g. 560001"
+                    value={formData.pincode}
+                    onChange={(e) => setFormData({...formData, pincode: e.target.value})}
                   />
                 </div>
                 <div className="space-y-2">
