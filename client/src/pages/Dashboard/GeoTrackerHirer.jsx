@@ -79,12 +79,11 @@ export default function GeoTrackerHirer() {
     }
     setPinLoading(true);
     try {
-      const response = await axios.get(`https://nominatim.openstreetmap.org/search?q=${formData.pincode}+India&format=json`);
+      // 1. Try Nominatim directly with Pincode
+      let response = await axios.get(`https://nominatim.openstreetmap.org/search?q=${formData.pincode}+India&format=json`);
       if (response.data && response.data.length > 0) {
         const data = response.data[0];
         setPosition({ lat: parseFloat(data.lat), lng: parseFloat(data.lon) });
-        
-        // Try to parse city and state from display_name
         const parts = data.display_name.split(',').map(p => p.trim());
         setFormData(prev => ({
           ...prev,
@@ -93,12 +92,54 @@ export default function GeoTrackerHirer() {
           address: data.display_name
         }));
         toast.success('Pincode verified successfully');
-      } else {
-        toast.error('Could not find location for this pincode. Try Map or Live location.');
+        setPinLoading(false);
+        return;
       }
+      
+      // 2. Fallback: Get District/State from Indian Postal API
+      const postRes = await axios.get(`https://api.postalpincode.in/pincode/${formData.pincode}`);
+      if (postRes.data && postRes.data[0] && postRes.data[0].Status === 'Success') {
+        const postOffice = postRes.data[0].PostOffice[0];
+        const { District, State, Name } = postOffice;
+        
+        // 3. Get Lat/Lng of that District from Nominatim
+        const fallbackRes = await axios.get(`https://nominatim.openstreetmap.org/search?q=${Name},+${District},+${State}+India&format=json`);
+        
+        if (fallbackRes.data && fallbackRes.data.length > 0) {
+            const data = fallbackRes.data[0];
+            setPosition({ lat: parseFloat(data.lat), lng: parseFloat(data.lon) });
+            setFormData(prev => ({
+                ...prev,
+                city: District || Name,
+                state: State,
+                address: `${Name}, ${District}, ${State}, India - ${formData.pincode}`
+            }));
+            toast.success('Pincode verified via regional fallback');
+            setPinLoading(false);
+            return;
+        } else {
+            // Try one more time with just District and State
+            const districtRes = await axios.get(`https://nominatim.openstreetmap.org/search?q=${District},+${State}+India&format=json`);
+            if (districtRes.data && districtRes.data.length > 0) {
+                const data = districtRes.data[0];
+                setPosition({ lat: parseFloat(data.lat), lng: parseFloat(data.lon) });
+                setFormData(prev => ({
+                    ...prev,
+                    city: District,
+                    state: State,
+                    address: `${District}, ${State}, India - ${formData.pincode}`
+                }));
+                toast.success('Pincode verified via district fallback');
+                setPinLoading(false);
+                return;
+            }
+        }
+      }
+
+      toast.error('Could not find location for this pincode. Try Map or Live location.');
     } catch (err) {
       console.error('Geocoding error', err);
-      toast.error('Error fetching location');
+      toast.error('Error fetching location details. Try another method.');
     } finally {
       setPinLoading(false);
     }
