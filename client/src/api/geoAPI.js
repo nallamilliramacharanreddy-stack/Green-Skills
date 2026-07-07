@@ -17,7 +17,7 @@ const geoAPI = {
 
   updateLocation: async (latitude, longitude, trackingEnabled = true) => {
     try {
-      const response = await axios.post(`${API_URL}/geo/location`, 
+      const response = await axios.post(`${API_URL}/geo/location`,
         { latitude, longitude, trackingEnabled },
         { withCredentials: true }
       );
@@ -27,7 +27,7 @@ const geoAPI = {
       throw error;
     }
   },
-  
+
   getNearbyJobs: async (latitude, longitude, maxDistance = 50000, skills = '') => {
     try {
       const response = await axios.get(`${API_URL}/jobs/nearby`, {

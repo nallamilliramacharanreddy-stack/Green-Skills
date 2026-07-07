@@ -206,6 +206,7 @@ const DashboardLayout = ({ children, role: propRole }) => {
         { icon: Crown, label: 'Premium Hub', path: '/dashboard/premium' },
       ]},
       { category: 'CAREERS', items: [
+        { icon: MapPin, label: 'Nearby Jobs', path: '/dashboard/nearby-jobs' },
         { icon: Briefcase, label: 'Apply Jobs', path: '/dashboard/hiring' },
         { icon: FileText, label: 'Hiring Exams', path: '/dashboard/hiring-exams' },
       ]},

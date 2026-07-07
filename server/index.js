@@ -170,6 +170,7 @@ app.use('/api', require('./routes/videoManagementRoutes'));
 app.use('/api/assignments', require('./routes/assignmentRoutes'));
 app.use('/api/lessons', require('./routes/lessonRoutes'));
 app.use('/api/geo', geoRoutes);
+app.use('/api/geo-tracker', require('./routes/geoTrackerRoutes'));
 
 app.get('/', (req, res) => {
   res.send('Green Skills API is running...');

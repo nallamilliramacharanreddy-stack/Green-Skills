@@ -33,7 +33,8 @@ const SupportDashboard = React.lazy(() => import('./pages/Dashboard/SupportDashb
 const SuperAdmin = React.lazy(() => import('./pages/Dashboard/SuperAdmin'));
 const PremiumEcosystem = React.lazy(() => import('./pages/Premium/PremiumEcosystem'));
 const Videos = React.lazy(() => import('./pages/Dashboard/Videos'));
-
+const GeoTrackerHirer = React.lazy(() => import('./pages/Dashboard/GeoTrackerHirer'));
+const NearbyJobs = React.lazy(() => import('./pages/Dashboard/NearbyJobs'));
 import { ProtectedRoute, PublicRoute } from './components/auth/AuthRoutes';
 import Navbar from './components/layout/Navbar';
 import FloatingAI from './components/layout/FloatingAI';
@@ -71,8 +72,9 @@ function App() {
             {/* Protected Student Routes */}
             <Route path="/dashboard" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
             <Route path="/dashboard/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />
-            <Route path="/dashboard/hiring" element={<ProtectedRoute><Hiring /></ProtectedRoute>} />
+            <Route path="/dashboard/hiring" element={<ProtectedRoute allowedRoles={['student']}><Hiring /></ProtectedRoute>} />
             <Route path="/dashboard/hiring-exams" element={<ProtectedRoute><HiringExams /></ProtectedRoute>} />
+            <Route path="/dashboard/nearby-jobs" element={<ProtectedRoute allowedRoles={['student']}><NearbyJobs /></ProtectedRoute>} />
             <Route path="/dashboard/quiz" element={<ProtectedRoute allowedRoles={['student']}><Quiz /></ProtectedRoute>} />
             <Route path="/dashboard/ai" element={<ProtectedRoute><AIChat /></ProtectedRoute>} />
             <Route path="/dashboard/journey" element={<ProtectedRoute><MyJourney /></ProtectedRoute>} />
@@ -101,7 +103,7 @@ function App() {
             <Route path="/guide" element={<ProtectedRoute><GuideDashboard /></ProtectedRoute>} />
             <Route path="/guide/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/employer" element={<ProtectedRoute allowedRoles={['employer']}><EmployerDashboard /></ProtectedRoute>} />
-            <Route path="/employer/tracker" element={<ProtectedRoute allowedRoles={['employer']}><EmployerDashboard /></ProtectedRoute>} />
+            <Route path="/employer/tracker" element={<ProtectedRoute allowedRoles={['employer']}><GeoTrackerHirer /></ProtectedRoute>} />
             <Route path="/employer/jobs" element={<ProtectedRoute allowedRoles={['employer']}><EmployerDashboard /></ProtectedRoute>} />
             <Route path="/employer/exams" element={<ProtectedRoute allowedRoles={['employer']}><EmployerDashboard /></ProtectedRoute>} />
             <Route path="/employer/candidates" element={<ProtectedRoute allowedRoles={['employer']}><EmployerDashboard /></ProtectedRoute>} />

@@ -49,9 +49,9 @@ const AdminProctoring = () => {
 
   if (selectedResult) {
     return (
-      <ReportViewer 
-        result={selectedResult} 
-        onBack={() => setSelectedResult(null)} 
+      <ReportViewer
+        result={selectedResult}
+        onBack={() => setSelectedResult(null)}
         onInvalidate={(updatedResult) => {
           setResults(prev => prev.map(r => r._id === updatedResult._id ? updatedResult : r));
           setSelectedResult(updatedResult);
@@ -68,8 +68,8 @@ const AdminProctoring = () => {
           <p className="text-slate-500 font-medium">Monitor, audit, and analyze assessment integrity.</p>
         </div>
         <div className="relative w-72">
-           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-           <input type="text" placeholder="Search candidates..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:border-slate-900 transition-all font-bold text-sm" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <input type="text" placeholder="Search candidates..." value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:border-slate-900 transition-all font-bold text-sm" />
         </div>
       </div>
 
@@ -91,7 +91,7 @@ const AdminProctoring = () => {
                 <td className="p-6">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center font-black uppercase text-xs">
-                       {res.user?.name?.charAt(0)}
+                      {res.user?.name?.charAt(0)}
                     </div>
                     <div>
                       <p className="font-bold text-slate-900 text-sm">{res.user?.name || 'Unknown Candidate'}</p>
@@ -131,13 +131,12 @@ const AdminProctoring = () => {
                 </td>
                 <td className="p-6">
                   <div className="flex flex-col gap-1">
-                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider w-max ${
-                      res.submissionType === 'Auto Submission Due To Violations' || res.autoSubmitReason
-                        ? 'bg-red-50 text-red-600 border border-red-100'
-                        : res.submissionType === 'Time Expired Submission'
+                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider w-max ${res.submissionType === 'Auto Submission Due To Violations' || res.autoSubmitReason
+                      ? 'bg-red-50 text-red-600 border border-red-100'
+                      : res.submissionType === 'Time Expired Submission'
                         ? 'bg-amber-50 text-amber-600 border border-amber-100'
                         : 'bg-emerald-50 text-emerald-600 border border-emerald-100'
-                    }`}>
+                      }`}>
                       {res.submissionType || (res.autoSubmitReason ? 'Auto Submission' : 'Normal Submission')}
                     </span>
                     <span className="text-[9px] text-slate-400 font-semibold font-mono">
@@ -189,7 +188,7 @@ const ReportViewer = ({ result, onBack, onInvalidate }) => {
       if (isPlaying) {
         videoRef.current.pause();
       } else {
-        videoRef.current.play().catch(() => {});
+        videoRef.current.play().catch(() => { });
       }
       setIsPlaying(!isPlaying);
     }
@@ -202,12 +201,12 @@ const ReportViewer = ({ result, onBack, onInvalidate }) => {
   };
 
   const trust = result.trustScore !== undefined ? result.trustScore : 100;
-  
+
   // Calculate integrity level
   let integrityLevel = "Excellent";
   let integrityColor = "text-emerald-500 border-emerald-200 bg-emerald-50";
   let integrityProgressColor = "stroke-emerald-500";
-  
+
   if (trust < 50) {
     integrityLevel = "Severe Violation";
     integrityColor = "text-red-600 border-red-200 bg-red-50";
@@ -272,8 +271,8 @@ const ReportViewer = ({ result, onBack, onInvalidate }) => {
             Score Invalidated
           </span>
         ) : (
-          <button 
-            onClick={handleRemoveScore} 
+          <button
+            onClick={handleRemoveScore}
             disabled={invalidating}
             className="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg shadow-red-500/10 hover:shadow-red-500/25 disabled:opacity-50"
           >
@@ -284,7 +283,7 @@ const ReportViewer = ({ result, onBack, onInvalidate }) => {
 
       {/* Auto Submit Violation Banner */}
       {result.autoSubmitReason && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-red-50 border-2 border-red-200 p-6 rounded-[2rem] flex items-start gap-5 shadow-lg shadow-red-500/5"
@@ -295,7 +294,7 @@ const ReportViewer = ({ result, onBack, onInvalidate }) => {
           <div>
             <h3 className="text-lg font-black text-red-950 uppercase tracking-tight">Assessment Automatically Terminated</h3>
             <p className="text-red-700 text-sm font-medium mt-1 leading-relaxed">
-              This assessment was automatically submitted because of a critical integrity violation: 
+              This assessment was automatically submitted because of a critical integrity violation:
               <strong className="bg-red-200/50 px-2 py-0.5 rounded text-red-950 ml-1 font-bold italic">"{result.autoSubmitReason}"</strong>.
             </p>
           </div>
@@ -305,9 +304,9 @@ const ReportViewer = ({ result, onBack, onInvalidate }) => {
       {/* Candidate Header */}
       <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex items-center gap-6">
-          <img 
-            src={result.user?.profilePicture ? (result.user.profilePicture.startsWith('http') ? result.user.profilePicture : `${API_BASE_URL}${result.user.profilePicture}`) : `https://ui-avatars.com/api/?name=${result.user?.name || 'Candidate'}&background=0f172a&color=fff&size=128`} 
-            className="w-24 h-24 rounded-3xl object-cover border border-slate-100 shadow" 
+          <img
+            src={result.user?.profilePicture ? (result.user.profilePicture.startsWith('http') ? result.user.profilePicture : `${API_BASE_URL}${result.user.profilePicture}`) : `https://ui-avatars.com/api/?name=${result.user?.name || 'Candidate'}&background=0f172a&color=fff&size=128`}
+            className="w-24 h-24 rounded-3xl object-cover border border-slate-100 shadow"
           />
           <div>
             <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter italic">{result.user?.name || 'Unknown Candidate'}</h2>
@@ -380,11 +379,10 @@ const ReportViewer = ({ result, onBack, onInvalidate }) => {
         </div>
         <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xl text-center">
           <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1">Auto Submitted</span>
-          <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${
-            result.submissionType === 'Auto Submission Due To Violations' || result.autoSubmitReason
-              ? 'bg-red-50 text-red-600 border border-red-100'
-              : 'bg-emerald-50 text-emerald-600 border border-emerald-100'
-          }`}>
+          <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${result.submissionType === 'Auto Submission Due To Violations' || result.autoSubmitReason
+            ? 'bg-red-50 text-red-600 border border-red-100'
+            : 'bg-emerald-50 text-emerald-600 border border-emerald-100'
+            }`}>
             {result.submissionType === 'Auto Submission Due To Violations' || result.autoSubmitReason ? 'YES' : 'NO'}
           </span>
         </div>
@@ -398,10 +396,10 @@ const ReportViewer = ({ result, onBack, onInvalidate }) => {
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
+
         {/* Left Side: Video + Logs */}
         <div className="lg:col-span-2 space-y-8">
-          
+
           {/* Webcam stream visualizer */}
           <div className="bg-slate-900 p-6 rounded-[2.5rem] border border-slate-800 shadow-2xl relative overflow-hidden">
             <div className="flex justify-between items-center mb-4">
@@ -412,19 +410,19 @@ const ReportViewer = ({ result, onBack, onInvalidate }) => {
                 Audited Feed
               </span>
             </div>
-            
+
             <div className="aspect-video bg-black rounded-3xl relative overflow-hidden border border-slate-800 shadow-inner group">
-              <video 
+              <video
                 ref={videoRef}
-                src={getVideoUrl(result.videoRecordingUrl) || "https://assets.mixkit.co/videos/preview/mixkit-woman-working-on-laptop-43091-large.mp4"} 
-                className="w-full h-full object-cover opacity-85" 
+                src={getVideoUrl(result.videoRecordingUrl) || "https://assets.mixkit.co/videos/preview/mixkit-woman-working-on-laptop-43091-large.mp4"}
+                className="w-full h-full object-cover opacity-85"
                 playsInline
                 loop
                 muted
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
               />
-              
+
               {!result.videoRecordingUrl && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/75 z-10 p-4 text-center">
                   <Video size={36} className="text-slate-400 mb-2 animate-pulse" />
@@ -434,7 +432,7 @@ const ReportViewer = ({ result, onBack, onInvalidate }) => {
                   </p>
                 </div>
               )}
-              
+
               {/* Bounding box simulation overlays */}
               <div className="absolute top-1/4 left-1/3 w-1/3 h-1/2 border-2 border-emerald-500 rounded flex flex-col justify-between p-1 pointer-events-none">
                 <span className="bg-emerald-500 text-white font-black text-[9px] px-1 py-0.5 rounded w-max">
@@ -462,21 +460,21 @@ const ReportViewer = ({ result, onBack, onInvalidate }) => {
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button 
-                    onClick={() => handleSkip(-10)} 
+                  <button
+                    onClick={() => handleSkip(-10)}
                     className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors"
                     title="Rewind 10s"
                   >
                     <Rewind size={16} />
                   </button>
-                  <button 
+                  <button
                     onClick={handlePlayPause}
                     className="p-2 bg-white text-slate-950 rounded-xl hover:scale-105 transition-transform flex items-center justify-center"
                     title={isPlaying ? 'Pause' : 'Play'}
                   >
                     {isPlaying ? <Pause size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" />}
                   </button>
-                  <button 
+                  <button
                     onClick={() => handleSkip(10)}
                     className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors"
                     title="Forward 10s"
@@ -520,20 +518,20 @@ const ReportViewer = ({ result, onBack, onInvalidate }) => {
                 <Activity className="text-primary" /> Integrity Activity Logs
               </h3>
               <div className="flex bg-slate-100 p-1 rounded-xl">
-                <button 
-                  onClick={() => setActiveTab('screen')} 
+                <button
+                  onClick={() => setActiveTab('screen')}
                   className={`px-4 py-2 text-xs font-black uppercase rounded-lg transition-all ${activeTab === 'screen' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-500 hover:text-slate-950'}`}
                 >
                   Screen & Window
                 </button>
-                <button 
-                  onClick={() => setActiveTab('audio')} 
+                <button
+                  onClick={() => setActiveTab('audio')}
                   className={`px-4 py-2 text-xs font-black uppercase rounded-lg transition-all ${activeTab === 'audio' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-500 hover:text-slate-950'}`}
                 >
                   Audio & Voice
                 </button>
-                <button 
-                  onClick={() => setActiveTab('objects')} 
+                <button
+                  onClick={() => setActiveTab('objects')}
                   className={`px-4 py-2 text-xs font-black uppercase rounded-lg transition-all ${activeTab === 'objects' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-500 hover:text-slate-950'}`}
                 >
                   Object & AI
@@ -556,11 +554,10 @@ const ReportViewer = ({ result, onBack, onInvalidate }) => {
                       <td className="p-4 text-xs font-mono font-bold text-slate-500">{log.timestamp}</td>
                       <td className="p-4 text-xs font-bold text-slate-800">{log.event}</td>
                       <td className="p-4">
-                        <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded ${
-                          log.severity === 'critical' ? 'bg-red-100 text-red-700' :
+                        <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded ${log.severity === 'critical' ? 'bg-red-100 text-red-700' :
                           log.severity === 'high' ? 'bg-orange-100 text-orange-700' :
-                          log.severity === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'
-                        }`}>{log.severity}</span>
+                            log.severity === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'
+                          }`}>{log.severity}</span>
                       </td>
                     </tr>
                   ))}
@@ -569,11 +566,10 @@ const ReportViewer = ({ result, onBack, onInvalidate }) => {
                       <td className="p-4 text-xs font-mono font-bold text-slate-500">{log.timestamp}</td>
                       <td className="p-4 text-xs font-bold text-slate-800">{log.event}</td>
                       <td className="p-4">
-                        <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded ${
-                          log.severity === 'critical' ? 'bg-red-100 text-red-700' :
+                        <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded ${log.severity === 'critical' ? 'bg-red-100 text-red-700' :
                           log.severity === 'high' ? 'bg-orange-100 text-orange-700' :
-                          log.severity === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'
-                        }`}>{log.severity}</span>
+                            log.severity === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'
+                          }`}>{log.severity}</span>
                       </td>
                     </tr>
                   ))}
@@ -582,11 +578,10 @@ const ReportViewer = ({ result, onBack, onInvalidate }) => {
                       <td className="p-4 text-xs font-mono font-bold text-slate-500">{log.timestamp}</td>
                       <td className="p-4 text-xs font-bold text-slate-800">{log.event}</td>
                       <td className="p-4">
-                        <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded ${
-                          log.severity === 'critical' ? 'bg-red-100 text-red-700' :
+                        <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded ${log.severity === 'critical' ? 'bg-red-100 text-red-700' :
                           log.severity === 'high' ? 'bg-orange-100 text-orange-700' :
-                          log.severity === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'
-                        }`}>{log.severity}</span>
+                            log.severity === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'
+                          }`}>{log.severity}</span>
                       </td>
                     </tr>
                   ))}
@@ -606,10 +601,10 @@ const ReportViewer = ({ result, onBack, onInvalidate }) => {
                   <div className="flex justify-between items-start mb-4">
                     <h4 className="font-bold text-slate-900 text-sm">Question {ans.questionIndex + 1}</h4>
                     <div className="flex gap-3">
-                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1"><Clock size={12}/> {ans.timeTaken}s</span>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1"><Clock size={12} /> {ans.timeTaken}s</span>
                       {ans.violationCountDuringQuestion > 0 && (
                         <span className="text-[10px] font-black text-red-500 uppercase flex items-center gap-1 bg-red-100 px-2 py-0.5 rounded">
-                          <AlertTriangle size={12}/> {ans.violationCountDuringQuestion} Flags
+                          <AlertTriangle size={12} /> {ans.violationCountDuringQuestion} Flags
                         </span>
                       )}
                     </div>
@@ -632,36 +627,36 @@ const ReportViewer = ({ result, onBack, onInvalidate }) => {
 
         {/* Right Side: Trust scoring engine + Timeline */}
         <div className="space-y-8 col-span-1">
-          
+
           {/* Trust score engine circular gauge */}
           <div className="bg-slate-900 p-8 rounded-[2.5rem] border border-slate-800 shadow-2xl flex flex-col items-center justify-center text-center text-white relative overflow-hidden">
             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 w-full text-left">
               Integrity Profile
             </h3>
-            
+
             {/* SVG Circular Gauge */}
             <div className="relative w-48 h-48 flex items-center justify-center mb-6">
               <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
                 {/* Background Track */}
-                <circle 
-                  cx="60" 
-                  cy="60" 
-                  r="50" 
-                  className="stroke-slate-800" 
-                  strokeWidth="8" 
-                  fill="transparent" 
+                <circle
+                  cx="60"
+                  cy="60"
+                  r="50"
+                  className="stroke-slate-800"
+                  strokeWidth="8"
+                  fill="transparent"
                 />
                 {/* Progress Circle */}
-                <circle 
-                  cx="60" 
-                  cy="60" 
-                  r="50" 
-                  className={`transition-all duration-1000 ${integrityProgressColor}`} 
-                  strokeWidth="10" 
-                  strokeDasharray="314.16" 
-                  strokeDashoffset={strokeDashoffset} 
-                  strokeLinecap="round" 
-                  fill="transparent" 
+                <circle
+                  cx="60"
+                  cy="60"
+                  r="50"
+                  className={`transition-all duration-1000 ${integrityProgressColor}`}
+                  strokeWidth="10"
+                  strokeDasharray="314.16"
+                  strokeDashoffset={strokeDashoffset}
+                  strokeLinecap="round"
+                  fill="transparent"
                 />
               </svg>
               {/* Score Value Overlay */}
@@ -675,7 +670,7 @@ const ReportViewer = ({ result, onBack, onInvalidate }) => {
               <div className={`px-4 py-2 border rounded-2xl font-black text-xs uppercase tracking-wider mb-6 ${integrityColor}`}>
                 {integrityLevel}
               </div>
-              
+
               <div className="space-y-3 font-medium text-xs">
                 <div className="flex justify-between p-3 bg-white/5 rounded-xl border border-white/5">
                   <span className="text-slate-400">Total Warnings</span>
@@ -701,20 +696,18 @@ const ReportViewer = ({ result, onBack, onInvalidate }) => {
                 {result.violationTimeline.map((v, i) => (
                   <div key={i} className="relative group">
                     {/* Circle Indicator */}
-                    <div className={`absolute -left-[31px] top-1.5 w-4.5 h-4.5 rounded-full border-4 border-white shadow ${
-                      v.severity === 'critical' ? 'bg-red-500' :
+                    <div className={`absolute -left-[31px] top-1.5 w-4.5 h-4.5 rounded-full border-4 border-white shadow ${v.severity === 'critical' ? 'bg-red-500' :
                       v.severity === 'high' ? 'bg-orange-500' :
-                      v.severity === 'medium' ? 'bg-amber-500' : 'bg-slate-400'
-                    }`}></div>
-                    
+                        v.severity === 'medium' ? 'bg-amber-500' : 'bg-slate-400'
+                      }`}></div>
+
                     <div className="space-y-1">
                       <div className="flex justify-between items-center">
                         <span className="text-[9px] font-bold text-slate-400 font-mono">{v.timestamp}</span>
-                        <span className={`px-1.5 py-0.5 text-[7px] font-black uppercase tracking-wider rounded ${
-                          v.severity === 'critical' ? 'bg-red-50 text-red-600 border border-red-100' :
+                        <span className={`px-1.5 py-0.5 text-[7px] font-black uppercase tracking-wider rounded ${v.severity === 'critical' ? 'bg-red-50 text-red-600 border border-red-100' :
                           v.severity === 'high' ? 'bg-orange-50 text-orange-600 border border-orange-100' :
-                          v.severity === 'medium' ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-slate-50 text-slate-600 border border-slate-100'
-                        }`}>{v.severity}</span>
+                            v.severity === 'medium' ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-slate-50 text-slate-600 border border-slate-100'
+                          }`}>{v.severity}</span>
                       </div>
                       <p className="text-xs font-black text-slate-900 leading-tight">{v.type}</p>
                       <p className="text-[11px] font-medium text-slate-500 leading-normal">{v.description}</p>
