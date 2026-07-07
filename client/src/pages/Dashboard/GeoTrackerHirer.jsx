@@ -78,68 +78,88 @@ export default function GeoTrackerHirer() {
       return;
     }
     setPinLoading(true);
+
     try {
-      // 1. Try Nominatim directly with Pincode
-      let response = await axios.get(`https://nominatim.openstreetmap.org/search?q=${formData.pincode}+India&format=json`);
-      if (response.data && response.data.length > 0) {
-        const data = response.data[0];
-        setPosition({ lat: parseFloat(data.lat), lng: parseFloat(data.lon) });
-        const parts = data.display_name.split(',').map(p => p.trim());
-        setFormData(prev => ({
-          ...prev,
-          city: parts.length > 2 ? parts[0] : prev.city,
-          state: parts.length > 1 ? parts[parts.length - 2] : prev.state,
-          address: data.display_name
-        }));
-        toast.success('Pincode verified successfully');
-        setPinLoading(false);
-        return;
+      // 1. Try Nominatim directly
+      try {
+        let response = await axios.get(`https://nominatim.openstreetmap.org/search?q=${formData.pincode}+India&format=json`);
+        if (response.data && response.data.length > 0) {
+          const data = response.data[0];
+          setPosition({ lat: parseFloat(data.lat), lng: parseFloat(data.lon) });
+          const parts = data.display_name.split(',').map(p => p.trim());
+          setFormData(prev => ({
+            ...prev,
+            city: parts.length > 2 ? parts[0] : prev.city,
+            state: parts.length > 1 ? parts[parts.length - 2] : prev.state,
+            address: data.display_name
+          }));
+          toast.success('Pincode verified successfully');
+          setPinLoading(false);
+          return;
+        }
+      } catch (e) {
+        console.warn('Nominatim direct failed:', e);
+      }
+
+      // 2. Try Photon API directly
+      try {
+        let response = await axios.get(`https://photon.komoot.io/api/?q=${formData.pincode}+India`);
+        if (response.data && response.data.features && response.data.features.length > 0) {
+          const data = response.data.features[0];
+          setPosition({ lat: parseFloat(data.geometry.coordinates[1]), lng: parseFloat(data.geometry.coordinates[0]) });
+          setFormData(prev => ({
+            ...prev,
+            city: data.properties.district || data.properties.city || data.properties.county || prev.city,
+            state: data.properties.state || prev.state,
+            address: `${data.properties.name || ''}, ${data.properties.district || ''}, ${data.properties.state || ''} - ${formData.pincode}`
+          }));
+          toast.success('Pincode verified successfully');
+          setPinLoading(false);
+          return;
+        }
+      } catch (e) {
+        console.warn('Photon API failed:', e);
       }
       
-      // 2. Fallback: Get District/State from Indian Postal API
-      const postRes = await axios.get(`https://api.postalpincode.in/pincode/${formData.pincode}`);
-      if (postRes.data && postRes.data[0] && postRes.data[0].Status === 'Success') {
-        const postOffice = postRes.data[0].PostOffice[0];
+      // 3. Fallback: Get District/State from Indian Postal API
+      let postOffice = null;
+      try {
+        const postRes = await axios.get(`https://api.postalpincode.in/pincode/${formData.pincode}`);
+        if (postRes.data && postRes.data[0] && postRes.data[0].Status === 'Success') {
+          postOffice = postRes.data[0].PostOffice[0];
+        }
+      } catch (e) {
+        console.warn('Postal API failed:', e);
+      }
+
+      if (postOffice) {
         const { District, State, Name } = postOffice;
         
-        // 3. Get Lat/Lng of that District from Nominatim
-        const fallbackRes = await axios.get(`https://nominatim.openstreetmap.org/search?q=${Name},+${District},+${State}+India&format=json`);
-        
-        if (fallbackRes.data && fallbackRes.data.length > 0) {
-            const data = fallbackRes.data[0];
-            setPosition({ lat: parseFloat(data.lat), lng: parseFloat(data.lon) });
-            setFormData(prev => ({
-                ...prev,
-                city: District || Name,
-                state: State,
-                address: `${Name}, ${District}, ${State}, India - ${formData.pincode}`
-            }));
-            toast.success('Pincode verified via regional fallback');
-            setPinLoading(false);
-            return;
-        } else {
-            // Try one more time with just District and State
-            const districtRes = await axios.get(`https://nominatim.openstreetmap.org/search?q=${District},+${State}+India&format=json`);
-            if (districtRes.data && districtRes.data.length > 0) {
-                const data = districtRes.data[0];
-                setPosition({ lat: parseFloat(data.lat), lng: parseFloat(data.lon) });
-                setFormData(prev => ({
-                    ...prev,
-                    city: District,
-                    state: State,
-                    address: `${District}, ${State}, India - ${formData.pincode}`
-                }));
-                toast.success('Pincode verified via district fallback');
-                setPinLoading(false);
-                return;
-            }
+        // 4. Get Lat/Lng of that District from Photon
+        try {
+          const fallbackRes = await axios.get(`https://photon.komoot.io/api/?q=${Name},+${District},+${State}+India`);
+          if (fallbackRes.data && fallbackRes.data.features && fallbackRes.data.features.length > 0) {
+              const data = fallbackRes.data.features[0];
+              setPosition({ lat: parseFloat(data.geometry.coordinates[1]), lng: parseFloat(data.geometry.coordinates[0]) });
+              setFormData(prev => ({
+                  ...prev,
+                  city: District || Name,
+                  state: State,
+                  address: `${Name}, ${District}, ${State}, India - ${formData.pincode}`
+              }));
+              toast.success('Pincode verified via regional fallback');
+              setPinLoading(false);
+              return;
+          }
+        } catch (e) {
+          console.warn('Fallback geocoding failed:', e);
         }
       }
 
-      toast.error('Could not find location for this pincode. Try Map or Live location.');
+      toast.error('Could not auto-detect location. Please use Map or Live Location.');
     } catch (err) {
-      console.error('Geocoding error', err);
-      toast.error('Error fetching location details. Try another method.');
+      console.error('Critical Geocoding error', err);
+      toast.error('Error connecting to location services. Try Map or Live Location.');
     } finally {
       setPinLoading(false);
     }
