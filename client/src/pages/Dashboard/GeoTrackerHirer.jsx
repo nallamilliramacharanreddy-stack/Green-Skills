@@ -8,6 +8,7 @@ import 'leaflet/dist/leaflet.css';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Search, Plus, X, Briefcase, DollarSign, Navigation, Building, Trash2, Power } from 'lucide-react';
 import toast from 'react-hot-toast';
+import DashboardLayout from '../../components/layout/DashboardLayout';
 
 // Fix Leaflet's default icon path issues
 delete L.Icon.Default.prototype._getIconUrl;
@@ -179,7 +180,8 @@ export default function GeoTrackerHirer() {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-6">
+    <DashboardLayout role="employer">
+      <div className="w-full max-w-7xl mx-auto space-y-6">
       <div className="flex justify-between items-center bg-white/70 backdrop-blur-xl p-6 rounded-2xl border border-white/20 shadow-xl">
         <div>
           <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
@@ -398,5 +400,6 @@ export default function GeoTrackerHirer() {
         )}
       </AnimatePresence>
     </div>
+    </DashboardLayout>
   );
 }

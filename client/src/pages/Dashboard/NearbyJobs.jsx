@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import DashboardLayout from '../../components/layout/DashboardLayout';
 
 // Fix Leaflet's default icon path issues
 delete L.Icon.Default.prototype._getIconUrl;
@@ -257,7 +258,8 @@ export default function NearbyJobs() {
   );
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-6">
+    <DashboardLayout role="student">
+      <div className="w-full max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between bg-white/70 backdrop-blur-xl p-6 rounded-2xl border border-white/20 shadow-xl gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
@@ -312,5 +314,6 @@ export default function NearbyJobs() {
         )}
       </AnimatePresence>
     </div>
+    </DashboardLayout>
   );
 }

@@ -1,0 +1,13 @@
+node_modules/
+.git/
+.env*
+scratch/
+scratch_img/
+server/
+*.zip
+*.tar.gz
+*.tgz
+*.mp4
+*.mp3
+path.txt
+concat.txt
