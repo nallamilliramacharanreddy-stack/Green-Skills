@@ -482,7 +482,7 @@ export default function GeoTrackerHirer() {
                             <LocationMarker position={position} setPosition={setPosition} />
                           </MapContainer>
                         </div>
-                        <p className="text-xs text-slate-500 italic">Click on the map to drop a pin.</p>
+                        <p className="text-xs text-slate-500 ">Click on the map to drop a pin.</p>
                         <div>
                           <label className="block text-xs font-bold text-slate-700 mb-1">Complete Address</label>
                           <textarea required name="address" value={formData.address} onChange={handleInputChange} rows={2} className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#00E5FF] outline-none" placeholder="Provide complete address for this pin location"></textarea>

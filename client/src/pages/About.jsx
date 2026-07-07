@@ -42,8 +42,8 @@ const About = () => {
                 transition={{ duration: 0.5 }}
                 className="text-center"
               >
-                <h1 className="text-6xl md:text-8xl font-black text-white tracking-tighter uppercase italic">
-                  Our <span className="text-primary not-italic">Mission</span>
+                <h1 className="text-6xl md:text-8xl font-black text-white tracking-tighter uppercase ">
+                  Our <span className="text-primary ">Mission</span>
                 </h1>
                 <p className="text-slate-300 text-xl md:text-2xl max-w-3xl mx-auto font-medium leading-relaxed mt-6">
                   Empowering Rural Communities Through Digital Green Skill Development and Job Matching.

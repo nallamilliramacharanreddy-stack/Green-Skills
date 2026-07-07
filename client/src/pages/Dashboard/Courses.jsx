@@ -882,7 +882,7 @@ const Courses = () => {
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
           <div className="space-y-2">
-            <h2 className="text-6xl font-black text-slate-900 tracking-tighter uppercase italic">Knowledge Hub</h2>
+            <h2 className="text-6xl font-black text-slate-900 tracking-tighter uppercase ">Knowledge Hub</h2>
             <p className="text-slate-500 font-medium text-lg">Your synchronized path to green-tech mastery.</p>
           </div>
           <div className="flex items-center gap-4">
@@ -935,17 +935,17 @@ const Courses = () => {
                 <div className="p-10 flex-1 flex flex-col">
                   <div className="flex items-center gap-1 text-yellow-500 mb-4">
                     {[...Array(5)].map((_, j) => <Star key={j} size={14} fill={j < 4 ? "currentColor" : "none"} />)}
-                    <span className="text-[10px] font-black text-slate-400 ml-2 tracking-widest uppercase italic">Tier 1</span>
+                    <span className="text-[10px] font-black text-slate-400 ml-2 tracking-widest uppercase ">Tier 1</span>
                   </div>
 
-                  <h3 className="text-2xl font-black text-slate-900 mb-4 leading-none uppercase tracking-tighter italic group-hover:text-primary transition-colors">{course.title}</h3>
+                  <h3 className="text-2xl font-black text-slate-900 mb-4 leading-none uppercase tracking-tighter  group-hover:text-primary transition-colors">{course.title}</h3>
                   <p className="text-slate-500 font-medium text-sm line-clamp-2 mb-8">{course.description}</p>
 
                   {/* Progress Matrix */}
                   <div className="mt-auto space-y-4">
                     <div className="flex justify-between items-end mb-2">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Progress Matrix</span>
-                      <span className="text-xs font-black text-slate-900 italic">{getCourseProgress(course)}%</span>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ">Progress Matrix</span>
+                      <span className="text-xs font-black text-slate-900 ">{getCourseProgress(course)}%</span>
                     </div>
                     <div className="w-full h-3 bg-slate-50 rounded-full overflow-hidden border border-slate-100">
                       <div className="h-full bg-primary shadow-[0_0_15px_rgba(22,163,74,0.5)]" style={{ width: `${getCourseProgress(course)}%` }}></div>
@@ -1862,7 +1862,7 @@ const Courses = () => {
         const selected = essayText.substring(start, end);
         let insert = '';
         if (tag === 'bold') insert = `**${selected || 'bold text'}**`;
-        else if (tag === 'italic') insert = `_${selected || 'italic text'}_`;
+        else if (tag === '') insert = `_${selected || ' text'}_`;
         else if (tag === 'underline') insert = `<u>${selected || 'underline text'}</u>`;
         else if (tag === 'ul') insert = `\n• ${selected || 'list item'}\n`;
         else if (tag === 'ol') insert = `\n1. ${selected || 'list item'}\n`;
@@ -1927,7 +1927,7 @@ const Courses = () => {
               {!isLocked && (
                 <div className="flex items-center gap-1 px-6 py-2.5 border-b border-slate-100 bg-slate-50 shrink-0 flex-wrap">
                   <button onClick={() => applyFormat('bold')} className="p-2 rounded-lg text-slate-600 hover:bg-slate-200 transition-all" title="Bold"><Bold size={14} /></button>
-                  <button onClick={() => applyFormat('italic')} className="p-2 rounded-lg text-slate-600 hover:bg-slate-200 transition-all" title="Italic"><Italic size={14} /></button>
+                  <button onClick={() => applyFormat('')} className="p-2 rounded-lg text-slate-600 hover:bg-slate-200 transition-all" title="Italic"><Italic size={14} /></button>
                   <button onClick={() => applyFormat('underline')} className="p-2 rounded-lg text-slate-600 hover:bg-slate-200 transition-all" title="Underline"><Underline size={14} /></button>
                   <div className="w-px h-5 bg-slate-200 mx-1" />
                   <button onClick={() => applyFormat('ul')} className="p-2 rounded-lg text-slate-600 hover:bg-slate-200 transition-all" title="Bullet List"><List size={14} /></button>

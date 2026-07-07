@@ -183,7 +183,7 @@ const ExamCreator = () => {
     <div className="space-y-8">
       <div className="flex justify-between items-center bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm">
         <div>
-          <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter italic">Exam Creator</h2>
+          <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter ">Exam Creator</h2>
           <p className="text-slate-500 text-sm font-medium">Design custom MCQ assessments and study notes for candidates.</p>
         </div>
         <button 
@@ -342,7 +342,7 @@ const ExamCreator = () => {
               <div className="bg-slate-900 p-8 rounded-[40px] shadow-2xl text-white">
                 <div className="flex justify-between items-center mb-8">
                   <div>
-                    <h3 className="text-xl font-black uppercase tracking-tighter italic">Exam Blueprint</h3>
+                    <h3 className="text-xl font-black uppercase tracking-tighter ">Exam Blueprint</h3>
                     <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em]">Real-time Visualization</p>
                   </div>
                   <div className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full border border-white/5">

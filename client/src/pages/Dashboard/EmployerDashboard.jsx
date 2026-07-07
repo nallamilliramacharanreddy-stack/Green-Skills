@@ -128,7 +128,7 @@ const EmployerDashboard = () => {
           <div className="w-24 h-24 bg-amber-50 rounded-3xl flex items-center justify-center text-amber-500 mb-8 border border-amber-100 shadow-xl shadow-amber-100/50 rotate-3">
             <Clock size={44} className="animate-pulse" />
           </div>
-          <h2 className="text-5xl font-black text-slate-900 uppercase tracking-tighter italic mb-6">Security Clearance <span className="text-amber-500">Pending</span></h2>
+          <h2 className="text-5xl font-black text-slate-900 uppercase tracking-tighter  mb-6">Security Clearance <span className="text-amber-500">Pending</span></h2>
           <div className="max-w-2xl bg-slate-50 border border-slate-100 p-10 rounded-[32px] shadow-inner">
             <p className="text-xl font-medium text-slate-600 leading-relaxed">
               Your corporate identity is currently under review by our <span className="text-slate-900 font-bold">Main Administration</span>.
@@ -160,7 +160,7 @@ const EmployerDashboard = () => {
                   </span>
                   <span className="text-[10px] font-black tracking-[0.4em] text-emerald-600 uppercase">Live Ecosystem Nexus Active</span>
                 </div>
-                <h2 className="text-5xl md:text-6xl font-black text-slate-900 uppercase tracking-tighter italic leading-none">
+                <h2 className="text-5xl md:text-6xl font-black text-slate-900 uppercase tracking-tighter  leading-none">
                   Talent <span className="bg-gradient-to-r from-emerald-500 to-teal-600 bg-clip-text text-transparent">Console</span>
                 </h2>
                 <p className="text-slate-500 text-sm md:text-base font-semibold max-w-2xl leading-relaxed mt-3">
@@ -210,7 +210,7 @@ const EmployerDashboard = () => {
             <div className="mb-12">
               <div className="flex items-center gap-3 mb-6">
                 <Crown size={22} className="text-amber-400 animate-pulse" />
-                <h3 className="text-lg font-black text-slate-800 uppercase tracking-wider italic">Ecosystem Leaders</h3>
+                <h3 className="text-lg font-black text-slate-800 uppercase tracking-wider ">Ecosystem Leaders</h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-end max-w-5xl mx-auto px-4 py-8 bg-slate-50/50 rounded-[40px] border border-slate-100 relative overflow-hidden backdrop-blur-sm">
                 <div className="absolute inset-0 bg-gradient-to-tr from-emerald-100/10 via-transparent to-yellow-100/10 pointer-events-none"></div>
@@ -296,9 +296,9 @@ const EmployerDashboard = () => {
 
                       {/* Name & Title */}
                       <div className="text-center w-full">
-                        <h4 className="text-xl font-black text-slate-900 uppercase tracking-tight italic leading-tight truncate px-2">{talent.name}</h4>
+                        <h4 className="text-xl font-black text-slate-900 uppercase tracking-tight  leading-tight truncate px-2">{talent.name}</h4>
                         <div className="flex flex-wrap items-center justify-center gap-1.5 mt-2">
-                          <span className="text-[9px] font-black text-primary bg-primary/5 px-2 py-0.5 rounded border border-primary/10 uppercase tracking-widest italic">
+                          <span className="text-[9px] font-black text-primary bg-primary/5 px-2 py-0.5 rounded border border-primary/10 uppercase tracking-widest ">
                             {talent.skillsInterested?.[0] || 'Renewable Energy'}
                           </span>
                           {talent.education && (
@@ -314,7 +314,7 @@ const EmployerDashboard = () => {
 
                       {/* Main Stat display */}
                       <div className="text-center mb-5">
-                        <p className="text-4xl font-black bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent italic tracking-tighter leading-none">
+                        <p className="text-4xl font-black bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent  tracking-tighter leading-none">
                           {sortBy === 'xp' ? `${talent.ultraStreak?.leaderboardPoints || 0}` :
                            sortBy === 'streak' ? `${talent.ultraStreak?.currentStreak || 0}` :
                            `${talent.score}%`}
@@ -373,7 +373,7 @@ const EmployerDashboard = () => {
                   <stat.icon size={22} />
                 </div>
                 <div>
-                  <p className="text-2xl font-black text-slate-800 tracking-tight italic">{stat.value}</p>
+                  <p className="text-2xl font-black text-slate-800 tracking-tight ">{stat.value}</p>
                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{stat.label}</p>
                   <p className="text-[8px] text-slate-400 font-medium">{stat.sub}</p>
                 </div>
@@ -385,7 +385,7 @@ const EmployerDashboard = () => {
             {/* Remaining Talent Grid */}
             <div className="lg:col-span-2 space-y-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-black text-slate-800 uppercase tracking-wider italic">Network Candidates</h3>
+                <h3 className="text-lg font-black text-slate-800 uppercase tracking-wider ">Network Candidates</h3>
                 <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest bg-slate-100 px-3 py-1 rounded-full">{restTalent.length} Profiles</span>
               </div>
 
@@ -417,7 +417,7 @@ const EmployerDashboard = () => {
                         {/* Upper Details */}
                         <div>
                           <div className="flex justify-between items-start gap-4 mb-4">
-                            <span className="w-8 h-8 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center font-black text-slate-400 text-xs italic">
+                            <span className="w-8 h-8 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center font-black text-slate-400 text-xs ">
                               #{rank}
                             </span>
                             
@@ -465,9 +465,9 @@ const EmployerDashboard = () => {
                               )}
                             </div>
                             <div className="min-w-0">
-                              <h4 className="text-lg font-black text-slate-900 uppercase tracking-tight italic truncate leading-none">{talent.name}</h4>
+                              <h4 className="text-lg font-black text-slate-900 uppercase tracking-tight  truncate leading-none">{talent.name}</h4>
                               <div className="flex flex-col gap-1 mt-1">
-                                <span className="text-[8px] font-black text-primary uppercase tracking-widest bg-primary/5 px-2 py-0.5 rounded border border-primary/10 italic w-fit">
+                                <span className="text-[8px] font-black text-primary uppercase tracking-widest bg-primary/5 px-2 py-0.5 rounded border border-primary/10  w-fit">
                                   {talent.skillsInterested?.[0] || 'Renewable Energy'}
                                 </span>
                               </div>
@@ -543,7 +543,7 @@ const EmployerDashboard = () => {
                   <span className="text-[8px] font-black uppercase tracking-[0.3em] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full">System Diagnostics</span>
                 </div>
 
-                <h3 className="text-2xl md:text-3xl font-black uppercase tracking-tighter italic leading-tight mb-3 relative z-10">
+                <h3 className="text-2xl md:text-3xl font-black uppercase tracking-tighter  leading-tight mb-3 relative z-10">
                   Hiring <span className="text-emerald-400">Intelligence</span>
                 </h3>
                 <p className="text-slate-400 text-xs font-semibold leading-relaxed mb-6 relative z-10">
@@ -558,7 +558,7 @@ const EmployerDashboard = () => {
                       <p className="text-sm font-bold text-slate-300 mt-0.5">Algorithm Accuracy</p>
                     </div>
                     <div className="text-right">
-                      <span className="text-lg font-black italic text-emerald-400">94.2%</span>
+                      <span className="text-lg font-black  text-emerald-400">94.2%</span>
                       <p className="text-[7px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">Optimum Range</p>
                     </div>
                   </div>
@@ -569,7 +569,7 @@ const EmployerDashboard = () => {
                       <p className="text-sm font-bold text-slate-300 mt-0.5">Clearance Level</p>
                     </div>
                     <div className="text-right">
-                      <span className="text-lg font-black italic text-emerald-400">Tier 1</span>
+                      <span className="text-lg font-black  text-emerald-400">Tier 1</span>
                       <p className="text-[7px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">Full Clearance</p>
                     </div>
                   </div>
@@ -606,7 +606,7 @@ const EmployerDashboard = () => {
                 <div className="flex items-center justify-between mb-8">
                   <div className="flex items-center gap-3">
                     <TrendingUp className="text-amber-500" size={20} />
-                    <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter italic">Market Trends</h3>
+                    <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter ">Market Trends</h3>
                   </div>
                   <span className="text-[8px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded">Real-Time</span>
                 </div>
@@ -667,7 +667,7 @@ const EmployerDashboard = () => {
                         )}
                       </div>
                       <div>
-                        <h3 className="text-3xl font-black text-white uppercase tracking-tighter italic leading-none">{selectedCandidate.name}</h3>
+                        <h3 className="text-3xl font-black text-white uppercase tracking-tighter  leading-none">{selectedCandidate.name}</h3>
                         <p className="text-indigo-300 text-xs font-bold uppercase tracking-widest mt-2">{selectedCandidate.education || 'Graduate Candidate'}</p>
                       </div>
                     </div>
@@ -708,19 +708,19 @@ const EmployerDashboard = () => {
                     <div className="grid grid-cols-3 gap-4">
                       <div className="p-4 bg-slate-50 border border-slate-100 rounded-3xl text-center">
                         <Trophy className="mx-auto text-amber-500 mb-1.5" size={20} />
-                        <p className="text-xl font-black text-slate-900 italic tracking-tighter">{selectedCandidate.ultraStreak?.leaderboardPoints || 0}</p>
+                        <p className="text-xl font-black text-slate-900  tracking-tighter">{selectedCandidate.ultraStreak?.leaderboardPoints || 0}</p>
                         <p className="text-[8px] text-slate-400 font-black uppercase tracking-widest mt-0.5">XP Points</p>
                       </div>
                       
                       <div className="p-4 bg-slate-50 border border-slate-100 rounded-3xl text-center">
                         <Flame className="mx-auto text-orange-500 mb-1.5 animate-pulse" size={20} />
-                        <p className="text-xl font-black text-slate-900 italic tracking-tighter">{selectedCandidate.ultraStreak?.currentStreak || 0} Days</p>
+                        <p className="text-xl font-black text-slate-900  tracking-tighter">{selectedCandidate.ultraStreak?.currentStreak || 0} Days</p>
                         <p className="text-[8px] text-slate-400 font-black uppercase tracking-widest mt-0.5">Current Streak</p>
                       </div>
 
                       <div className="p-4 bg-slate-50 border border-slate-100 rounded-3xl text-center">
                         <Target className="mx-auto text-primary mb-1.5" size={20} />
-                        <p className="text-xl font-black text-slate-900 italic tracking-tighter">{selectedCandidate.score}%</p>
+                        <p className="text-xl font-black text-slate-900  tracking-tighter">{selectedCandidate.score}%</p>
                         <p className="text-[8px] text-slate-400 font-black uppercase tracking-widest mt-0.5">Skill Index</p>
                       </div>
                     </div>
@@ -743,7 +743,7 @@ const EmployerDashboard = () => {
                               </div>
                             ))
                           ) : (
-                            <div className="text-[11px] text-slate-400 italic">No exams cleared yet.</div>
+                            <div className="text-[11px] text-slate-400 ">No exams cleared yet.</div>
                           )}
                         </div>
                       </div>
@@ -768,7 +768,7 @@ const EmployerDashboard = () => {
                               </span>
                             ))
                           ) : (
-                            <div className="text-[11px] text-slate-400 italic">No badges earned.</div>
+                            <div className="text-[11px] text-slate-400 ">No badges earned.</div>
                           )}
                         </div>
                       </div>

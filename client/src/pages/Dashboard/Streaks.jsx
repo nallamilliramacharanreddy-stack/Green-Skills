@@ -91,7 +91,7 @@ const Streaks = () => {
     <DashboardLayout role="student">
       <div className="max-w-[1200px] mx-auto py-10 px-4">
         <div className="space-y-2 mb-12">
-          <h2 className="text-6xl font-black text-slate-900 tracking-tighter uppercase italic">Streak Analytics</h2>
+          <h2 className="text-6xl font-black text-slate-900 tracking-tighter uppercase ">Streak Analytics</h2>
           <p className="text-slate-500 font-medium text-lg">Your activity is continuously tracked. Maintain momentum to unlock rewards.</p>
         </div>
 
@@ -126,7 +126,7 @@ const Streaks = () => {
           className="bg-white p-10 rounded-[40px] border border-slate-100 shadow-2xl relative overflow-hidden"
         >
           <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
-            <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter italic flex items-center gap-3">
+            <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter  flex items-center gap-3">
               <Calendar className="text-fuchsia-500" /> Monthly Streak
             </h3>
             <div className="flex items-center gap-3">

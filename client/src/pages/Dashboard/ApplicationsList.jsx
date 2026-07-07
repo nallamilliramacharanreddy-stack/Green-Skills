@@ -163,7 +163,7 @@ const ApplicationsList = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between gap-4 bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm">
         <div>
-          <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter italic">Applications Hub</h2>
+          <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter ">Applications Hub</h2>
           <p className="text-slate-500 text-sm font-medium mt-1">Review talent applications and manage your hiring pipeline.</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
@@ -255,7 +255,7 @@ const ApplicationsList = () => {
 
                         <div className="flex items-center gap-2 mb-3">
                           <Briefcase size={12} className="text-primary" />
-                          <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest italic">
+                          <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest ">
                             Applied for: {app.jobId?.title || app.geoVacancyId?.jobTitle || 'Unknown Position'}
                           </p>
                           {app.geoVacancyId && (
@@ -372,7 +372,7 @@ const ApplicationsList = () => {
                 <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto border border-indigo-100">
                   <Calendar className="text-indigo-500 w-8 h-8" />
                 </div>
-                <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter italic">
+                <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter ">
                   {selectedApp?.status === 'shortlisted' ? 'Schedule Interview' : 'Shortlist & Schedule'}
                 </h3>
                 <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">
@@ -457,7 +457,7 @@ const ApplicationsList = () => {
             >
               <div className="text-center space-y-2">
                 <CheckCircle className="mx-auto text-emerald-500 w-12 h-12" />
-                <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter italic">Confirm Hiring</h3>
+                <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter ">Confirm Hiring</h3>
                 <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Hiring {selectedApp?.studentId?.name}</p>
               </div>
 

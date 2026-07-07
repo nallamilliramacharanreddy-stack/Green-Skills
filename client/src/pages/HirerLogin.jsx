@@ -200,7 +200,7 @@ const HirerLogin = () => {
                 <div className="relative z-10">
                   <div className="flex items-center justify-between mb-12">
                     <div>
-                      <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic">{forgotPasswordStage > 0 ? 'RESET PASSWORD' : 'HIRER LOGIN'}</h2>
+                      <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase ">{forgotPasswordStage > 0 ? 'RESET PASSWORD' : 'HIRER LOGIN'}</h2>
                     </div>
                     <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 group-hover:border-primary/50 transition-colors shadow-inner">
                       <Cpu className="text-primary animate-pulse" />
@@ -212,7 +212,7 @@ const HirerLogin = () => {
                       <>
                         {forgotPasswordStage === 1 && (
                           <div className="space-y-2 group/input">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">Registered Email</label>
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 ">Registered Email</label>
                             <div className="relative">
                               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within/input:text-primary transition-colors" size={18} />
                               <input 
@@ -228,7 +228,7 @@ const HirerLogin = () => {
                         )}
                         {forgotPasswordStage === 2 && (
                           <div className="space-y-2 group/input animate-fade-in">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">Reset OTP</label>
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 ">Reset OTP</label>
                             <div className="relative">
                               <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within/input:text-primary transition-colors" size={18} />
                               <input 
@@ -246,7 +246,7 @@ const HirerLogin = () => {
                         {forgotPasswordStage === 3 && (
                           <>
                             <div className="space-y-2 group/input animate-fade-in">
-                              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">New Password</label>
+                              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 ">New Password</label>
                               <div className="relative">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/input:text-primary transition-colors" size={18} />
                                 <input 
@@ -267,7 +267,7 @@ const HirerLogin = () => {
                               </div>
                             </div>
                             <div className="space-y-2 group/input animate-fade-in mt-4">
-                              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">Confirm Password</label>
+                              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 ">Confirm Password</label>
                               <div className="relative">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/input:text-primary transition-colors" size={18} />
                                 <input 
@@ -291,7 +291,7 @@ const HirerLogin = () => {
                     ) : (
                       <>
                         <div className="space-y-2 group/input">
-                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">Company Email</label>
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 ">Company Email</label>
                           <div className="relative">
                             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within/input:text-primary transition-colors" size={18} />
                             <input 
@@ -306,7 +306,7 @@ const HirerLogin = () => {
                         </div>
 
                         <div className="space-y-2 group/input">
-                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">Password</label>
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 ">Password</label>
                           <div className="relative">
                             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/input:text-primary transition-colors" size={18} />
                             <input 
@@ -348,7 +348,7 @@ const HirerLogin = () => {
                     <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest text-center">
                       Need to recruit talent? <Link to="/hirer/signup" className="text-slate-900 hover:text-primary underline decoration-2 underline-offset-4 transition-colors ml-1">Register Company</Link>
                     </p>
-                    <Link to="/login" className="text-slate-400 text-[9px] uppercase tracking-widest hover:text-primary transition-colors italic">Student Login?</Link>
+                    <Link to="/login" className="text-slate-400 text-[9px] uppercase tracking-widest hover:text-primary transition-colors ">Student Login?</Link>
                   </div>
                 </div>
               </div>

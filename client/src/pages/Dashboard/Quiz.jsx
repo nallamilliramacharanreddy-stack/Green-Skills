@@ -1215,7 +1215,7 @@ const Quiz = () => {
             </div>
             
             <div className="space-y-2">
-              <h2 className="text-2xl font-black uppercase tracking-tighter italic">Secure Exam Verification</h2>
+              <h2 className="text-2xl font-black uppercase tracking-tighter ">Secure Exam Verification</h2>
               <p className="text-xs text-slate-400 font-medium">This assessment requires full-screen mode to maintain academic integrity.</p>
             </div>
 
@@ -1586,7 +1586,7 @@ const Quiz = () => {
   return (
     <DashboardLayout role="student">
       <div className="mb-12">
-        <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic">Skill Assessments</h2>
+        <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase ">Skill Assessments</h2>
         <p className="text-slate-500 mt-1 font-medium tracking-tight">Prove your green expertise and claim your spot on the leaderboard.</p>
       </div>
 
@@ -1824,7 +1824,7 @@ const Quiz = () => {
               {/* Modal Header */}
               <div className="bg-white p-6 px-8 border-b border-slate-200 flex justify-between items-center shrink-0">
                 <div>
-                  <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight italic">Assessment Audit Report</h3>
+                  <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight ">Assessment Audit Report</h3>
                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
                     {selectedAttempt.course?.title || selectedAttempt.quiz?.title || 'Solar panel certification'}
                   </p>
@@ -1997,7 +1997,7 @@ const Quiz = () => {
                         )}
                         
                         <div className="mt-2 space-y-1 bg-white/50 p-3 rounded-lg border border-slate-100 text-[11px]">
-                          <p className="text-slate-500 font-medium"><strong>Your Answer:</strong> {ans.candidateAnswer || <span className="italic text-slate-400">Skipped</span>}</p>
+                          <p className="text-slate-500 font-medium"><strong>Your Answer:</strong> {ans.candidateAnswer || <span className=" text-slate-400">Skipped</span>}</p>
                           <p className="text-slate-700 font-medium"><strong>Correct Answer:</strong> {ans.correctAnswer}</p>
                           {ans.explanation && (
                             <p className="text-slate-600 text-xs mt-1 bg-slate-50 p-2 rounded border border-slate-100"><strong>Explanation:</strong> {ans.explanation}</p>

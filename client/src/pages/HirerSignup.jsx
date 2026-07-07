@@ -214,7 +214,7 @@ const HirerSignup = () => {
                 <div className="relative z-10">
                   <div className="flex items-center justify-between mb-12">
                     <div>
-                      <h3 className="text-3xl font-black text-slate-900 uppercase tracking-tighter italic">Register Company</h3>
+                      <h3 className="text-3xl font-black text-slate-900 uppercase tracking-tighter ">Register Company</h3>
                       <p className="text-slate-600 text-[10px] font-black tracking-[0.4em] uppercase">ENTITY REGISTRATION</p>
                     </div>
                     <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center border border-slate-100 shadow-inner">
@@ -245,7 +245,7 @@ const HirerSignup = () => {
                           accept="image/*"
                         />
                       </div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Corporate Identity Asset (Optional)</p>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ">Corporate Identity Asset (Optional)</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-8">

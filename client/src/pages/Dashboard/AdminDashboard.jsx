@@ -326,7 +326,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
 const DashboardOverview = ({ stats, users, hirers, courses }) => (
   <div className="space-y-12">
     <div className="flex flex-col gap-2">
-      <h2 className="text-6xl font-black text-slate-900 tracking-tighter uppercase italic">Control Center</h2>
+      <h2 className="text-6xl font-black text-slate-900 tracking-tighter uppercase ">Control Center</h2>
       <p className="text-slate-500 font-medium tracking-tight text-lg">System-wide performance and identity matrix.</p>
     </div>
 
@@ -355,7 +355,7 @@ const DashboardOverview = ({ stats, users, hirers, courses }) => (
 
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <div className="bg-white p-10 rounded-[48px] border border-slate-100 shadow-xl">
-        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter mb-8 italic flex items-center gap-3">
+        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter mb-8  flex items-center gap-3">
           <Users className="text-primary" /> Recent Users
         </h3>
         <div className="space-y-4">
@@ -368,14 +368,14 @@ const DashboardOverview = ({ stats, users, hirers, courses }) => (
                   <p className="text-[10px] text-slate-400 font-bold">{u.email}</p>
                 </div>
               </div>
-              <span className="text-[10px] font-black text-slate-400 italic">NEW</span>
+              <span className="text-[10px] font-black text-slate-400 ">NEW</span>
             </div>
           ))}
         </div>
       </div>
 
       <div className="bg-white p-10 rounded-[48px] border border-slate-100 shadow-xl">
-        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter mb-8 italic flex items-center gap-3">
+        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter mb-8  flex items-center gap-3">
           <Building className="text-blue-500" /> Recent Hirers
         </h3>
         <div className="space-y-4">
@@ -388,14 +388,14 @@ const DashboardOverview = ({ stats, users, hirers, courses }) => (
                   <p className="text-[10px] text-slate-400 font-bold">{h.email}</p>
                 </div>
               </div>
-              <span className="text-[10px] font-black text-slate-400 italic">NEW</span>
+              <span className="text-[10px] font-black text-slate-400 ">NEW</span>
             </div>
           ))}
         </div>
       </div>
 
       <div className="bg-white p-10 rounded-[48px] border border-slate-100 shadow-xl">
-        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter mb-8 italic flex items-center gap-3">
+        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter mb-8  flex items-center gap-3">
           <Play className="text-red-500" /> Recent Courses
         </h3>
         <div className="space-y-4">
@@ -433,7 +433,7 @@ const ManageCourses = ({ courses, onGenQuiz, onDeleteCourse, refresh, users }) =
     <div className="space-y-10">
       <div className="flex justify-between items-end">
         <div className="space-y-1">
-          <h2 className="text-5xl font-black text-slate-900 uppercase tracking-tighter italic">Manage Courses</h2>
+          <h2 className="text-5xl font-black text-slate-900 uppercase tracking-tighter ">Manage Courses</h2>
           <p className="text-slate-500 font-medium">Deploy and replicate knowledge across the network.</p>
         </div>
         <button
@@ -460,7 +460,7 @@ const ManageCourses = ({ courses, onGenQuiz, onDeleteCourse, refresh, users }) =
               </div>
             </div>
             <div className="p-8">
-              <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter mb-2 leading-none italic">{course.title}</h3>
+              <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter mb-2 leading-none ">{course.title}</h3>
               <p className="text-slate-500 font-medium mb-6 text-xs line-clamp-2">{course.description}</p>
 
               <div className="grid grid-cols-2 gap-4 mb-6">
@@ -489,7 +489,7 @@ const ManageCourses = ({ courses, onGenQuiz, onDeleteCourse, refresh, users }) =
                     }) || [];
 
                     if (enrolledUsers.length === 0) {
-                      return <p className="text-xs font-semibold text-slate-500 italic">No users registered yet.</p>;
+                      return <p className="text-xs font-semibold text-slate-500 ">No users registered yet.</p>;
                     }
 
                     return enrolledUsers.map(user => (
@@ -629,8 +629,8 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
         </button>
 
         <div className="mb-12">
-          <h3 className="text-4xl font-black text-slate-900 uppercase tracking-tighter italic italic">Course Architecture</h3>
-          <p className="text-slate-400 font-bold uppercase tracking-widest text-xs mt-2 italic">Design and deploy knowledge nodes.</p>
+          <h3 className="text-4xl font-black text-slate-900 uppercase tracking-tighter  ">Course Architecture</h3>
+          <p className="text-slate-400 font-bold uppercase tracking-widest text-xs mt-2 ">Design and deploy knowledge nodes.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-12 pb-12">
@@ -673,7 +673,7 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
           {/* Section 2: Lesson Matrix */}
           <div className="space-y-8 bg-slate-50 p-10 rounded-[48px] border border-slate-100">
             <div className="flex justify-between items-center mb-6">
-              <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest flex items-center gap-2 italic">
+              <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest flex items-center gap-2 ">
                 <Video size={14} className="text-primary" /> 2. Lesson Architecture (Dynamic Lessons & Videos)
               </h4>
               <button
@@ -707,7 +707,7 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-black">{moduleIdx + 1}</div>
-                      <h5 className="text-xl font-black text-slate-900 uppercase tracking-tighter italic">{moduleTitle}</h5>
+                      <h5 className="text-xl font-black text-slate-900 uppercase tracking-tighter ">{moduleTitle}</h5>
                     </div>
                     {moduleIdx > 0 && (
                       <button
@@ -989,17 +989,17 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
           {/* Section 3: Core Details */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-2 md:col-span-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 italic">Course Title</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 ">Course Title</label>
               <input
                 value={formData.title}
                 onChange={(e) => setFormData(p => ({ ...p, title: e.target.value }))}
-                className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-primary/10 focus:border-primary/50 transition-all font-black uppercase italic text-lg tracking-tighter"
+                className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-primary/10 focus:border-primary/50 transition-all font-black uppercase  text-lg tracking-tighter"
                 placeholder="Enterprise Module Title..."
                 required
               />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 italic">Description</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 ">Description</label>
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData(p => ({ ...p, description: e.target.value }))}
@@ -1008,11 +1008,11 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 italic">Category</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 ">Category</label>
               <select
                 value={formData.category}
                 onChange={(e) => setFormData(p => ({ ...p, category: e.target.value }))}
-                className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white transition-all font-black uppercase text-xs italic"
+                className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white transition-all font-black uppercase text-xs "
               >
                 <option>Green Skill</option>
                 <option>Digital Literacy</option>
@@ -1022,7 +1022,7 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
               </select>
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 italic">Difficulty Level</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 ">Difficulty Level</label>
               <div className="flex bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
                 {['Beginner', 'Intermediate', 'Expert'].map(level => (
                   <button
@@ -1037,7 +1037,7 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 italic">Estimated Duration</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 ">Estimated Duration</label>
               <div className="relative">
                 <Clock className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                 <input
@@ -1049,7 +1049,7 @@ const CourseUploadForm = ({ course, onClose, refresh }) => {
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 italic">Skill Tags</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 ">Skill Tags</label>
               <div className="relative">
                 <Tag className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                 <input
@@ -1090,7 +1090,7 @@ const AdminLeaderboard = ({ data }) => {
   return (
     <div className="space-y-10">
       <div className="space-y-1">
-        <h2 className="text-5xl font-black text-slate-900 uppercase tracking-tighter italic">Global Leaderboard</h2>
+        <h2 className="text-5xl font-black text-slate-900 uppercase tracking-tighter ">Global Leaderboard</h2>
         <p className="text-slate-500 font-medium">Top performing learners powered by the Streak Engine.</p>
       </div>
 
@@ -1162,7 +1162,7 @@ const UserDataManagement = ({ data, onToggleStatus, onDelete, onHandleRequest })
     <div className="space-y-10">
       <div className="flex justify-between items-end">
         <div className="space-y-1">
-          <h2 className="text-5xl font-black text-slate-900 uppercase tracking-tighter italic">User Repository</h2>
+          <h2 className="text-5xl font-black text-slate-900 uppercase tracking-tighter ">User Repository</h2>
           <p className="text-slate-500 font-medium">Manage learner identities and access states.</p>
         </div>
         <div className="relative">
@@ -1179,7 +1179,7 @@ const UserDataManagement = ({ data, onToggleStatus, onDelete, onHandleRequest })
               <AlertCircle size={24} />
             </div>
             <div>
-              <h3 className="text-xl font-black text-amber-900 uppercase tracking-tighter italic">Pending Re-activation Requests</h3>
+              <h3 className="text-xl font-black text-amber-900 uppercase tracking-tighter ">Pending Re-activation Requests</h3>
               <p className="text-amber-700/60 font-bold uppercase text-[10px] tracking-widest">Awaiting Admin Authorization</p>
             </div>
           </div>
@@ -1253,7 +1253,7 @@ const UserDataManagement = ({ data, onToggleStatus, onDelete, onHandleRequest })
                       {u.isSuspended ? 'Suspended' : 'Verified'}
                     </span>
                     {u.suspensionRequest?.status === 'pending' && (
-                      <span className="text-[8px] font-black text-amber-600 uppercase tracking-widest italic ml-1 flex items-center gap-1">
+                      <span className="text-[8px] font-black text-amber-600 uppercase tracking-widest  ml-1 flex items-center gap-1">
                         <Clock size={8} /> Request Pending
                       </span>
                     )}
@@ -1304,7 +1304,7 @@ const HirerDataManagement = ({ data, onToggleStatus, onDelete, onApprove, onReje
   return (
     <div className="space-y-10">
       <div className="space-y-1">
-        <h2 className="text-5xl font-black text-slate-900 uppercase tracking-tighter italic">Hirer Network</h2>
+        <h2 className="text-5xl font-black text-slate-900 uppercase tracking-tighter ">Hirer Network</h2>
         <p className="text-slate-500 font-medium">Coordinate with corporate and industrial partners.</p>
       </div>
 
@@ -1331,7 +1331,7 @@ const HirerDataManagement = ({ data, onToggleStatus, onDelete, onApprove, onReje
                 <td className="px-10 py-8">
                   <div className="space-y-1">
                     <p className="font-bold text-slate-900 text-sm">{h.email}</p>
-                    <p className="text-[10px] text-slate-400 font-black tracking-widest italic">{h.name}</p>
+                    <p className="text-[10px] text-slate-400 font-black tracking-widest ">{h.name}</p>
                   </div>
                 </td>
                 <td className="px-10 py-8">
@@ -1343,7 +1343,7 @@ const HirerDataManagement = ({ data, onToggleStatus, onDelete, onApprove, onReje
                       {h.isSuspended ? 'Blocked' : !h.isAdminApproved ? 'Pending Approval' : 'Authorized Partner'}
                     </span>
                     {!h.isAdminApproved && (
-                      <span className="text-[8px] font-black text-amber-600 uppercase tracking-widest italic ml-1 flex items-center gap-1">
+                      <span className="text-[8px] font-black text-amber-600 uppercase tracking-widest  ml-1 flex items-center gap-1">
                         <Clock size={8} /> Needs Review
                       </span>
                     )}
@@ -1360,7 +1360,7 @@ const HirerDataManagement = ({ data, onToggleStatus, onDelete, onApprove, onReje
                       <FileText size={14} /> Download Doc
                     </a>
                   ) : (
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] italic">No Document</span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] ">No Document</span>
                   )}
                 </td>
                 <td className="px-10 py-8 text-right">
@@ -1526,7 +1526,7 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
     <div className="space-y-10">
       <div className="flex justify-between items-end">
         <div className="space-y-1">
-          <h2 className="text-5xl font-black text-slate-900 uppercase tracking-tighter italic">Assessment Engine</h2>
+          <h2 className="text-5xl font-black text-slate-900 uppercase tracking-tighter ">Assessment Engine</h2>
           <p className="text-slate-500 font-medium">Create and manage course assessments.</p>
         </div>
         <button
@@ -1557,14 +1557,14 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
       </div>
 
       <div className="bg-white p-10 rounded-[48px] border border-slate-100 shadow-xl">
-        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter mb-8 italic">Recent Assessments</h3>
+        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter mb-8 ">Recent Assessments</h3>
         <div className="space-y-4">
           {assessments.map(a => (
             <div key={a.id} className="flex items-center justify-between p-6 bg-slate-50 rounded-[24px] border border-slate-100">
               <div className="flex items-center gap-6">
                 <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white"><Award size={20} /></div>
                 <div>
-                  <h4 className="font-black text-slate-900 text-lg uppercase tracking-tighter italic">{a.title}</h4>
+                  <h4 className="font-black text-slate-900 text-lg uppercase tracking-tighter ">{a.title}</h4>
                   <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">
                     {a.courseTitle} • {a.questionsCount || a.questions} Qs • {a.date} at {a.time || '10:00 AM'}
                   </p>
@@ -1592,7 +1592,7 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
           <ChevronLeft size={24} />
         </button>
         <div>
-          <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter italic">Create Assessment</h2>
+          <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter ">Create Assessment</h2>
           <p className="text-slate-500 font-medium">Build questions manually and select the correct answer.</p>
         </div>
       </div>
@@ -1712,7 +1712,7 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
         <div className="bg-slate-900 p-8 rounded-[40px] shadow-2xl text-white flex flex-col min-h-[500px]">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h3 className="text-xl font-black uppercase tracking-tighter italic">Question Preview</h3>
+              <h3 className="text-xl font-black uppercase tracking-tighter ">Question Preview</h3>
               <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mt-1">{questions.length} question{questions.length !== 1 ? 's' : ''} added</p>
             </div>
           </div>
@@ -1768,7 +1768,7 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
       <div className="bg-slate-900 p-10 rounded-[48px] text-white space-y-6">
         <div className="flex justify-between items-start">
           <div className="space-y-2">
-            <h2 className="text-4xl font-black uppercase tracking-tighter italic">Review &amp; Publish</h2>
+            <h2 className="text-4xl font-black uppercase tracking-tighter ">Review &amp; Publish</h2>
             <p className="text-slate-400 font-medium">Review questions, set banner, then publish to course.</p>
           </div>
           <div className="flex gap-4">
@@ -1802,7 +1802,7 @@ const QuizManagement = ({ courses, onGenQuiz, refresh }) => {
       </div>
 
       <div className="flex justify-between items-center px-4">
-        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter italic">{questions.length} Questions</h3>
+        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter ">{questions.length} Questions</h3>
         <div className="flex gap-4">
           <button onClick={handleAddQuestion} className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold uppercase hover:bg-slate-200 flex items-center gap-2"><Plus size={14} /> Add Question</button>
         </div>
@@ -2006,7 +2006,7 @@ const AdminProfile = ({ currentUser, refreshUser }) => {
           <div className="space-y-12">
             <div className="flex items-center gap-10">
               <div className="relative group">
-                <div className="w-32 h-32 bg-slate-900 rounded-[40px] flex items-center justify-center text-white text-5xl font-black uppercase italic overflow-hidden border-4 border-white shadow-xl">
+                <div className="w-32 h-32 bg-slate-900 rounded-[40px] flex items-center justify-center text-white text-5xl font-black uppercase  overflow-hidden border-4 border-white shadow-xl">
                   {currentUser?.profilePicture ? (
                     <img src={currentUser.profilePicture.startsWith('http') ? currentUser.profilePicture : `${API_BASE_URL}${currentUser.profilePicture}`} className="w-full h-full object-cover" />
                   ) : (
@@ -2018,10 +2018,10 @@ const AdminProfile = ({ currentUser, refreshUser }) => {
                 </div>
               </div>
               <div>
-                <h3 className="text-4xl font-black text-slate-900 uppercase tracking-tighter italic leading-none">
+                <h3 className="text-4xl font-black text-slate-900 uppercase tracking-tighter  leading-none">
                   {currentUser?.name}
                 </h3>
-                <p className="text-primary font-bold uppercase tracking-widest text-xs mt-3 flex items-center gap-2 italic">
+                <p className="text-primary font-bold uppercase tracking-widest text-xs mt-3 flex items-center gap-2 ">
                   <CheckCircle size={14} /> Master Admin Authorized
                 </p>
                 <button
@@ -2069,7 +2069,7 @@ const AdminProfile = ({ currentUser, refreshUser }) => {
                 <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange} accept="image/*" />
               </div>
               <div className="flex-1 space-y-2">
-                <p className="text-sm text-slate-500 font-medium italic">Update your avatar or branding assets. Recommended: 512x512px.</p>
+                <p className="text-sm text-slate-500 font-medium ">Update your avatar or branding assets. Recommended: 512x512px.</p>
                 <button type="button" onClick={() => fileInputRef.current.click()} className="text-[10px] font-black text-primary uppercase tracking-widest hover:underline">Change Photo</button>
               </div>
             </div>
@@ -2139,7 +2139,7 @@ const AdminProfile = ({ currentUser, refreshUser }) => {
 const AdminApproval = ({ data = [], onApprove, onToggleStatus, onDelete }) => (
   <div className="space-y-10">
     <div className="space-y-1">
-      <h2 className="text-5xl font-black text-slate-900 uppercase tracking-tighter italic">Administrative Council</h2>
+      <h2 className="text-5xl font-black text-slate-900 uppercase tracking-tighter ">Administrative Council</h2>
       <p className="text-slate-500 font-medium">Coordinate with system administrators and manage clearance levels.</p>
     </div>
 
@@ -2160,7 +2160,7 @@ const AdminApproval = ({ data = [], onApprove, onToggleStatus, onDelete }) => (
                   <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white font-black group-hover:scale-110 transition-transform"><Shield size={20} /></div>
                   <div>
                     <p className="font-black text-slate-900 uppercase tracking-tighter text-xl leading-none">{item.name}</p>
-                    <p className="text-xs text-slate-400 italic font-mono mt-1">{item.email}</p>
+                    <p className="text-xs text-slate-400  font-mono mt-1">{item.email}</p>
                   </div>
                 </div>
               </td>
@@ -2177,7 +2177,7 @@ const AdminApproval = ({ data = [], onApprove, onToggleStatus, onDelete }) => (
               <td className="px-12 py-10 text-right">
                 <div className="flex items-center justify-end gap-3">
                   {item.email === 'nallamilliramacharanreddy@gmail.com' ? (
-                    <div className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg italic">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg ">
                       <Lock size={12} className="text-primary" /> Root Administrator
                     </div>
                   ) : (
@@ -2269,7 +2269,7 @@ const QuestionBankIntegrityReport = () => {
     <div className="space-y-8 bg-slate-50 p-8 rounded-[48px] border border-slate-100 shadow-sm">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter italic flex items-center gap-3">
+          <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter  flex items-center gap-3">
             <ShieldAlert className="text-primary animate-pulse" size={32} /> Question Bank Integrity Dashboard
           </h2>
           <p className="text-slate-500 font-medium mt-1">Real-time similarity metrics, quality audits, and copy prevention.</p>
@@ -2327,7 +2327,7 @@ const QuestionBankIntegrityReport = () => {
       <div className="bg-white p-8 rounded-[48px] border border-slate-100 shadow-xl min-h-[300px]">
         {activeSubTab === 'summary' && (
           <div className="space-y-6">
-            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter italic">Integrity Overview</h3>
+            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter ">Integrity Overview</h3>
             <p className="text-slate-600 text-sm max-w-3xl leading-relaxed">
               The Question Bank Integrity & Anti-Repetition System audits all questions across standard assessments, courses, and lessons.
               It prevents identical fingerprints, wording permutations, or options cloning. A Quality Score of 90% or higher is recommended for secure testing environments.
@@ -2355,7 +2355,7 @@ const QuestionBankIntegrityReport = () => {
 
         {activeSubTab === 'duplicates' && (
           <div className="space-y-6">
-            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter italic">Duplicate Questions Report</h3>
+            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter ">Duplicate Questions Report</h3>
             {report.exactDuplicates.length === 0 ? (
               <div className="text-slate-400 font-bold text-sm py-10">No exact duplicates found. Your database question bank is clean!</div>
             ) : (
@@ -2385,7 +2385,7 @@ const QuestionBankIntegrityReport = () => {
 
         {activeSubTab === 'similars' && (
           <div className="space-y-6">
-            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter italic">Similar Questions Report</h3>
+            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter ">Similar Questions Report</h3>
             {report.similarQuestions.length === 0 ? (
               <div className="text-slate-400 font-bold text-sm py-10">No highly similar questions detected (similarity &gt;= 85%). Good quality pool!</div>
             ) : (
@@ -2415,7 +2415,7 @@ const QuestionBankIntegrityReport = () => {
 
         {activeSubTab === 'answers' && (
           <div className="space-y-6">
-            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter italic">Duplicate Answer Options Report</h3>
+            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter ">Duplicate Answer Options Report</h3>
             {report.duplicateAnswers.length === 0 ? (
               <div className="text-slate-400 font-bold text-sm py-10">No duplicate answer choices or blank options found. Well structured choices!</div>
             ) : (
@@ -2476,7 +2476,7 @@ const NameChangeManagement = ({ data, onDecide, certRegenData, onRegenDecide }) 
       <div className="space-y-10">
         <div className="flex justify-between items-end">
           <div className="space-y-1">
-            <h2 className="text-5xl font-black text-slate-900 uppercase tracking-tighter italic">Profile Name Changes</h2>
+            <h2 className="text-5xl font-black text-slate-900 uppercase tracking-tighter ">Profile Name Changes</h2>
             <p className="text-slate-500 font-medium">Verify and approve student/learner name updates for account profile integrity.</p>
           </div>
         </div>
@@ -2545,7 +2545,7 @@ const NameChangeManagement = ({ data, onDecide, certRegenData, onRegenDecide }) 
                           </button>
                         </div>
                       ) : (
-                        <span className="text-xs text-slate-400 italic">
+                        <span className="text-xs text-slate-400 ">
                           Processed
                         </span>
                       )}
@@ -2554,7 +2554,7 @@ const NameChangeManagement = ({ data, onDecide, certRegenData, onRegenDecide }) 
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="px-10 py-12 text-center text-slate-400 italic text-sm">
+                  <td colSpan="6" className="px-10 py-12 text-center text-slate-400  text-sm">
                     No profile name change requests found.
                   </td>
                 </tr>
@@ -2569,7 +2569,7 @@ const NameChangeManagement = ({ data, onDecide, certRegenData, onRegenDecide }) 
       <div className="space-y-10">
         <div className="flex justify-between items-end">
           <div className="space-y-1">
-            <h2 className="text-5xl font-black text-slate-900 uppercase tracking-tighter italic">Certificate Regeneration Requests</h2>
+            <h2 className="text-5xl font-black text-slate-900 uppercase tracking-tighter ">Certificate Regeneration Requests</h2>
             <p className="text-slate-500 font-medium">Verify and approve student/learner name updates on specific generated certificates.</p>
           </div>
         </div>
@@ -2643,7 +2643,7 @@ const NameChangeManagement = ({ data, onDecide, certRegenData, onRegenDecide }) 
                           </button>
                         </div>
                       ) : (
-                        <span className="text-xs text-slate-400 italic">
+                        <span className="text-xs text-slate-400 ">
                           Processed
                         </span>
                       )}
@@ -2652,7 +2652,7 @@ const NameChangeManagement = ({ data, onDecide, certRegenData, onRegenDecide }) 
                 ))
               ) : (
                 <tr>
-                  <td colSpan="7" className="px-10 py-12 text-center text-slate-400 italic text-sm">
+                  <td colSpan="7" className="px-10 py-12 text-center text-slate-400  text-sm">
                     No certificate regeneration requests found.
                   </td>
                 </tr>
@@ -2803,7 +2803,7 @@ const AdminAssignments = ({ courses }) => {
             <ClipboardList size={22} className="text-indigo-600" />
           </div>
           <div>
-            <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter italic">Assignments</h2>
+            <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter ">Assignments</h2>
             <p className="text-xs text-slate-500 font-medium">Manage essay tasks for enrolled students</p>
           </div>
         </div>
@@ -2864,7 +2864,7 @@ const AdminAssignments = ({ courses }) => {
       {/* CREATE / EDIT FORM */}
       {(view === 'create' || view === 'edit') && (
         <div className="max-w-3xl mx-auto bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
-          <h3 className="font-black text-slate-900 text-xl mb-6 uppercase tracking-tighter italic">{view === 'edit' ? 'Edit Assignment' : 'Create New Assignment'}</h3>
+          <h3 className="font-black text-slate-900 text-xl mb-6 uppercase tracking-tighter ">{view === 'edit' ? 'Edit Assignment' : 'Create New Assignment'}</h3>
           <div className="space-y-5">
             <div>
               <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-1">Assignment Title *</label>
@@ -2983,7 +2983,7 @@ const AdminAssignments = ({ courses }) => {
               <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${statusColor[selectedSubmission.status] || 'bg-slate-100 text-slate-600'}`}>{selectedSubmission.status}</span>
             </div>
             <div className="bg-slate-50 rounded-2xl p-6 text-sm text-slate-700 leading-relaxed font-medium whitespace-pre-wrap max-h-96 overflow-y-auto border border-slate-100">
-              {selectedSubmission.essayContent || <span className="text-slate-400 italic">No content submitted yet (draft)</span>}
+              {selectedSubmission.essayContent || <span className="text-slate-400 ">No content submitted yet (draft)</span>}
             </div>
           </div>
 

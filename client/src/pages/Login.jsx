@@ -309,7 +309,7 @@ const Login = () => {
                 <div className="relative z-10">
                   <div className="flex items-center justify-between mb-12">
                     <div>
-                      <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic">{isOtpMode ? 'ADMIN VERIFICATION' : forgotPasswordStage > 0 ? 'RESET PASSWORD' : 'LOGIN AS'}</h2>
+                      <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase ">{isOtpMode ? 'ADMIN VERIFICATION' : forgotPasswordStage > 0 ? 'RESET PASSWORD' : 'LOGIN AS'}</h2>
                     </div>
                     <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 group-hover:border-primary/50 transition-colors shadow-inner">
                       <Cpu className="text-primary animate-pulse" />
@@ -319,7 +319,7 @@ const Login = () => {
                   <form onSubmit={forgotPasswordStage > 0 ? handleForgotPasswordSubmit : handleSubmit} className="space-y-8">
                     {isOtpMode ? (
                       <div className="space-y-2 group/input animate-fade-in">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">Security OTP</label>
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 ">Security OTP</label>
                         <div className="relative">
                           <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within/input:text-primary transition-colors" size={18} />
                           <input
@@ -356,7 +356,7 @@ const Login = () => {
                       <>
                         {forgotPasswordStage === 1 && (
                           <div className="space-y-2 group/input">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">Registered Email</label>
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 ">Registered Email</label>
                             <div className="relative">
                               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within/input:text-primary transition-colors" size={18} />
                               <input
@@ -372,7 +372,7 @@ const Login = () => {
                         )}
                         {forgotPasswordStage === 2 && (
                           <div className="space-y-2 group/input animate-fade-in">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">Reset OTP</label>
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 ">Reset OTP</label>
                             <div className="relative">
                               <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within/input:text-primary transition-colors" size={18} />
                               <input
@@ -391,7 +391,7 @@ const Login = () => {
                         {forgotPasswordStage === 3 && (
                           <>
                             <div className="space-y-2 group/input animate-fade-in">
-                              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">New Password</label>
+                              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 ">New Password</label>
                               <div className="relative">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/input:text-primary transition-colors" size={18} />
                                 <input
@@ -413,7 +413,7 @@ const Login = () => {
                               </div>
                             </div>
                             <div className="space-y-2 group/input animate-fade-in mt-4">
-                              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">Confirm Password</label>
+                              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 ">Confirm Password</label>
                               <div className="relative">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/input:text-primary transition-colors" size={18} />
                                 <input
@@ -438,7 +438,7 @@ const Login = () => {
                     ) : (
                       <>
                         <div className="space-y-2 group/input">
-                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">Email</label>
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 ">Email</label>
                           <div className="relative">
                             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within/input:text-primary transition-colors" size={18} />
                             <input
@@ -453,7 +453,7 @@ const Login = () => {
                         </div>
 
                         <div className="space-y-2 group/input">
-                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">Password</label>
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 ">Password</label>
                           <div className="relative">
                             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/input:text-primary transition-colors" size={18} />
                             <input
@@ -533,7 +533,7 @@ const Login = () => {
                     <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">
                       Not have any account? <Link to="/signup" className="text-slate-900 hover:text-primary underline decoration-2 underline-offset-4 transition-colors ml-1">Register here</Link>
                     </p>
-                    <Link to="/hirer/login" className="text-primary text-[9px] font-black uppercase tracking-[0.2em] hover:text-emerald transition-all italic mt-4">Are you a Hirer? Go to Hirer Portal</Link>
+                    <Link to="/hirer/login" className="text-primary text-[9px] font-black uppercase tracking-[0.2em] hover:text-emerald transition-all  mt-4">Are you a Hirer? Go to Hirer Portal</Link>
                   </div>
                 </div>
               </div>

@@ -245,7 +245,7 @@ const ManageVideos = () => {
     <div className="space-y-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex flex-col gap-2">
-          <h2 className="text-6xl font-black text-slate-900 tracking-tighter uppercase italic flex items-center gap-4">
+          <h2 className="text-6xl font-black text-slate-900 tracking-tighter uppercase  flex items-center gap-4">
             <Film className="text-emerald-500" size={56} /> Video Hub
           </h2>
           <p className="text-slate-500 font-medium tracking-tight text-lg">
@@ -376,7 +376,7 @@ const ManageVideos = () => {
                 <p className="text-slate-400 font-bold uppercase tracking-wider text-xs">Querying Database...</p>
               </div>
             ) : videos.length === 0 ? (
-              <div className="py-20 text-center text-slate-400 font-medium italic border-2 border-dashed border-slate-100 rounded-3xl">
+              <div className="py-20 text-center text-slate-400 font-medium  border-2 border-dashed border-slate-100 rounded-3xl">
                 No videos found in the database. Use the upload panel to add some.
               </div>
             ) : (

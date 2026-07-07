@@ -151,7 +151,7 @@ const JobManagement = () => {
     <div className="space-y-8">
       <div className="flex justify-between items-center bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm">
         <div>
-          <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter italic">Job Management</h2>
+          <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter ">Job Management</h2>
           <p className="text-slate-500 text-sm font-medium">Create and deploy recruitment notices to the Nexus.</p>
         </div>
         <button 
@@ -353,7 +353,7 @@ const JobManagement = () => {
                       {job.status}
                     </span>
                   </div>
-                  <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-3 italic">{job.companyName}</p>
+                  <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-3 ">{job.companyName}</p>
                   <div className="flex flex-wrap gap-4 text-xs font-bold text-slate-500">
                     <span className="flex items-center gap-1.5"><MapPin size={14} className="text-primary" /> {job.location}</span>
                     <span className="flex items-center gap-1.5"><DollarSign size={14} className="text-primary" /> {job.salary}</span>

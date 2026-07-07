@@ -34,7 +34,7 @@ const CandidateList = () => {
     <div className="space-y-8">
       <div className="flex justify-between items-center bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm">
         <div>
-          <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter italic">Candidate Nexus</h2>
+          <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter ">Candidate Nexus</h2>
           <p className="text-slate-500 text-sm font-medium">Analyze and shortlist prospective green talent from the community.</p>
         </div>
         <div className="flex items-center gap-4">
@@ -94,7 +94,7 @@ const CandidateList = () => {
                           </span>
                         ))
                       ) : (
-                        <span className="text-slate-300 text-[10px] font-bold italic">No skills listed</span>
+                        <span className="text-slate-300 text-[10px] font-bold ">No skills listed</span>
                       )}
                     </div>
                   </td>

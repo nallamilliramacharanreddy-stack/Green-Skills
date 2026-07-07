@@ -72,7 +72,7 @@ const Contact = () => {
                 <Globe size={14} /> Global Support
               </motion.div>
               <h2 className="text-5xl md:text-7xl font-black text-slate-900 uppercase tracking-tighter leading-[0.9]">
-                Contact <br/><span className="text-primary italic">Us</span>
+                Contact <br/><span className="text-primary ">Us</span>
               </h2>
               <p className="text-slate-500 font-medium text-lg pt-4 max-w-sm">
                 Have a question or want to explore partnership opportunities? We'd love to hear from you.
@@ -196,7 +196,7 @@ const Contact = () => {
                     </div>
                     
                     <div className="space-y-4">
-                      <h3 className="text-4xl font-black text-slate-900 uppercase tracking-tighter italic">Successfully Sent</h3>
+                      <h3 className="text-4xl font-black text-slate-900 uppercase tracking-tighter ">Successfully Sent</h3>
                       <p className="text-slate-500 font-medium max-w-xs mx-auto">
                         Your message has been transmitted through the Nexus. We'll be in sync shortly.
                       </p>

@@ -37,7 +37,7 @@ const HiredUsers = () => {
         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-[100px]"></div>
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
           <div>
-            <h2 className="text-4xl font-black text-white uppercase tracking-tighter italic">Hired Portfolio</h2>
+            <h2 className="text-4xl font-black text-white uppercase tracking-tighter ">Hired Portfolio</h2>
             <p className="text-slate-400 text-sm font-medium mt-2">Verified placement records for your organization.</p>
           </div>
           <div className="flex items-center gap-4 px-6 py-4 bg-white/5 border border-white/10 rounded-[32px]">

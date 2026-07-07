@@ -86,7 +86,7 @@ const ShortlistedUsers = () => {
         <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-[100px]"></div>
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
           <div>
-            <h2 className="text-4xl font-black text-white uppercase tracking-tighter italic">Shortlisted Candidates</h2>
+            <h2 className="text-4xl font-black text-white uppercase tracking-tighter ">Shortlisted Candidates</h2>
             <p className="text-slate-400 text-sm font-medium mt-2">Manage scheduled interviews and communications for shortlisted talent.</p>
           </div>
           <div className="flex items-center gap-4 px-6 py-4 bg-white/5 border border-white/10 rounded-[32px]">
@@ -232,7 +232,7 @@ const ShortlistedUsers = () => {
                 <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto border border-indigo-100">
                   <Calendar className="text-indigo-500 w-8 h-8" />
                 </div>
-                <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter italic">
+                <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter ">
                   {selectedApp?.interviewDate ? 'Reschedule Interview' : 'Set Interview Details'}
                 </h3>
                 <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">

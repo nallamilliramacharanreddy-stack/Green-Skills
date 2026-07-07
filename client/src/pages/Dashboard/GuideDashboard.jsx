@@ -167,7 +167,7 @@ const GuideDashboard = () => {
                     return (
                       <div key={student._id || i} className="group p-5 bg-slate-50 rounded-3xl border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:border-primary/30 hover:shadow-md transition-all">
                         <div className="flex items-center gap-5">
-                          <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 text-slate-400 flex items-center justify-center font-black text-xl italic shadow-inner">
+                          <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 text-slate-400 flex items-center justify-center font-black text-xl  shadow-inner">
                             {student.name?.[0] || '?'}
                           </div>
                           <div>
@@ -206,7 +206,7 @@ const GuideDashboard = () => {
                     );
                   })
                 ) : (
-                  <div className="text-center py-12 text-slate-400 italic">No registered student nodes found.</div>
+                  <div className="text-center py-12 text-slate-400 ">No registered student nodes found.</div>
                 )}
               </div>
             </motion.div>
@@ -326,7 +326,7 @@ const GuideDashboard = () => {
                       );
                     })
                   ) : (
-                    <div className="text-center py-8 text-slate-400 italic text-xs">No upcoming events scheduled.</div>
+                    <div className="text-center py-8 text-slate-400  text-xs">No upcoming events scheduled.</div>
                   )}
                 </div>
 

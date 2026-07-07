@@ -235,7 +235,7 @@ const Signup = () => {
                 <div className="relative z-10">
                   <div className="flex items-center justify-between mb-12">
                     <div>
-                      <h3 className="text-3xl font-black text-slate-900 uppercase tracking-tighter italic">Register</h3>
+                      <h3 className="text-3xl font-black text-slate-900 uppercase tracking-tighter ">Register</h3>
                       <p className="text-slate-600 text-[10px] font-black tracking-[0.4em] uppercase">ACCOUNT REGISTRATION</p>
                     </div>
                     <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center border border-slate-100 shadow-inner">
@@ -266,7 +266,7 @@ const Signup = () => {
                           accept="image/*"
                         />
                       </div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Optional Identity Asset</p>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ">Optional Identity Asset</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-8">
@@ -334,7 +334,7 @@ const Signup = () => {
                       <p className="text-center mt-8 text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">
                         Registered? <Link to="/login" className="text-slate-900 hover:text-primary underline transition-all underline-offset-4 font-bold">Bypass to Login</Link>
                       </p>
-                      <Link to="/hirer/signup" className="text-primary text-[9px] font-black uppercase tracking-[0.2em] hover:text-emerald transition-all italic mt-4 block text-center">Recruiting for a company? Register as Hirer</Link>
+                      <Link to="/hirer/signup" className="text-primary text-[9px] font-black uppercase tracking-[0.2em] hover:text-emerald transition-all  mt-4 block text-center">Recruiting for a company? Register as Hirer</Link>
                     </div>
                   </form>
                 </div>

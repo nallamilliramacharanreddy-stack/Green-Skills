@@ -375,7 +375,7 @@ const HiringExams = () => {
                 <div className="w-20 h-20 bg-amber-50 text-amber-500 rounded-3xl flex items-center justify-center border border-amber-100 shadow-sm animate-pulse">
                   <Shield size={36} />
                 </div>
-                <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter italic leading-none">
+                <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter  leading-none">
                   AI Proctoring Enabled
                 </h3>
                 <p className="text-xs font-medium text-slate-500 leading-relaxed">
@@ -427,7 +427,7 @@ const HiringExams = () => {
               {/* Modal Header */}
               <div className="bg-white p-6 px-8 border-b border-slate-200 flex justify-between items-center shrink-0">
                 <div>
-                  <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight italic">Assessment Audit Report</h3>
+                  <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight ">Assessment Audit Report</h3>
                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
                     {selectedAttempt.quiz?.title || 'Hiring Assessment'}
                   </p>

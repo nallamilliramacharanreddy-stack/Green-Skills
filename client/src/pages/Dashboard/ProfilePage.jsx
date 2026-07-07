@@ -128,7 +128,7 @@ const ProfilePage = () => {
               <div className="space-y-12">
                 <div className="flex items-center gap-10">
                   <div className="relative group">
-                    <div className="w-32 h-32 bg-slate-900 rounded-[40px] flex items-center justify-center text-white text-5xl font-black uppercase italic overflow-hidden border-4 border-white shadow-xl">
+                    <div className="w-32 h-32 bg-slate-900 rounded-[40px] flex items-center justify-center text-white text-5xl font-black uppercase  overflow-hidden border-4 border-white shadow-xl">
                       {currentUser?.profilePicture ? (
                         <img src={currentUser.profilePicture.startsWith('http') ? currentUser.profilePicture : `${API_BASE_URL}${currentUser.profilePicture}`} className="w-full h-full object-cover" />
                       ) : (
@@ -144,10 +144,10 @@ const ProfilePage = () => {
                     })()}
                   </div>
                   <div>
-                    <h3 className="text-4xl font-black text-slate-900 uppercase tracking-tighter italic leading-none">
+                    <h3 className="text-4xl font-black text-slate-900 uppercase tracking-tighter  leading-none">
                       {currentUser?.name}
                     </h3>
-                    <p className="text-primary font-bold uppercase tracking-widest text-xs mt-3 flex items-center gap-2 italic">
+                    <p className="text-primary font-bold uppercase tracking-widest text-xs mt-3 flex items-center gap-2 ">
                       <CheckCircle size={14} /> Identity Authorized
                     </p>
                     {pendingRequest && (
@@ -210,7 +210,7 @@ const ProfilePage = () => {
                     <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange} accept="image/*" />
                   </div>
                   <div className="flex-1 space-y-2">
-                    <p className="text-sm text-slate-500 font-medium italic">Update your avatar or branding assets. Recommended: 512x512px.</p>
+                    <p className="text-sm text-slate-500 font-medium ">Update your avatar or branding assets. Recommended: 512x512px.</p>
                     <button type="button" onClick={() => fileInputRef.current.click()} className="text-[10px] font-black text-primary uppercase tracking-widest hover:underline">Change Photo</button>
                   </div>
                 </div>
@@ -297,7 +297,7 @@ const ProfilePage = () => {
                 className="bg-white w-full max-w-md rounded-[32px] p-8 border border-slate-100 shadow-2xl space-y-6"
               >
                 <div className="space-y-1">
-                  <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter italic">Change Security Password</h3>
+                  <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter ">Change Security Password</h3>
                   <p className="text-xs text-slate-500 font-medium">Update your account authentication credentials.</p>
                 </div>
 
@@ -361,7 +361,7 @@ const ProfilePage = () => {
                 className="bg-white w-full max-w-md rounded-[32px] p-8 border border-slate-100 shadow-2xl space-y-6"
               >
                 <div className="space-y-1">
-                  <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter italic">Request Name Change</h3>
+                  <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter ">Request Name Change</h3>
                   <p className="text-xs text-slate-500 font-bold">Admin verification is required for security and certificate integrity.</p>
                 </div>
 

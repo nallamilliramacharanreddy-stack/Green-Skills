@@ -75,7 +75,7 @@ const AICareerRoadmap = () => {
               </div>
             </div>
           )) : (
-            <div className="text-center text-slate-500 py-10 italic">Select a goal and generate your personalized AI roadmap.</div>
+            <div className="text-center text-slate-500 py-10 ">Select a goal and generate your personalized AI roadmap.</div>
           )}
         </div>
       </div>
@@ -439,7 +439,7 @@ const QuickToolsModule = () => {
                       </div>
                     ))
                   ) : (
-                    <div className="text-center py-12 text-slate-400 font-medium italic">
+                    <div className="text-center py-12 text-slate-400 font-medium ">
                       Your notebook is empty.
                     </div>
                   )}
@@ -545,7 +545,7 @@ const QuickToolsModule = () => {
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-12 text-slate-400 font-medium italic">
+                    <div className="text-center py-12 text-slate-400 font-medium ">
                       You have no active support tickets.
                     </div>
                   )}
@@ -978,7 +978,7 @@ const AIResumeBuilder = () => {
           <div className="w-20 h-20 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mb-6 animate-pulse border-4 border-rose-500/20">
             <BrainCircuit size={40} />
           </div>
-          <h2 className="text-3xl font-black tracking-tighter uppercase italic">Synthesizing Credentials</h2>
+          <h2 className="text-3xl font-black tracking-tighter uppercase ">Synthesizing Credentials</h2>
           <p className="text-slate-400 font-medium mt-2 max-w-sm mb-8 text-sm">
             {generatingProgress < 40 ? "Enhancing achievements vocabulary..." :
              generatingProgress < 70 ? "Mapping industry-standard green keywords..." :
@@ -1732,7 +1732,7 @@ const Placeholder = ({ title, desc }) => (
     <div className="w-20 h-20 bg-slate-900 rounded-3xl flex items-center justify-center mb-6 shadow-xl shadow-slate-900/20">
       <Sparkles className="text-white" size={32} />
     </div>
-    <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic mb-4">{title}</h2>
+    <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase  mb-4">{title}</h2>
     <p className="text-slate-500 font-medium max-w-md">{desc}</p>
     <div className="mt-8 px-6 py-3 bg-emerald-100 text-emerald-700 rounded-full font-bold text-xs uppercase tracking-widest flex items-center gap-2">
       <CheckCircle2 size={16} /> Module Initialized

@@ -43,7 +43,7 @@ const Videos = () => {
           <span className="text-xs font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-500 tracking-[0.2em] uppercase drop-shadow-sm mb-0.5">
             Knowledge Vault
           </span>
-          <h2 className="text-5xl font-black text-slate-900 tracking-tighter uppercase italic flex items-center gap-4">
+          <h2 className="text-5xl font-black text-slate-900 tracking-tighter uppercase  flex items-center gap-4">
             <Film className="text-emerald-500" size={48} /> Video Library
           </h2>
           <p className="text-slate-500 font-medium tracking-tight text-lg">

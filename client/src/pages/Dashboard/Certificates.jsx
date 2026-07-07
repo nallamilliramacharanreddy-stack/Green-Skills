@@ -125,7 +125,7 @@ const Certificates = () => {
               Return to Portal
             </button>
             <h1 className="text-5xl md:text-6xl lg:text-[5.5rem] font-medium text-white tracking-[-0.04em] leading-[0.9] mb-6">
-              Official<br /><span className="text-zinc-500 italic font-serif">Certificates.</span>
+              Official<br /><span className="text-zinc-500  font-serif">Certificates.</span>
             </h1>
             <p className="text-xs text-zinc-500 font-medium max-w-xl tracking-[0.2em] leading-relaxed uppercase">
               Your verified enterprise credentials. Access your secured academic and professional artifacts.
@@ -265,7 +265,7 @@ const Certificates = () => {
 
         {/* Downloaded Certificates Grid */}
         <div className="relative z-10 mt-20 pt-16 border-t border-[#1f1f1f]">
-          <h2 className="text-3xl font-medium text-white tracking-tight mb-8 uppercase italic flex items-center gap-3">
+          <h2 className="text-3xl font-medium text-white tracking-tight mb-8 uppercase  flex items-center gap-3">
             <Download className="text-indigo-500" size={24} /> Downloaded Certificates ({validCertificates.length})
           </h2>
           {validCertificates.length > 0 ? (

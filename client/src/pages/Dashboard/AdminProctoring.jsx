@@ -64,7 +64,7 @@ const AdminProctoring = () => {
     <div className="space-y-8">
       <div className="flex justify-between items-end mb-8">
         <div className="space-y-1">
-          <h2 className="text-5xl font-black text-slate-900 uppercase tracking-tighter italic">AI Proctoring Hub</h2>
+          <h2 className="text-5xl font-black text-slate-900 uppercase tracking-tighter ">AI Proctoring Hub</h2>
           <p className="text-slate-500 font-medium">Monitor, audit, and analyze assessment integrity.</p>
         </div>
         <div className="relative w-72">
@@ -295,7 +295,7 @@ const ReportViewer = ({ result, onBack, onInvalidate }) => {
             <h3 className="text-lg font-black text-red-950 uppercase tracking-tight">Assessment Automatically Terminated</h3>
             <p className="text-red-700 text-sm font-medium mt-1 leading-relaxed">
               This assessment was automatically submitted because of a critical integrity violation:
-              <strong className="bg-red-200/50 px-2 py-0.5 rounded text-red-950 ml-1 font-bold italic">"{result.autoSubmitReason}"</strong>.
+              <strong className="bg-red-200/50 px-2 py-0.5 rounded text-red-950 ml-1 font-bold ">"{result.autoSubmitReason}"</strong>.
             </p>
           </div>
         </motion.div>
@@ -309,7 +309,7 @@ const ReportViewer = ({ result, onBack, onInvalidate }) => {
             className="w-24 h-24 rounded-3xl object-cover border border-slate-100 shadow"
           />
           <div>
-            <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter italic">{result.user?.name || 'Unknown Candidate'}</h2>
+            <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter ">{result.user?.name || 'Unknown Candidate'}</h2>
             <p className="text-slate-400 font-black text-[10px] uppercase tracking-widest mt-1">Candidate ID: {result.user?._id || 'N/A'}</p>
             <div className="flex items-center gap-3 mt-4 flex-wrap">
               <span className="px-3 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold">{result.course?.title || 'Solar Panel Course'}</span>

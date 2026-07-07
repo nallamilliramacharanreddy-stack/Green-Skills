@@ -234,7 +234,7 @@ const CertificateGenerator = ({ course, isOpen, onClose, user, onGenerated, init
           </button>
 
           <div className="p-10">
-            <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter italic mb-8">
+            <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter  mb-8">
               Course Completion Certificate
             </h2>
 
@@ -335,7 +335,7 @@ const CertificateGenerator = ({ course, isOpen, onClose, user, onGenerated, init
                         {studentName}
                       </h1>
                       
-                      <p className="text-slate-600 text-[16px] mb-2 font-serif italic">
+                      <p className="text-slate-600 text-[16px] mb-2 font-serif ">
                         has successfully completed
                       </p>
                       

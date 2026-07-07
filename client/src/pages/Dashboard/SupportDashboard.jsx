@@ -410,7 +410,7 @@ const SupportDashboard = () => {
                       </div>
                     ))
                   ) : (
-                    <div className="text-center py-12 text-slate-400 text-xs italic">
+                    <div className="text-center py-12 text-slate-400 text-xs ">
                       No tickets in roster.
                     </div>
                   )}
@@ -528,7 +528,7 @@ const SupportDashboard = () => {
                               );
                             })
                           ) : (
-                            <div className="text-center py-6 text-slate-400 text-xs italic">
+                            <div className="text-center py-6 text-slate-400 text-xs ">
                               No responses recorded. Transmit the first reply below.
                             </div>
                           )}

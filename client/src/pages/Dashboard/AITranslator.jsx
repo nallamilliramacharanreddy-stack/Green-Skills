@@ -292,7 +292,7 @@ const AITranslator = () => {
               <Languages className="text-white" size={28} />
             </div>
             <div>
-              <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic">Neural Video Translator</h1>
+              <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase ">Neural Video Translator</h1>
               <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Multi-modal AI Dubbing & Lip-Sync Pipeline</p>
             </div>
           </div>
@@ -443,7 +443,7 @@ const AITranslator = () => {
                   <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-6">
                     <Loader2 size={40} className="text-indigo-500 animate-spin" />
                   </div>
-                  <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter italic">AI Pipeline Active</h2>
+                  <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter ">AI Pipeline Active</h2>
                   <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em] mt-2">{processingMessage}</p>
                 </div>
 

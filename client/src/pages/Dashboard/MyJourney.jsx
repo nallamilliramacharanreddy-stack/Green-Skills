@@ -214,7 +214,7 @@ const MyJourney = () => {
   return (
     <DashboardLayout role="student">
       <div className="mb-10">
-        <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter italic">My Learning Journey</h2>
+        <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter ">My Learning Journey</h2>
         <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.3em] mt-2">Synchronizing your path to green-tech mastery</p>
       </div>
 
@@ -227,7 +227,7 @@ const MyJourney = () => {
               <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
                 <PlayCircle size={20} />
               </div>
-              <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight italic">Active Nodes ({allEnrolled.length})</h3>
+              <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight ">Active Nodes ({allEnrolled.length})</h3>
             </div>
 
             <div className="space-y-6">
@@ -243,8 +243,8 @@ const MyJourney = () => {
 
                   <div className="flex justify-between items-start mb-6">
                     <div>
-                      <span className="text-[10px] font-black text-primary uppercase tracking-widest italic">{course.category || 'Green Tech'}</span>
-                      <h4 className="text-xl font-black text-slate-900 uppercase tracking-tighter italic leading-none mt-1">{course.title}</h4>
+                      <span className="text-[10px] font-black text-primary uppercase tracking-widest ">{course.category || 'Green Tech'}</span>
+                      <h4 className="text-xl font-black text-slate-900 uppercase tracking-tighter  leading-none mt-1">{course.title}</h4>
                     </div>
                     <div className={`text-[10px] font-black px-4 py-2 rounded-full uppercase tracking-widest ${getCourseProgress(course) >= 100 ? 'bg-emerald-100 text-emerald-600' : 'bg-primary/10 text-primary'}`}>
                       {getCourseProgress(course) >= 100 ? 'Completed' : 'In Progress'}
@@ -253,8 +253,8 @@ const MyJourney = () => {
 
                   <div className="space-y-4">
                     <div className="flex justify-between items-end">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Sync Status</span>
-                      <span className="text-xs font-black text-slate-900 italic">{getCourseProgress(course)}% Synced</span>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ">Sync Status</span>
+                      <span className="text-xs font-black text-slate-900 ">{getCourseProgress(course)}% Synced</span>
                     </div>
                     <div className="w-full h-2 bg-slate-50 rounded-full overflow-hidden">
                       <div className="h-full bg-primary" style={{ width: `${getCourseProgress(course)}%` }}></div>
@@ -287,7 +287,7 @@ const MyJourney = () => {
               <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-600">
                 <Award size={20} />
               </div>
-              <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight italic">Completed Nodes ({strictlyCompleted.length})</h3>
+              <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight ">Completed Nodes ({strictlyCompleted.length})</h3>
             </div>
 
             <div className="space-y-6">
@@ -301,8 +301,8 @@ const MyJourney = () => {
                 >
                   <div className="flex justify-between items-center">
                     <div>
-                      <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest italic">Specialization Achieved</span>
-                      <h4 className="text-xl font-black text-slate-900 uppercase tracking-tighter italic leading-none mt-1">{course.title}</h4>
+                      <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest ">Specialization Achieved</span>
+                      <h4 className="text-xl font-black text-slate-900 uppercase tracking-tighter  leading-none mt-1">{course.title}</h4>
                     </div>
                     <div
                       style={{ backgroundColor: '#10b981', color: '#ffffff' }}
@@ -400,7 +400,7 @@ const MyJourney = () => {
               <div className="w-10 h-10 bg-indigo-500/10 rounded-xl flex items-center justify-center text-indigo-600">
                 <Award size={20} />
               </div>
-              <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight italic">Regeneration</h3>
+              <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight ">Regeneration</h3>
             </div>
 
             <div className="space-y-6">
@@ -412,8 +412,8 @@ const MyJourney = () => {
                     <div key={idx} className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-xl relative overflow-hidden">
                       <div className="flex justify-between items-start mb-4">
                         <div>
-                          <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest italic">ID: {cert.certificateId}</span>
-                          <h4 className="text-lg font-black text-slate-900 uppercase tracking-tighter italic leading-none mt-1">{cert.courseName}</h4>
+                          <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest ">ID: {cert.certificateId}</span>
+                          <h4 className="text-lg font-black text-slate-900 uppercase tracking-tighter  leading-none mt-1">{cert.courseName}</h4>
                           <p className="text-[10px] text-slate-400 font-bold uppercase mt-2">NAME: <span className="text-slate-800">{cert.candidateName}</span></p>
                         </div>
                       </div>
@@ -503,7 +503,7 @@ const MyJourney = () => {
         >
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-2">
-              <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter italic flex items-center gap-2">
+              <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter  flex items-center gap-2">
                 <Calendar className="text-fuchsia-500" size={20} /> Streak
               </h3>
             </div>
@@ -561,7 +561,7 @@ const MyJourney = () => {
         >
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-2">
-              <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter italic flex items-center gap-2">
+              <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter  flex items-center gap-2">
                 <Download className="text-indigo-500" size={20} /> Downloaded Certificates
               </h3>
             </div>
@@ -639,7 +639,7 @@ const MyJourney = () => {
               className="bg-white w-full max-w-md rounded-[32px] p-8 border border-slate-100 shadow-2xl space-y-6"
             >
               <div className="space-y-1">
-                <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter italic">Regenerate Certificate</h3>
+                <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter ">Regenerate Certificate</h3>
                 <p className="text-xs text-slate-500 font-bold">Request admin permission to change the name on your certificate.</p>
               </div>
 
