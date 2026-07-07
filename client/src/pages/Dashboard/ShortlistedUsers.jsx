@@ -210,11 +210,69 @@ const ShortlistedUsers = () => {
           })
         )}
         {!loading && shortlisted.length === 0 && (
-          <div className="col-span-full text-center py-20 bg-slate-50 rounded-[40px] border-2 border-dashed border-slate-200">
-            <Users className="mx-auto w-16 h-16 text-slate-200 mb-4" />
-            <h3 className="text-xl font-black text-slate-400 uppercase tracking-tighter">No Shortlisted Candidates</h3>
-            <p className="text-slate-400 text-sm mt-2">When candidates clear screening exams or are manually shortlisted, they will appear here.</p>
-          </div>
+          <>
+            <div className="col-span-full mb-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-lg text-[10px] font-black uppercase tracking-widest border border-amber-200">
+                <Users size={12} />
+                Demo Candidate (Example)
+              </div>
+            </div>
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white p-8 rounded-[40px] border border-gray-200 border-dashed opacity-70 shadow-sm transition-all flex flex-col justify-between min-h-[380px]"
+            >
+              <div>
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-200">
+                      <Users size={28} className="text-slate-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter leading-none">JOHN DOE (EXAMPLE)</h3>
+                      <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1.5">B.Tech Energy Engineering</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Badges */}
+                <div className="flex flex-wrap gap-2 mb-6">
+                  <span className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-[9px] font-black uppercase tracking-widest border border-indigo-100">
+                    Shortlisted
+                  </span>
+                  <span className="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-lg text-[9px] font-black uppercase tracking-widest border border-emerald-100 flex items-center gap-1">
+                    <CheckCircle size={10} /> Passed Quiz (95%)
+                  </span>
+                </div>
+
+                <div className="p-5 bg-slate-50 rounded-[24px] border border-slate-100 mb-6 space-y-3 font-medium text-xs text-slate-600">
+                  <div className="flex items-center gap-2.5">
+                    <Briefcase size={14} className="text-primary" />
+                    <span>Role: <strong>Renewable Energy Specialist</strong></span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <Mail size={14} className="text-primary" />
+                    <span className="truncate">john.doe@example.com</span>
+                  </div>
+                </div>
+
+                {/* Scheduled interview info box */}
+                <div className="p-5 bg-amber-50/60 border border-amber-100/60 rounded-[24px] mb-6 flex items-center gap-2.5 text-xs text-amber-700 font-bold">
+                  <Clock size={14} />
+                  <span>Interview date not set</span>
+                </div>
+              </div>
+
+              <div className="flex gap-2 mt-auto w-full">
+                <button 
+                  disabled
+                  className="w-full py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest bg-slate-100 text-slate-400 shadow-none flex items-center justify-center gap-2 cursor-not-allowed"
+                >
+                  <Calendar size={12} /> Set Interview Time
+                </button>
+              </div>
+            </motion.div>
+          </>
         )}
       </div>
 
