@@ -79,7 +79,7 @@ export default function GeoTrackerHirer() {
     }
     setPinLoading(true);
     try {
-      const response = await axios.get(`https://nominatim.openstreetmap.org/search?postalcode=${formData.pincode}&country=india&format=json`);
+      const response = await axios.get(`https://nominatim.openstreetmap.org/search?q=${formData.pincode}+India&format=json`);
       if (response.data && response.data.length > 0) {
         const data = response.data[0];
         setPosition({ lat: parseFloat(data.lat), lng: parseFloat(data.lon) });
@@ -92,9 +92,9 @@ export default function GeoTrackerHirer() {
           state: parts.length > 1 ? parts[parts.length - 2] : prev.state,
           address: data.display_name
         }));
-        toast.success('Location fetched successfully');
+        toast.success('Pincode verified successfully');
       } else {
-        toast.error('Could not find location for this pincode');
+        toast.error('Could not find location for this pincode. Try Map or Live location.');
       }
     } catch (err) {
       console.error('Geocoding error', err);
@@ -104,9 +104,32 @@ export default function GeoTrackerHirer() {
     }
   };
 
+  const handleLiveLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported by your browser');
+      return;
+    }
+    setPinLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        toast.success('Live location acquired!');
+        setPinLoading(false);
+      },
+      (err) => {
+        console.error(err);
+        toast.error('Unable to retrieve your location');
+        setPinLoading(false);
+      }
+    );
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === 'pincode' && locationMethod === 'pincode') {
+      setPosition(null);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -321,8 +344,9 @@ export default function GeoTrackerHirer() {
                     <h3 className="text-sm font-black text-slate-400 uppercase tracking-wider mb-2">Location Targeting</h3>
                     
                     <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
-                      <button type="button" onClick={() => setLocationMethod('pincode')} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${locationMethod === 'pincode' ? 'bg-white shadow-sm text-primary' : 'text-slate-500 hover:text-slate-700'}`}>Use Pincode</button>
-                      <button type="button" onClick={() => setLocationMethod('map')} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${locationMethod === 'map' ? 'bg-white shadow-sm text-primary' : 'text-slate-500 hover:text-slate-700'}`}>Pin on Map</button>
+                      <button type="button" onClick={() => { setLocationMethod('pincode'); setPosition(null); }} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors ${locationMethod === 'pincode' ? 'bg-white shadow-sm text-primary' : 'text-slate-500 hover:text-slate-700'}`}>Pincode</button>
+                      <button type="button" onClick={() => { setLocationMethod('live'); setPosition(null); }} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors ${locationMethod === 'live' ? 'bg-white shadow-sm text-primary' : 'text-slate-500 hover:text-slate-700'}`}>Live Location</button>
+                      <button type="button" onClick={() => { setLocationMethod('map'); setPosition(null); }} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors ${locationMethod === 'map' ? 'bg-white shadow-sm text-primary' : 'text-slate-500 hover:text-slate-700'}`}>Pin Map</button>
                     </div>
 
                     {locationMethod === 'pincode' && (
@@ -332,18 +356,49 @@ export default function GeoTrackerHirer() {
                           <div className="flex gap-2">
                             <input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange} className="flex-1 px-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#00E5FF] outline-none" placeholder="e.g. 500081" />
                             <button type="button" onClick={handlePincodeSearch} disabled={pinLoading} className="px-4 py-2 bg-[#00E5FF] text-white font-bold rounded-xl hover:bg-[#00cce6] transition-colors disabled:opacity-50">
-                              {pinLoading ? '...' : 'Fetch'}
+                              {pinLoading ? '...' : 'Verify'}
                             </button>
                           </div>
+                          {!position && formData.pincode && (
+                            <p className="text-[10px] text-rose-500 mt-1 font-medium">Please click Verify to cross-check this pincode.</p>
+                          )}
                         </div>
                         {position && (
-                          <div className="text-xs text-emerald-600 font-medium bg-emerald-50 p-2 rounded-lg">
-                            Location found: {formData.city}, {formData.state}
+                          <div className="text-xs text-emerald-600 font-medium bg-emerald-50 p-2 rounded-lg border border-emerald-100">
+                            ✓ Pincode verified: {formData.city}, {formData.state}
                           </div>
                         )}
                         <div>
                           <label className="block text-xs font-bold text-slate-700 mb-1">Complete Address</label>
                           <textarea name="address" value={formData.address} onChange={handleInputChange} rows={2} className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#00E5FF] outline-none" placeholder="Building, Street, Area"></textarea>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1">City</label>
+                            <input type="text" name="city" value={formData.city} onChange={handleInputChange} className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl outline-none" />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1">State</label>
+                            <input type="text" name="state" value={formData.state} onChange={handleInputChange} className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl outline-none" />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {locationMethod === 'live' && (
+                      <div className="space-y-4 p-4 border border-slate-100 rounded-xl bg-slate-50/50">
+                        <button type="button" onClick={handleLiveLocation} disabled={pinLoading} className="w-full py-3 bg-[#4F46E5] text-white font-bold rounded-xl hover:bg-[#4338ca] transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                          <Navigation size={18} /> {pinLoading ? 'Getting location...' : 'Get My Live Location'}
+                        </button>
+                        {position && (
+                          <div className="text-xs text-emerald-600 font-medium bg-emerald-50 p-2 rounded-lg border border-emerald-100 flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                            Live location acquired successfully!
+                          </div>
+                        )}
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Complete Address</label>
+                          <textarea required name="address" value={formData.address} onChange={handleInputChange} rows={2} className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#4F46E5] outline-none" placeholder="Building, Street, Area"></textarea>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
