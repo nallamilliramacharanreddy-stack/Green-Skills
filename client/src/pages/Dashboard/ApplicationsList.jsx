@@ -255,7 +255,14 @@ const ApplicationsList = () => {
 
                         <div className="flex items-center gap-2 mb-3">
                           <Briefcase size={12} className="text-primary" />
-                          <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest italic">Applied for: {app.jobId?.title}</p>
+                          <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest italic">
+                            Applied for: {app.jobId?.title || app.geoVacancyId?.jobTitle || 'Unknown Position'}
+                          </p>
+                          {app.geoVacancyId && (
+                            <span className="ml-2 px-2 py-0.5 bg-rose-50 text-rose-600 border border-rose-100 rounded text-[8px] font-black uppercase tracking-widest flex items-center gap-1">
+                              <MapPin size={8} /> Geo Vacancy
+                            </span>
+                          )}
                         </div>
 
                         <div className="flex flex-wrap gap-4 text-xs font-bold text-slate-500">

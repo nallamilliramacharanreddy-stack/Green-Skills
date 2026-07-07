@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 
 const applicationSchema = new mongoose.Schema({
-  jobId: { type: mongoose.Schema.Types.ObjectId, ref: 'Job', required: true },
+  jobId: { type: mongoose.Schema.Types.ObjectId, ref: 'Job' }, // Made optional
+  geoVacancyId: { type: mongoose.Schema.Types.ObjectId, ref: 'GeoVacancy' },
   studentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   employerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   status: {

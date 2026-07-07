@@ -152,6 +152,7 @@ const getEmployerApplications = async (req, res) => {
   try {
     const apps = await Application.find({ employerId: req.params.employerId })
       .populate('jobId')
+      .populate('geoVacancyId')
       .populate('studentId', 'name email education profilePicture');
     res.json(apps);
   } catch (error) {
@@ -184,6 +185,7 @@ const updateApplicationStatus = async (req, res) => {
 
     app = await Application.findById(id)
       .populate('jobId')
+      .populate('geoVacancyId')
       .populate('studentId')
       .populate('employerId');
 
@@ -191,13 +193,13 @@ const updateApplicationStatus = async (req, res) => {
       name: app.studentId?.name || 'Candidate',
       email: app.studentId?.email,
       phone: app.studentId?.mobile || '',
-      appliedRole: app.jobId?.title || 'the applied position'
+      appliedRole: app.jobId?.title || app.geoVacancyId?.jobTitle || 'the applied position'
     };
 
     const recruiter = {
       name: app.employerId?.name || 'Hiring Team',
       designation: app.employerId?.role || 'Recruiter',
-      companyName: app.jobId?.companyName || (app.employerId?.companyDetails?.companyName || 'Our Company'),
+      companyName: app.jobId?.companyName || app.geoVacancyId?.companyName || (app.employerId?.companyDetails?.companyName || 'Our Company'),
       companyEmail: app.employerId?.email || ''
     };
 
@@ -370,4 +372,29 @@ const getStudentApplications = async (req, res) => {
   }
 };
 
-module.exports = { applyForJob, getEmployerApplications, updateApplicationStatus, getStudentApplications };
+const applyForGeoVacancy = async (req, res) => {
+  try {
+    const { geoVacancyId, studentId, employerId } = req.body;
+    
+    // Check if already applied
+    const existing = await Application.findOne({ geoVacancyId, studentId });
+    if (existing) {
+      return res.status(400).json({ message: 'You have already applied for this geo vacancy.' });
+    }
+
+    const application = new Application({
+      geoVacancyId,
+      studentId,
+      employerId,
+      status: 'pending'
+    });
+
+    await application.save();
+    res.status(201).json({ message: 'Application submitted successfully', application });
+  } catch (error) {
+    console.error('Error applying for geo vacancy:', error);
+    res.status(500).json({ message: 'Server error while applying' });
+  }
+};
+
+module.exports = { applyForJob, getEmployerApplications, updateApplicationStatus, getStudentApplications, applyForGeoVacancy };

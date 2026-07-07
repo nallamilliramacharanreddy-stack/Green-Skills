@@ -8,6 +8,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import DashboardLayout from '../../components/layout/DashboardLayout';
+import { useAuth } from '../../context/AuthContext';
 
 // Fix Leaflet's default icon path issues
 delete L.Icon.Default.prototype._getIconUrl;
@@ -52,12 +53,14 @@ function SetMapBounds({ jobs, userLocation }) {
 }
 
 export default function NearbyJobs() {
+  const { user } = useAuth();
   const [phase, setPhase] = useState('requesting_permission'); // requesting_permission, animating, results, error
   const [userLocation, setUserLocation] = useState(null);
   const [jobs, setJobs] = useState([]);
   const [loadingText, setLoadingText] = useState('Searching nearby jobs...');
   const [viewMode, setViewMode] = useState('grid'); // grid or map
   const [errorMsg, setErrorMsg] = useState('');
+  const [applyingTo, setApplyingTo] = useState(null);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -105,6 +108,23 @@ export default function NearbyJobs() {
           setPhase('results');
         }, 4000);
       });
+  };
+
+  const handleApply = async (geoVacancyId, employerId) => {
+    if (!user) return;
+    setApplyingTo(geoVacancyId);
+    try {
+      await axios.post(`${API_URL}/applications/geo-apply`, {
+        geoVacancyId,
+        studentId: user._id,
+        employerId
+      });
+      toast.success('Successfully applied for this position!');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to submit application');
+    } finally {
+      setApplyingTo(null);
+    }
   };
 
   const renderAnimation = () => (
@@ -223,9 +243,13 @@ export default function NearbyJobs() {
             <button className="flex-1 py-3 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors">
               View Details
             </button>
-            <button className="flex-1 py-3 bg-gradient-to-r from-[#00E5FF] to-[#4F46E5] text-white font-bold rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-1 group/btn">
-              Apply Now
-              <ChevronRight size={18} className="group-hover/btn:translate-x-1 transition-transform" />
+            <button 
+              onClick={() => handleApply(job._id, job.hirerId?._id)}
+              disabled={applyingTo === job._id}
+              className="flex-1 py-3 bg-gradient-to-r from-[#00E5FF] to-[#4F46E5] text-white font-bold rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-1 group/btn disabled:opacity-70"
+            >
+              {applyingTo === job._id ? 'Applying...' : 'Apply Now'}
+              {!applyingTo && <ChevronRight size={18} className="group-hover/btn:translate-x-1 transition-transform" />}
             </button>
           </div>
         </motion.div>
