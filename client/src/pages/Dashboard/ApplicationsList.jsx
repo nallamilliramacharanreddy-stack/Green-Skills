@@ -5,7 +5,7 @@ import {
   FileText, CheckCircle, XCircle, 
   ExternalLink, User, Briefcase,
   Clock, Filter, Search, Award, Calendar,
-  Video, MailCheck, RefreshCw, ChevronRight
+  Video, MailCheck, RefreshCw, ChevronRight, MapPin
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
