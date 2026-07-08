@@ -1605,10 +1605,6 @@ const AIResumeBuilder = () => {
           </div>
         </div>
       )}
-
-      <div className="mt-12 pt-12 border-t-2 border-slate-100">
-        <SmartJobMatch />
-      </div>
     </div>
   );
 };
@@ -1873,6 +1869,7 @@ const features = [
   { id: 'tools', icon: Brain, title: 'Quick Tools', component: QuickToolsModule },
   { id: 'language', icon: Globe2, title: 'Regional Support', component: RegionalLanguageSupport },
   { id: 'resume', icon: FileText, title: 'AI Resume Builder', component: AIResumeBuilder },
+  { id: 'match', icon: Target, title: 'AI Resume Match', component: SmartJobMatch },
 ];
 
 const Placeholder = ({ title, desc }) => (
