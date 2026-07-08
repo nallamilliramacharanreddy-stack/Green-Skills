@@ -1282,10 +1282,10 @@ const AIResumeBuilder = () => {
                     </div>
 
                     {/* Two Column Body */}
-                    <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+                    <div className="flex flex-row flex-1 overflow-hidden">
                     
                     {/* Left Gray Sidebar: #E5E7EB */}
-                    <div className="w-full md:w-[32%] bg-[#E5E7EB] p-6 space-y-8 border-r border-slate-300 shrink-0 font-opensans">
+                    <div className="w-[32%] bg-[#E5E7EB] p-6 space-y-8 border-r border-slate-300 shrink-0 font-opensans">
                       {/* CONTACT */}
                       <div className="space-y-3">
                         <h4 className="text-[11px] font-black text-[#2F3B52] uppercase tracking-[0.2em] border-b border-[#2F3B52] pb-1 font-poppins">CONTACT</h4>
