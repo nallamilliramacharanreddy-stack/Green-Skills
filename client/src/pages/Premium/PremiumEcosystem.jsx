@@ -1214,10 +1214,17 @@ const AIResumeBuilder = () => {
               
               {/* Tab 1: Live Resume rendering */}
               {activeTab === 'resume' && (
-                <div className="w-full overflow-x-auto pb-4">
+                <div 
+                  className="w-full max-w-[794px] mx-auto overflow-hidden rounded-lg shadow-lg bg-slate-50 border border-slate-200"
+                  style={{ containerType: 'inline-size', aspectRatio: '210/297' }}
+                >
                   <div 
-                    className="resume-print-container border border-slate-200 bg-white text-[#2F3B52] shadow-lg mx-auto overflow-hidden font-opensans flex flex-col relative shrink-0" 
-                    style={{ width: '794px', height: '1123px' }}
+                    className="resume-print-container bg-white text-[#2F3B52] overflow-hidden font-opensans flex flex-col relative origin-top-left" 
+                    style={{ 
+                      width: '794px', 
+                      height: '1123px',
+                      transform: 'scale(calc(100cqi / 794))'
+                    }}
                   >
                     {/* Top Header: Dark Navy Header #2F3B52 */}
                     <div className="bg-[#2F3B52] text-white py-12 px-8 text-center space-y-2 relative font-montserrat shrink-0">
