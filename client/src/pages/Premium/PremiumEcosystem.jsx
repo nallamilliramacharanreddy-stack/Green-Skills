@@ -523,6 +523,10 @@ const QuickToolsModule = () => {
           </button>
         </div>
       </div>
+      
+      <div className="mt-12 pt-12 border-t-2 border-slate-100">
+        <SmartJobMatch />
+      </div>
 
       {/* Notes Slide-over Modal */}
       <AnimatePresence>
