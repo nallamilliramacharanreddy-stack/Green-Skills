@@ -1214,7 +1214,7 @@ const AIResumeBuilder = () => {
               
               {/* Tab 1: Live Resume rendering */}
               {activeTab === 'resume' && (
-                <div className="resume-print-container border border-slate-200 bg-white text-[#2F3B52] shadow-lg max-w-[800px] mx-auto overflow-hidden font-opensans">
+                <div className="resume-print-container border border-slate-200 bg-white text-[#2F3B52] shadow-lg w-[210mm] min-h-[297mm] mx-auto overflow-hidden font-opensans origin-top transform scale-75 sm:scale-100">
                   {/* Top Header: Dark Navy Header #2F3B52 */}
                   <div className="bg-[#2F3B52] text-white py-16 px-8 text-center space-y-2 relative font-montserrat">
                     <h1 className="text-5xl font-black uppercase tracking-[0.15em] leading-none">{resumeData.name}</h1>
