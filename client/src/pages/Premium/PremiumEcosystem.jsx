@@ -1079,6 +1079,36 @@ const AIResumeBuilder = () => {
 
   return (
     <div className="space-y-6">
+      <style>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          .resume-print-container, .resume-print-container * {
+            visibility: visible;
+          }
+          .resume-print-container {
+            position: fixed !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 210mm !important;
+            height: 297mm !important;
+            max-width: none !important;
+            max-height: none !important;
+            transform: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            page-break-inside: avoid !important;
+            page-break-after: avoid !important;
+            box-shadow: none !important;
+            border: none !important;
+          }
+          @page {
+            size: A4 portrait;
+            margin: 0;
+          }
+        }
+      `}</style>
       {/* Header */}
       <div className="flex items-center justify-between no-print">
         <div>
