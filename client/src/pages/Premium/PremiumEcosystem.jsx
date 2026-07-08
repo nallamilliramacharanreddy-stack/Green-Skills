@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
@@ -879,6 +879,24 @@ const AIResumeBuilder = () => {
   const [loadingRefine, setLoadingRefine] = useState(false);
   const [generatingProgress, setGeneratingProgress] = useState(0);
 
+  // Resize logic for precise A4 fitting without scrollbars
+  const containerRef = useRef(null);
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const updateScale = () => {
+      if (containerRef.current) {
+        const { width } = containerRef.current.getBoundingClientRect();
+        setScale(Math.min(1, width / 794)); // Never scale up beyond actual A4 size, only scale down
+      }
+    };
+    updateScale();
+    // Use a small timeout to let React render the DOM first
+    setTimeout(updateScale, 100);
+    window.addEventListener('resize', updateScale);
+    return () => window.removeEventListener('resize', updateScale);
+  }, [stage, activeTab]);
+
   const questionsList = [
     { key: 'name', label: 'Full Name', category: 'Personal Information', placeholder: 'e.g. Alex Mercer' },
     { key: 'phone', label: 'Mobile Number', category: 'Personal Information', placeholder: 'e.g. +91 98765 43210' },
@@ -1215,15 +1233,16 @@ const AIResumeBuilder = () => {
               {/* Tab 1: Live Resume rendering */}
               {activeTab === 'resume' && (
                 <div 
-                  className="w-full max-w-[794px] mx-auto overflow-hidden rounded-lg shadow-lg bg-slate-50 border border-slate-200"
-                  style={{ containerType: 'inline-size', aspectRatio: '210/297' }}
+                  ref={containerRef}
+                  className="w-full max-w-[794px] mx-auto overflow-hidden rounded-lg shadow-lg bg-slate-50 border border-slate-200 relative"
+                  style={{ height: `${1123 * scale}px` }}
                 >
                   <div 
-                    className="resume-print-container bg-white text-[#2F3B52] overflow-hidden font-opensans flex flex-col relative origin-top-left" 
+                    className="resume-print-container bg-white text-[#2F3B52] overflow-hidden font-opensans flex flex-col absolute top-0 left-0 origin-top-left" 
                     style={{ 
                       width: '794px', 
                       height: '1123px',
-                      transform: 'scale(calc(100cqi / 794))'
+                      transform: `scale(${scale})`
                     }}
                   >
                     {/* Top Header: Dark Navy Header #2F3B52 */}
