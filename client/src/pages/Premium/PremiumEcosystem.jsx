@@ -83,49 +83,193 @@ const AICareerRoadmap = () => {
   </div>
 )};
 
-const SmartJobMatch = () => (
-  <div className="space-y-6">
-    <div className="flex items-center justify-between">
-      <div>
-        <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Smart Job Match Engine</h3>
-        <p className="text-sm text-slate-500 font-medium">AI-weighted percentage calculator for job readiness</p>
+const SmartJobMatch = () => {
+  const { user } = useAuth();
+  const [file, setFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [extractedSkills, setExtractedSkills] = useState([]);
+  const [matches, setMatches] = useState([]);
+  const [analyzed, setAnalyzed] = useState(false);
+  const [applyingTo, setApplyingTo] = useState(null);
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!file) {
+      toast.error('Please select a resume file first.');
+      return;
+    }
+    
+    // Check size limit (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File size exceeds 10MB limit.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('resume', file);
+
+    setLoading(true);
+    try {
+      const res = await axios.post(`${API_URL}/ai/resume-match`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      setExtractedSkills(res.data.extractedSkills);
+      setMatches(res.data.matches);
+      setAnalyzed(true);
+      toast.success('Resume analyzed successfully!');
+    } catch (error) {
+      console.error(error);
+      toast.error(error.response?.data?.message || 'Error analyzing resume');
+    }
+    setLoading(false);
+  };
+
+  const handleApply = async (match) => {
+    if (!user) return;
+    setApplyingTo(match.id);
+    try {
+      const endpoint = match.type === 'GeoVacancy' ? '/applications/geo-apply' : '/applications/apply';
+      const payload = match.type === 'GeoVacancy' 
+        ? { geoVacancyId: match.id, studentId: user._id, employerId: match.hirerId }
+        : { jobId: match.id, studentId: user._id, employerId: match.hirerId, resume: 'Applied via AI Match', coverLetter: 'I am highly matched for this position.' };
+
+      await axios.post(`${API_URL}${endpoint}`, payload);
+      toast.success(`Successfully applied to ${match.organization}`);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to submit application');
+    }
+    setApplyingTo(null);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">AI Resume Match Engine</h3>
+          <p className="text-sm text-slate-500 font-medium">Upload your resume to instantly find perfectly matched green jobs.</p>
+        </div>
+        <div className="p-3 bg-blue-100 rounded-xl text-blue-600"><Target size={24} /></div>
       </div>
-      <div className="p-3 bg-blue-100 rounded-xl text-blue-600"><Target size={24} /></div>
-    </div>
-    <div className="grid grid-cols-2 gap-6">
-      <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 flex flex-col items-center justify-center text-center">
-        <div className="w-48 h-48 rounded-full border-8 border-slate-200 border-t-blue-500 flex items-center justify-center relative mb-4">
-          <div className="absolute inset-0 rounded-full border-8 border-blue-500 opacity-20 blur-sm"></div>
-          <div>
-            <h1 className="text-5xl font-black text-slate-900">84%</h1>
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">Match Score</p>
+      
+      {!analyzed ? (
+        <div className="bg-slate-50 p-10 rounded-3xl border border-slate-200 flex flex-col items-center justify-center text-center">
+          <div className="w-24 h-24 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-6">
+            <FileText size={40} />
+          </div>
+          <h4 className="text-xl font-black text-slate-900 mb-2">Upload Your Resume</h4>
+          <p className="text-slate-500 font-medium max-w-md mb-8">
+            Upload your resume (PDF, DOC, DOCX) and our AI will extract your green skills to find real jobs that match your profile.
+          </p>
+          
+          <div className="w-full max-w-md flex flex-col gap-4">
+            <input 
+              type="file" 
+              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
+              onChange={handleFileChange}
+              className="w-full p-3 rounded-xl border border-slate-300 bg-white"
+            />
+            
+            <button 
+              onClick={handleUpload} 
+              disabled={loading || !file}
+              className="w-full py-4 bg-slate-900 text-white rounded-xl font-black uppercase tracking-widest hover:bg-blue-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {loading ? <><RefreshCw size={20} className="animate-spin" /> Analyzing...</> : <><Sparkles size={20} /> Match My Resume</>}
+            </button>
           </div>
         </div>
-        <p className="text-sm text-slate-600 font-medium max-w-xs">You are highly matched for <strong>Junior EV Technician</strong> roles.</p>
-      </div>
-      <div className="bg-white p-6 rounded-3xl border border-slate-100 space-y-6">
-        <h4 className="font-bold text-slate-900">Algorithm Weights</h4>
-        <div className="space-y-4">
-          {[
-            { l: 'Course Completion', v: 30, c: 'bg-emerald-500' },
-            { l: 'Skill Match', v: 40, c: 'bg-blue-500' },
-            { l: 'Quiz Performance', v: 15, c: 'bg-purple-500' },
-            { l: 'Language Match', v: 15, c: 'bg-orange-500' },
-          ].map((w, i) => (
-            <div key={i}>
-              <div className="flex justify-between text-xs font-bold text-slate-600 mb-1 uppercase tracking-wider">
-                <span>{w.l}</span><span>{w.v}%</span>
-              </div>
-              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                <div className={`h-full ${w.c}`} style={{ width: `${w.v * 2}%` }}></div>
-              </div>
+      ) : (
+        <div className="space-y-6">
+          <div className="flex justify-between items-center bg-emerald-50 p-6 rounded-2xl border border-emerald-100">
+            <div>
+              <h4 className="font-bold text-emerald-900 mb-1">Analysis Complete</h4>
+              <p className="text-sm text-emerald-700">We extracted {extractedSkills.length} green skills from your resume.</p>
             </div>
-          ))}
+            <button 
+              onClick={() => { setAnalyzed(false); setFile(null); setMatches([]); setExtractedSkills([]); }}
+              className="px-4 py-2 bg-white text-emerald-700 rounded-lg font-bold text-sm shadow-sm border border-emerald-200 hover:bg-emerald-100"
+            >
+              Upload New Resume
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {matches.length === 0 ? (
+              <div className="col-span-full py-12 text-center bg-white rounded-3xl border border-slate-100">
+                <p className="text-slate-500 font-bold">No matching green-skill jobs found yet.</p>
+                <p className="text-sm text-slate-400 mt-2">Please update your resume with more relevant skills or check again later.</p>
+              </div>
+            ) : (
+              matches.map((match, idx) => (
+                <div key={idx} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+                  <div>
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 border border-blue-100">
+                        <Briefcase size={20} />
+                      </div>
+                      <div className="px-3 py-1 bg-green-100 text-green-700 rounded-lg font-black text-xs border border-green-200">
+                        {match.matchPercentage}% MATCH
+                      </div>
+                    </div>
+                    <h4 className="font-black text-slate-900 text-lg leading-tight mb-1">{match.title}</h4>
+                    <p className="text-slate-500 font-medium text-sm mb-4">{match.organization}</p>
+                    
+                    <div className="space-y-2 mb-6">
+                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <MapPin size={16} className="text-slate-400" />
+                        <span className="truncate">{match.location}</span>
+                      </div>
+                      {match.salary && (
+                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                          <span className="font-bold text-emerald-600">💰</span>
+                          <span className="truncate">{match.salary}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {match.requiredSkills && match.requiredSkills.length > 0 && (
+                      <div className="mb-6">
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Required Skills</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {match.requiredSkills.slice(0, 3).map((skill, i) => (
+                            <span key={i} className="px-2 py-1 bg-slate-100 text-slate-600 rounded text-[10px] font-bold">
+                              {skill}
+                            </span>
+                          ))}
+                          {match.requiredSkills.length > 3 && (
+                            <span className="px-2 py-1 bg-slate-50 text-slate-400 rounded text-[10px] font-bold border border-slate-200">
+                              +{match.requiredSkills.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <button 
+                    onClick={() => handleApply(match)}
+                    disabled={applyingTo === match.id}
+                    className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {applyingTo === match.id ? <RefreshCw size={16} className="animate-spin" /> : 'Apply Now'}
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
-  </div>
-);
+  );
+};
 
 const AdvancedDashboard = () => (
   <div className="space-y-6">

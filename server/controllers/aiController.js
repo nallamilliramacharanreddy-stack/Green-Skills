@@ -2,7 +2,9 @@ const User = require('../models/User');
 const Course = require('../models/Course');
 const Job = require('../models/Job');
 const ChatHistory = require('../models/ChatHistory');
+const GeoVacancy = require('../models/GeoVacancy');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const pdfParse = require('pdf-parse');
 
 const generateRoadmap = async (req, res) => {
   try {
@@ -568,6 +570,134 @@ Do NOT wrap the JSON in markdown code blocks like \`\`\`json. Return ONLY the ra
   }
 };
 
+const processResumeMatch = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No resume file uploaded' });
+    }
+
+    let extractedText = '';
+    
+    if (req.file.mimetype === 'application/pdf') {
+      const pdfData = await pdfParse(req.file.buffer);
+      extractedText = pdfData.text;
+    } else {
+      // Basic fallback for doc/docx if mammoth is not used
+      extractedText = req.file.buffer.toString('utf8'); 
+    }
+
+    // Call Gemini API to extract Green Skills
+    let extractedSkills = [];
+    if (process.env.GEMINI_API_KEY) {
+      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const prompt = `Extract a JSON array of specific "Green Skills" and environmental competencies from the following resume text. Focus on skills related to renewable energy, sustainability, waste management, agriculture, environmental conservation, etc. If none are found, return an empty array. Do not return markdown, just the JSON array of strings.\n\nResume Text:\n${extractedText.substring(0, 5000)}`;
+      
+      try {
+        const result = await model.generateContent(prompt);
+        const responseText = result.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
+        extractedSkills = JSON.parse(responseText);
+        if (!Array.isArray(extractedSkills)) {
+          extractedSkills = [];
+        }
+      } catch (err) {
+        console.error("Gemini Extraction Error:", err);
+        // Fallback to simple keyword extraction if Gemini fails
+        extractedSkills = extractGreenSkillsFallback(extractedText);
+      }
+    } else {
+      extractedSkills = extractGreenSkillsFallback(extractedText);
+    }
+
+    // Fetch all jobs and geo vacancies
+    const jobs = await Job.find({ status: 'approved' }).populate('postedBy', 'companyDetails name email');
+    const geoVacancies = await GeoVacancy.find({ status: 'Active' }).populate('hirerId', 'companyDetails name email');
+
+    let allMatches = [];
+
+    // Calculate match for standard Jobs
+    for (let job of jobs) {
+      const requiredSkills = job.requiredSkills || [];
+      const matchScore = calculateSimilarity(extractedSkills, requiredSkills);
+      if (matchScore > 10) { // threshold
+        allMatches.push({
+          type: 'Job',
+          id: job._id,
+          title: job.title,
+          organization: job.postedBy?.companyDetails?.companyName || job.postedBy?.name || 'Unknown Organization',
+          location: job.location || `${job.city}, ${job.state}`,
+          salary: job.salary,
+          requiredSkills: requiredSkills,
+          matchPercentage: matchScore,
+          hirerId: job.postedBy?._id,
+          postedDate: job.createdAt
+        });
+      }
+    }
+
+    // Calculate match for Geo Vacancies
+    for (let geo of geoVacancies) {
+      const requiredSkills = geo.skills || [];
+      const matchScore = calculateSimilarity(extractedSkills, requiredSkills);
+      if (matchScore > 10) {
+        allMatches.push({
+          type: 'GeoVacancy',
+          id: geo._id,
+          title: geo.jobTitle,
+          organization: geo.companyName || geo.hirerId?.name,
+          location: `${geo.address}, ${geo.city}`,
+          salary: geo.salary,
+          requiredSkills: requiredSkills,
+          matchPercentage: matchScore,
+          hirerId: geo.hirerId?._id,
+          postedDate: geo.createdAt
+        });
+      }
+    }
+
+    // Sort by highest match
+    allMatches.sort((a, b) => b.matchPercentage - a.matchPercentage);
+
+    res.json({
+      success: true,
+      extractedSkills,
+      matches: allMatches
+    });
+
+  } catch (error) {
+    console.error('Error processing resume match:', error);
+    res.status(500).json({ success: false, message: 'Failed to process resume match' });
+  }
+};
+
+// Simple Fallback Extractor if Gemini fails or is not configured
+function extractGreenSkillsFallback(text) {
+  const keywords = ['solar', 'wind', 'organic farming', 'waste management', 'recycling', 'compost', 'water conservation', 'sustainability', 'renewable', 'environmental', 'ev', 'electric vehicle', 'plantation', 'green building'];
+  const found = [];
+  const lowerText = text.toLowerCase();
+  for (let kw of keywords) {
+    if (lowerText.includes(kw)) found.push(kw);
+  }
+  return found;
+}
+
+function calculateSimilarity(userSkills, jobSkills) {
+  if (!jobSkills || jobSkills.length === 0) return 0;
+  if (!userSkills || userSkills.length === 0) return 0;
+  
+  let matches = 0;
+  for (let js of jobSkills) {
+    let jobSkillLower = js.toLowerCase();
+    for (let us of userSkills) {
+      if (jobSkillLower.includes(us.toLowerCase()) || us.toLowerCase().includes(jobSkillLower)) {
+        matches++;
+        break;
+      }
+    }
+  }
+  return Math.min(100, Math.round((matches / jobSkills.length) * 100) + (userSkills.length > 0 ? 15 : 0)); // Add base 15% if they have some green skills
+}
+
 module.exports = { 
   generateRoadmap, 
   calculateJobMatch, 
@@ -577,5 +707,6 @@ module.exports = {
   restoreChatHistory, 
   deleteIndividualMessage, 
   exportChatHistory,
-  generateResume
+  generateResume,
+  processResumeMatch
 };
