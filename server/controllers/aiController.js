@@ -579,8 +579,14 @@ const processResumeMatch = async (req, res) => {
     let extractedText = '';
     
     if (req.file.mimetype === 'application/pdf') {
-      const pdfData = await pdfParse(req.file.buffer);
-      extractedText = pdfData.text;
+      try {
+        const pdfData = await pdfParse(req.file.buffer);
+        extractedText = pdfData.text;
+      } catch (err) {
+        console.error("PDF Parsing Error:", err);
+        // Fallback to raw buffer extraction if pdf-parse fails
+        extractedText = req.file.buffer.toString('utf8');
+      }
     } else {
       // Basic fallback for doc/docx if mammoth is not used
       extractedText = req.file.buffer.toString('utf8'); 
@@ -687,9 +693,10 @@ function calculateSimilarity(userSkills, jobSkills) {
   
   let matches = 0;
   for (let js of jobSkills) {
-    let jobSkillLower = js.toLowerCase();
+    let jobSkillLower = String(js).toLowerCase();
     for (let us of userSkills) {
-      if (jobSkillLower.includes(us.toLowerCase()) || us.toLowerCase().includes(jobSkillLower)) {
+      let usStr = String(us).toLowerCase();
+      if (jobSkillLower.includes(usStr) || usStr.includes(jobSkillLower)) {
         matches++;
         break;
       }
