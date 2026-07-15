@@ -73,25 +73,26 @@ export default function Home() {
             <Leaf className="text-green-600" size={28} />
             <span className="text-xl font-bold text-slate-900 tracking-tight">GreenSkill <span className="text-slate-600 font-medium">Rural</span></span>
           </Link>
-          
           <div className="hidden lg:flex items-center gap-10">
-            {['Home', 'About Us', 'Contact'].map((item) => (
-              <div key={item} className="relative flex flex-col items-center group cursor-pointer">
-                <span className={`text-sm font-semibold transition-colors ${item === 'Home' ? 'text-green-600' : 'text-slate-600 hover:text-green-600'}`}>
-                  {item}
-                </span>
-                {item === 'Home' && <div className="absolute -bottom-2 w-1.5 h-1.5 rounded-full bg-green-600"></div>}
-              </div>
-            ))}
-          </div>
+            <div className="flex items-center gap-8">
+              {['Home', 'About Us', 'Contact'].map((item) => (
+                <div key={item} className="relative flex flex-col items-center group cursor-pointer">
+                  <span className={`text-sm font-semibold transition-colors ${item === 'Home' ? 'text-green-600' : 'text-slate-600 hover:text-green-600'}`}>
+                    {item}
+                  </span>
+                  {item === 'Home' && <div className="absolute -bottom-2 w-1.5 h-1.5 rounded-full bg-green-600"></div>}
+                </div>
+              ))}
+            </div>
 
-          <div className="hidden lg:flex items-center gap-4">
-            <Link to="/login" className="px-6 py-2 rounded-full border border-green-600 text-green-600 text-sm font-bold hover:bg-green-50 transition-colors">
-              Login
-            </Link>
-            <Link to="/signup" className="px-6 py-2 rounded-full bg-green-600 text-white text-sm font-bold hover:bg-green-700 transition-colors">
-              Sign Up
-            </Link>
+            <div className="flex items-center gap-4">
+              <Link to="/login" className="px-6 py-2 rounded-full border border-green-600 text-green-600 text-sm font-bold hover:bg-green-50 transition-colors">
+                Login
+              </Link>
+              <Link to="/signup" className="px-6 py-2 rounded-full bg-green-600 text-white text-sm font-bold hover:bg-green-700 transition-colors">
+                Sign Up
+              </Link>
+            </div>
           </div>
         </div>
       </nav>
