@@ -7,6 +7,8 @@
     "install:server": "npm install --prefix server",
     "install:client": "npm install --prefix client",
     "install-all": "npm install && npm run install:server && npm run install:client",
+    "build": "npm run install:client && npm run build --prefix client",
+    "vercel-build": "npm run install:client && npm run build --prefix client",
     "dev:server": "npm run dev --prefix server",
     "dev:client": "npm run dev --prefix client",
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
