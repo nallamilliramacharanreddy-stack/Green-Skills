@@ -10,17 +10,17 @@ import { API_URL, API_BASE_URL } from '../../utils/api';
 const LeagueShield = ({ active, color, shadowColor, icon: Icon, locked }) => (
   <div className={`relative flex flex-col items-center justify-center transition-all duration-300 ${active ? 'scale-125 z-10 -translate-y-2' : 'scale-100 opacity-80 hover:opacity-100'}`}>
     <div className={`w-16 h-20 rounded-t-2xl rounded-b-3xl flex items-center justify-center bg-gradient-to-br ${color} shadow-[0_10px_20px_${shadowColor}] border-t border-white/60 relative overflow-hidden`}>
-       {locked ? (
-         <div className="w-5 h-6 border-2 border-white/50 rounded-t-md relative mt-2">
-           <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-3 h-3 border-2 border-white/50 rounded-full border-b-0"></div>
-         </div>
-       ) : (
-         <Icon className={active ? 'text-white w-8 h-8' : 'text-white/80 w-6 h-6'} />
-       )}
-       {/* Highlight shine */}
-       <div className="absolute top-0 left-2 w-4 h-full bg-white/20 skew-x-[20deg] rounded-full"></div>
+      {locked ? (
+        <div className="w-5 h-6 border-2 border-white/50 rounded-t-md relative mt-2">
+          <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-3 h-3 border-2 border-white/50 rounded-full border-b-0"></div>
+        </div>
+      ) : (
+        <Icon className={active ? 'text-white w-8 h-8' : 'text-white/80 w-6 h-6'} />
+      )}
+      {/* Highlight shine */}
+      <div className="absolute top-0 left-2 w-4 h-full bg-white/20 skew-x-[20deg] rounded-full"></div>
     </div>
-  </div>
+  </div >
 );
 
 const LeaderboardPage = () => {
@@ -130,7 +130,7 @@ const LeaderboardPage = () => {
                         {rank}
                       </div>
                     </div>
-                    
+
                     <div className="flex-1 flex items-center gap-4">
                       <div className={`w-10 h-10 rounded-full overflow-hidden flex items-center justify-center font-bold text-sm ${isTop1 ? 'bg-blue-100 text-blue-600' : isTop2 ? 'bg-fuchsia-100 text-fuchsia-600' : 'bg-slate-200 text-slate-600'}`}>
                         {user.profilePicture ? (
@@ -151,7 +151,7 @@ const LeaderboardPage = () => {
                   </div>
                 );
               })}
-              
+
               {safeData.length === 0 && (
                 <div className="py-10 text-center text-slate-400">No data available on the leaderboard.</div>
               )}

@@ -39,7 +39,8 @@ const Navbar = () => {
   };
 
   // Hide global navbar on dashboard/admin routes
-  const hideNavbar = location.pathname.includes('/dashboard') || 
+  const hideNavbar = location.pathname === '/' || 
+                     location.pathname.includes('/dashboard') || 
                      location.pathname.includes('/admin') || 
                      location.pathname.includes('/employer') || 
                      location.pathname.includes('/guide') || 
