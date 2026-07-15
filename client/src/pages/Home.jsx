@@ -75,7 +75,7 @@ export default function Home() {
           </Link>
           
           <div className="hidden lg:flex items-center gap-10">
-            {['Home', 'Courses', 'Features', 'Jobs', 'Mentorship', 'About Us', 'Contact'].map((item) => (
+            {['Home', 'About Us', 'Contact'].map((item) => (
               <div key={item} className="relative flex flex-col items-center group cursor-pointer">
                 <span className={`text-sm font-semibold transition-colors ${item === 'Home' ? 'text-green-600' : 'text-slate-600 hover:text-green-600'}`}>
                   {item}
@@ -331,9 +331,6 @@ export default function Home() {
             <h4 className="font-extrabold mb-6 text-sm">Quick Links</h4>
             <ul className="flex flex-col gap-4 text-xs font-medium text-slate-400">
               <li><a href="#" className="hover:text-green-400 transition-colors">Home</a></li>
-              <li><a href="#" className="hover:text-green-400 transition-colors">Courses</a></li>
-              <li><a href="#" className="hover:text-green-400 transition-colors">Features</a></li>
-              <li><a href="#" className="hover:text-green-400 transition-colors">Jobs</a></li>
               <li><a href="#" className="hover:text-green-400 transition-colors">About Us</a></li>
               <li><Link to="/contact" className="hover:text-green-400 transition-colors">Contact</Link></li>
             </ul>
