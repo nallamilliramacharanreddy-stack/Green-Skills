@@ -76,7 +76,19 @@ export default function Home() {
           <div className="hidden lg:flex items-center gap-10">
             <div className="flex items-center gap-8">
               {['Home', 'About Us', 'Contact'].map((item) => (
-                <div key={item} className="relative flex flex-col items-center group cursor-pointer">
+                <div 
+                  key={item} 
+                  onClick={() => {
+                    if (item === 'About Us') {
+                      window.location.href = '/about';
+                    } else if (item === 'Contact') {
+                      window.location.href = '/contact';
+                    } else {
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                  }}
+                  className="relative flex flex-col items-center group cursor-pointer"
+                >
                   <span className={`text-sm font-semibold transition-colors ${item === 'Home' ? 'text-green-600' : 'text-slate-600 hover:text-green-600'}`}>
                     {item}
                   </span>
