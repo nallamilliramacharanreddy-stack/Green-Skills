@@ -79,12 +79,11 @@ export default function Home() {
                 <div 
                   key={item} 
                   onClick={() => {
-                    if (item === 'About Us') {
-                      window.location.href = '/about';
-                    } else if (item === 'Contact') {
-                      window.location.href = '/contact';
-                    } else {
+                    if (item === 'Home') {
                       window.scrollTo({ top: 0, behavior: 'smooth' });
+                    } else {
+                      const id = item.toLowerCase().replace(' ', '-');
+                      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
                     }
                   }}
                   className="relative flex flex-col items-center group cursor-pointer"
@@ -220,7 +219,7 @@ export default function Home() {
       </section>
 
       {/* 4. WHY CHOOSE US */}
-      <section className="max-w-[1400px] mx-auto px-6 py-20">
+      <section id="about-us" className="max-w-[1400px] mx-auto px-6 py-20">
         <h2 className="text-4xl font-extrabold text-center text-slate-900 mb-16">Why Choose GreenSkill Rural?</h2>
         <div className="grid grid-cols-2 lg:grid-cols-6 gap-6">
           {WHY_CHOOSE.map((item, i) => (
@@ -320,7 +319,7 @@ export default function Home() {
       </section>
 
       {/* 9. FOOTER */}
-      <footer className="bg-[#0b2b1a] pt-16 pb-8 px-6 md:px-12 rounded-t-[3rem]">
+      <footer id="contact" className="bg-[#0b2b1a] pt-16 pb-8 px-6 md:px-12 rounded-t-[3rem]">
         <div className="max-w-[1400px] mx-auto grid grid-cols-2 md:grid-cols-6 gap-10 border-b border-green-900/50 pb-12 mb-8 text-white">
           
           <div className="col-span-2">
