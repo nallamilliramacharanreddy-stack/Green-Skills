@@ -34,9 +34,7 @@ const Footer = ({ showCTA = true }) => {
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white/10 via-transparent to-black/30 pointer-events-none"></div>
 
             <div className="relative z-10 w-full flex flex-col items-center">
-              <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-[11px] font-bold uppercase tracking-wider mb-2 text-emerald-100 shadow-sm">
-                <Sparkles size={12} className="text-yellow-300 animate-pulse" /> Empowering Rural India
-              </span>
+
               <h2 className="text-xl md:text-2xl font-black tracking-tight mb-2 text-white leading-tight">
                 Ready to Build a Better, Greener Future?
               </h2>
@@ -197,10 +195,6 @@ const Footer = ({ showCTA = true }) => {
 
         </div>
 
-        {/* Bottom Legal & Copyright Bar */}
-        <div className="pt-5 text-center text-[11px] font-medium text-slate-400">
-          © 2026 GreenSkill Rural Platform. All rights reserved.
-        </div>
 
       </div>
     </footer>
