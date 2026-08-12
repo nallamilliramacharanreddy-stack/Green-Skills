@@ -41,6 +41,36 @@ const TESTIMONIALS = [
 
 export default function Home() {
   const { user } = useAuth();
+  const [currentLang, setCurrentLang] = useState('en');
+
+  useEffect(() => {
+    // Read Google Translate cookie to set initial language
+    const match = document.cookie.match(/(?:^|;)\s*googtrans=([^;]*)/);
+    if (match && match[1]) {
+      const parts = match[1].split('/');
+      const lang = parts[parts.length - 1];
+      if (lang) {
+        setCurrentLang(lang);
+      }
+    }
+  }, []);
+
+  const handleLanguageChange = (e) => {
+    const newLang = e.target.value;
+    setCurrentLang(newLang);
+    
+    // Attempt to trigger existing Google Translate combo box
+    const selectElement = document.querySelector('.goog-te-combo');
+    if (selectElement) {
+      selectElement.value = newLang;
+      selectElement.dispatchEvent(new Event('change'));
+    } else {
+      // Fallback: forcefully set cookie and reload the page
+      document.cookie = `googtrans=/en/${newLang}; path=/; domain=${window.location.hostname}`;
+      document.cookie = `googtrans=/en/${newLang}; path=/`; // some browsers need this without domain
+      window.location.reload();
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-800 selection:bg-green-200 overflow-x-hidden">
@@ -78,6 +108,29 @@ export default function Home() {
             </div>
 
             <div className="flex items-center gap-4">
+              <select 
+                className="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block px-3 py-1.5 outline-none font-medium cursor-pointer"
+                value={currentLang}
+                onChange={handleLanguageChange}
+              >
+                <optgroup label="Common">
+                  <option value="en">English (Default)</option>
+                  <option value="hi">हिन्दी (Hindi)</option>
+                  <option value="te">తెలుగు (Telugu)</option>
+                </optgroup>
+                <optgroup label="Regional">
+                  <option value="ta">தமிழ் (Tamil)</option>
+                  <option value="mr">मराठी (Marathi)</option>
+                  <option value="bn">বাংলা (Bengali)</option>
+                  <option value="gu">ગુજરાતી (Gujarati)</option>
+                  <option value="ml">മലയാളം (Malayalam)</option>
+                  <option value="pa">ਪੰਜਾਬੀ (Punjabi)</option>
+                  <option value="or">ଓଡ଼ିଆ (Odia)</option>
+                  <option value="as">অসমীয়া (Assamese)</option>
+                  <option value="ur">اردو (Urdu)</option>
+                </optgroup>
+              </select>
+
               {!user ? (
                 <>
                   <Link to="/login" className="px-6 py-2 rounded-full border border-green-600 text-green-600 text-sm font-bold hover:bg-green-50 transition-colors">
