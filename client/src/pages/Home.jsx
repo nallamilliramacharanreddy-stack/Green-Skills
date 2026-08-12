@@ -181,9 +181,6 @@ export default function Home() {
               <Link to={user ? (user.role === 'admin' ? '/admin' : user.role === 'employer' ? '/employer' : '/dashboard') : '/signup'} className="flex items-center gap-2 px-8 py-4 bg-green-600 text-white rounded-full font-bold hover:bg-green-700 transition-colors shadow-lg shadow-green-600/30">
                 {user ? 'Go to Dashboard' : 'Start Your Journey'} <ArrowRight size={18} />
               </Link>
-              <button className="flex items-center gap-2 px-8 py-4 bg-white border border-slate-200 text-slate-700 rounded-full font-bold hover:bg-slate-50 transition-colors shadow-sm">
-                <Play size={18} className="text-green-600 fill-green-600" /> Watch Demo
-              </button>
             </div>
             
 
