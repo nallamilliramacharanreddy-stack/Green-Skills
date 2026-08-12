@@ -122,9 +122,6 @@ const Footer = ({ showCTA = true }) => {
             <ul className="space-y-2 text-xs font-medium text-slate-300">
               <li><Link to="/about" className="hover:text-emerald-400 transition-colors">About Our Mission</Link></li>
               <li><Link to="/contact" className="hover:text-emerald-400 transition-colors">Contact Support</Link></li>
-              <li><Link to="/faq" className="hover:text-emerald-400 transition-colors">FAQs & Guides</Link></li>
-              <li><Link to="/privacy" className="hover:text-emerald-400 transition-colors">Privacy Policy</Link></li>
-              <li><Link to="/terms" className="hover:text-emerald-400 transition-colors">Terms of Service</Link></li>
             </ul>
           </div>
 
