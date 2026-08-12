@@ -59,7 +59,7 @@ const Navbar = () => {
           </Link>
           <div className="hidden md:flex items-center space-x-8">
             <Link to="/" className="text-darkslate hover:text-primary transition-colors font-medium">Home</Link>
-            <Link to="/about" className="text-darkslate hover:text-primary transition-colors font-medium">About</Link>
+            <Link to="/about" className="text-darkslate hover:text-primary transition-colors font-medium">About Us</Link>
             <Link to="/contact" className="text-darkslate hover:text-primary transition-colors font-medium">Contact</Link>
             
             {!user && (

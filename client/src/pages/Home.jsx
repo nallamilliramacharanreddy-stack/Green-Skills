@@ -54,24 +54,26 @@ export default function Home() {
           </Link>
           <div className="hidden lg:flex items-center gap-10">
             <div className="flex items-center gap-8">
-              {['Home', 'About Us', 'Contact'].map((item) => (
-                <div 
-                  key={item} 
+              {[
+                { name: 'Home', path: '/' },
+                { name: 'About Us', path: '/about' },
+                { name: 'Contact', path: '/contact' }
+              ].map((item) => (
+                <Link 
+                  key={item.name} 
+                  to={item.path}
                   onClick={() => {
-                    if (item === 'Home') {
+                    if (item.name === 'Home') {
                       window.scrollTo({ top: 0, behavior: 'smooth' });
-                    } else {
-                      const id = item.toLowerCase().replace(' ', '-');
-                      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
                     }
                   }}
                   className="relative flex flex-col items-center group cursor-pointer"
                 >
-                  <span className={`text-sm font-semibold transition-colors ${item === 'Home' ? 'text-green-600' : 'text-slate-600 hover:text-green-600'}`}>
-                    {item}
+                  <span className={`text-sm font-semibold transition-colors ${item.name === 'Home' ? 'text-green-600' : 'text-slate-600 hover:text-green-600'}`}>
+                    {item.name}
                   </span>
-                  {item === 'Home' && <div className="absolute -bottom-2 w-1.5 h-1.5 rounded-full bg-green-600"></div>}
-                </div>
+                  {item.name === 'Home' && <div className="absolute -bottom-2 w-1.5 h-1.5 rounded-full bg-green-600"></div>}
+                </Link>
               ))}
             </div>
 
