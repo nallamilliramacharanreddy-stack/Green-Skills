@@ -16,8 +16,8 @@ const Footer = ({ showCTA = true }) => {
     e.preventDefault();
     if (email.trim()) {
       const targetEmail = 'nallamilliramacharanreddy@gmail.com';
-      const subject = encodeURIComponent('Newsletter Subscription Request');
-      const body = encodeURIComponent(`Hello,\n\nI would like to subscribe to Digital Green Skills updates.\n\nSubscriber Email: ${email.trim()}`);
+      const subject = encodeURIComponent('Support Request from Website User');
+      const body = encodeURIComponent(`Hello Support,\n\nI need assistance regarding Digital Green Skills.\n\nUser Email: ${email.trim()}`);
       
       window.location.href = `mailto:${targetEmail}?subject=${subject}&body=${body}`;
 
@@ -135,16 +135,16 @@ const Footer = ({ showCTA = true }) => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-0.5 max-w-sm">
                 <h4 className="text-xs font-extrabold text-white flex items-center gap-1.5">
-                  <Mail className="text-emerald-400" size={15} /> Subscribe to Green Innovation News
+                  <Mail className="text-emerald-400" size={15} /> Need Help or Support?
                 </h4>
                 <p className="text-[11px] text-slate-400">
-                  Get weekly alerts on free solar, agri-tech courses, and job fairs.
+                  Enter your email to connect directly with our support team.
                 </p>
               </div>
 
               {subscribed ? (
                 <div className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-900/80 border border-emerald-500/50 text-emerald-300 font-bold text-xs">
-                  <CheckCircle2 size={14} className="text-emerald-400" /> Subscribed!
+                  <CheckCircle2 size={14} className="text-emerald-400" /> Support Request Sent!
                 </div>
               ) : (
                 <form onSubmit={handleSubscribe} className="flex w-full sm:w-auto bg-slate-900/90 rounded-lg p-1 border border-emerald-800/60 focus-within:border-emerald-500 transition-all">
@@ -160,7 +160,7 @@ const Footer = ({ showCTA = true }) => {
                     type="submit"
                     className="inline-flex items-center gap-1 bg-gradient-to-r from-emerald-500 to-green-600 text-white text-xs font-bold px-3 py-1.5 rounded-md transition-all shadow-sm shrink-0"
                   >
-                    Subscribe <Send size={11} />
+                    Support <Send size={11} />
                   </button>
                 </form>
               )}
