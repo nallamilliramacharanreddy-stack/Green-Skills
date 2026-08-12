@@ -15,6 +15,12 @@ const Footer = ({ showCTA = true }) => {
   const handleSubscribe = (e) => {
     e.preventDefault();
     if (email.trim()) {
+      const targetEmail = 'nallamilliramacharanreddy@gmail.com';
+      const subject = encodeURIComponent('Newsletter Subscription Request');
+      const body = encodeURIComponent(`Hello,\n\nI would like to subscribe to Digital Green Skills updates.\n\nSubscriber Email: ${email.trim()}`);
+      
+      window.location.href = `mailto:${targetEmail}?subject=${subject}&body=${body}`;
+
       setSubscribed(true);
       setEmail('');
       setTimeout(() => setSubscribed(false), 4000);
@@ -163,25 +169,31 @@ const Footer = ({ showCTA = true }) => {
 
           {/* Direct Contact Cards */}
           <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="flex items-center gap-2.5 bg-emerald-950/30 border border-emerald-800/30 rounded-xl p-3">
-              <div className="w-8 h-8 rounded-lg bg-emerald-900/60 flex items-center justify-center text-emerald-400 shrink-0">
+            <a 
+              href="mailto:nallamilliramacharanreddy@gmail.com" 
+              className="flex items-center gap-2.5 bg-emerald-950/30 border border-emerald-800/30 rounded-xl p-3 hover:border-emerald-500/50 transition-all group"
+            >
+              <div className="w-8 h-8 rounded-lg bg-emerald-900/60 flex items-center justify-center text-emerald-400 shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
                 <Mail size={15} />
               </div>
-              <div className="text-[11px] space-y-0">
+              <div className="text-[11px] space-y-0 overflow-hidden">
                 <span className="text-slate-400 font-medium block text-[10px]">Email Support</span>
-                <p className="font-bold text-white tracking-wide truncate">support@greenskill.org</p>
+                <p className="font-bold text-white tracking-wide truncate text-[10px]" title="nallamilliramacharanreddy@gmail.com">nallamilliramacharanreddy@gmail.com</p>
               </div>
-            </div>
+            </a>
 
-            <div className="flex items-center gap-2.5 bg-emerald-950/30 border border-emerald-800/30 rounded-xl p-3">
-              <div className="w-8 h-8 rounded-lg bg-emerald-900/60 flex items-center justify-center text-emerald-400 shrink-0">
+            <a 
+              href="tel:+919391333377" 
+              className="flex items-center gap-2.5 bg-emerald-950/30 border border-emerald-800/30 rounded-xl p-3 hover:border-emerald-500/50 transition-all group"
+            >
+              <div className="w-8 h-8 rounded-lg bg-emerald-900/60 flex items-center justify-center text-emerald-400 shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
                 <Phone size={15} />
               </div>
               <div className="text-[11px] space-y-0">
-                <span className="text-slate-400 font-medium block text-[10px]">Rural Helpline</span>
-                <p className="font-bold text-white tracking-wide">+91 1800-GREEN-SKILL</p>
+                <span className="text-slate-400 font-medium block text-[10px]">Helpline</span>
+                <p className="font-bold text-white tracking-wide">+91 9391333377</p>
               </div>
-            </div>
+            </a>
           </div>
 
         </div>
