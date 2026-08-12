@@ -28,12 +28,12 @@ const Footer = ({ showCTA = true }) => {
       <div className="absolute bottom-0 right-1/3 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
       {showCTA && (
-        <div className="max-w-[1240px] mx-auto px-6 pt-6 pb-2 relative z-10">
+        <div className="w-full max-w-[1440px] mx-auto px-6 md:px-12 lg:px-16 pt-6 pb-2 relative z-10">
           {/* SLEEK COMPACT INTEGRATED CTA BANNER */}
           <div className="relative w-full rounded-2xl overflow-hidden bg-gradient-to-r from-emerald-800 via-green-700 to-teal-900 shadow-xl border border-emerald-500/30 px-6 py-6 md:py-7 text-center text-white">
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white/10 via-transparent to-black/30 pointer-events-none"></div>
 
-            <div className="relative z-10 max-w-2xl mx-auto flex flex-col items-center">
+            <div className="relative z-10 max-w-3xl mx-auto flex flex-col items-center">
               <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-[11px] font-bold uppercase tracking-wider mb-2 text-emerald-100 shadow-sm">
                 <Sparkles size={12} className="text-yellow-300 animate-pulse" /> Empowering Rural India
               </span>
@@ -64,7 +64,7 @@ const Footer = ({ showCTA = true }) => {
       )}
 
       {/* FOOTER MAIN BODY */}
-      <div className="max-w-[1240px] mx-auto px-6 pt-6 pb-10 relative z-10">
+      <div className="w-full max-w-[1440px] mx-auto px-6 md:px-12 lg:px-16 pt-6 pb-10 relative z-10">
         
         {/* Top Grid: Brand & 3 Navigation Columns */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 pb-8 border-b border-emerald-900/40">
