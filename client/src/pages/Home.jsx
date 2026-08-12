@@ -44,24 +44,10 @@ const TESTIMONIALS = [
   { name: "Suresh Yadav", role: "Wind Energy Engineer", text: "\"I got placed in a top company through the job portal. Thank you GreenSkill Rural!\"", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=60" }
 ];
 
-const PARTNERS = [
-  { name: 'Tata Power', logo: 'https://upload.wikimedia.org/wikipedia/en/5/52/Tata_Power_Logo.svg' },
-  { name: 'Adani', logo: 'https://upload.wikimedia.org/wikipedia/commons/6/69/Adani_Group_logo.svg' },
-  { name: 'Infosys', logo: 'https://upload.wikimedia.org/wikipedia/commons/9/95/Infosys_logo.svg' },
-  { name: 'Google', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg' },
-  { name: 'Wipro', logo: 'https://upload.wikimedia.org/wikipedia/commons/a/a0/Wipro_Primary_Logo_Color_RGB.svg' },
-  { name: 'Microsoft', logo: 'https://upload.wikimedia.org/wikipedia/commons/9/96/Microsoft_logo_%282012%29.svg' },
-  { name: 'Schneider Electric', logo: 'https://upload.wikimedia.org/wikipedia/commons/9/9b/Schneider_Electric_2007.svg' }
-];
+
 
 export default function Home() {
   const { user } = useAuth();
-
-  if (user) {
-    if (user.role === 'admin') return <Navigate to="/admin" replace />;
-    if (user.role === 'employer') return <Navigate to="/employer" replace />;
-    return <Navigate to="/dashboard" replace />;
-  }
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-800 selection:bg-green-200 overflow-x-hidden">
@@ -97,12 +83,20 @@ export default function Home() {
             </div>
 
             <div className="flex items-center gap-4">
-              <Link to="/login" className="px-6 py-2 rounded-full border border-green-600 text-green-600 text-sm font-bold hover:bg-green-50 transition-colors">
-                Login
-              </Link>
-              <Link to="/signup" className="px-6 py-2 rounded-full bg-green-600 text-white text-sm font-bold hover:bg-green-700 transition-colors">
-                Sign Up
-              </Link>
+              {!user ? (
+                <>
+                  <Link to="/login" className="px-6 py-2 rounded-full border border-green-600 text-green-600 text-sm font-bold hover:bg-green-50 transition-colors">
+                    Login
+                  </Link>
+                  <Link to="/signup" className="px-6 py-2 rounded-full bg-green-600 text-white text-sm font-bold hover:bg-green-700 transition-colors">
+                    Sign Up
+                  </Link>
+                </>
+              ) : (
+                <Link to={user.role === 'admin' ? '/admin' : user.role === 'employer' ? '/employer' : '/dashboard'} className="px-6 py-2 rounded-full bg-green-600 text-white text-sm font-bold hover:bg-green-700 transition-colors">
+                  Go to Dashboard
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -136,8 +130,8 @@ export default function Home() {
             </p>
             
             <div className="flex items-center gap-4 mb-10">
-              <Link to="/signup" className="flex items-center gap-2 px-8 py-4 bg-green-600 text-white rounded-full font-bold hover:bg-green-700 transition-colors shadow-lg shadow-green-600/30">
-                Start Your Journey <ArrowRight size={18} />
+              <Link to={user ? (user.role === 'admin' ? '/admin' : user.role === 'employer' ? '/employer' : '/dashboard') : '/signup'} className="flex items-center gap-2 px-8 py-4 bg-green-600 text-white rounded-full font-bold hover:bg-green-700 transition-colors shadow-lg shadow-green-600/30">
+                {user ? 'Go to Dashboard' : 'Start Your Journey'} <ArrowRight size={18} />
               </Link>
               <button className="flex items-center gap-2 px-8 py-4 bg-white border border-slate-200 text-slate-700 rounded-full font-bold hover:bg-slate-50 transition-colors shadow-sm">
                 <Play size={18} className="text-green-600 fill-green-600" /> Watch Demo
@@ -204,19 +198,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 3. TRUSTED BY */}
-      <section className="max-w-6xl mx-auto px-6 py-12 text-center">
-        <h3 className="text-lg font-bold text-slate-900 mb-6">Trusted By & Hiring Partners</h3>
-        <div className="relative flex items-center justify-center px-12 py-6 bg-white border border-slate-100 rounded-full shadow-sm">
-          <button className="absolute left-4 w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-green-600 shadow-sm"><ChevronLeft size={16}/></button>
-          <div className="flex items-center justify-between w-full overflow-hidden px-4">
-            {PARTNERS.map((p, i) => (
-              <img key={i} src={p.logo} alt={p.name} className="h-8 object-contain opacity-80 hover:opacity-100 transition-opacity cursor-pointer mx-4" />
-            ))}
-          </div>
-          <button className="absolute right-4 w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-green-600 shadow-sm"><ChevronRight size={16}/></button>
-        </div>
-      </section>
 
       {/* 4. WHY CHOOSE US */}
       <section id="about-us" className="max-w-[1400px] mx-auto px-6 py-20">
@@ -311,8 +292,8 @@ export default function Home() {
           <div className="relative z-10 text-center text-white flex flex-col items-center">
             <h2 className="text-4xl font-extrabold mb-4">Ready to build a better future?</h2>
             <p className="text-lg text-green-50 mb-8 font-medium">Join thousands of rural learners and start your green journey today.</p>
-            <Link to="/signup" className="inline-flex items-center gap-2 px-8 py-4 bg-white text-green-700 rounded-full font-bold shadow-xl hover:bg-slate-50 transition-colors">
-              Start Learning Now <ArrowRight size={18}/>
+            <Link to={user ? (user.role === 'admin' ? '/admin' : user.role === 'employer' ? '/employer' : '/dashboard') : '/signup'} className="inline-flex items-center gap-2 px-8 py-4 bg-white text-green-700 rounded-full font-bold shadow-xl hover:bg-slate-50 transition-colors">
+              {user ? 'Go to Dashboard' : 'Start Learning Now'} <ArrowRight size={18}/>
             </Link>
           </div>
         </div>
