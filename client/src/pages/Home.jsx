@@ -32,9 +32,9 @@ const PLATFORMS = [
 ];
 
 const TESTIMONIALS = [
-  { name: "Anjali Verma", role: "Solar Technician", text: "\"GreenSkill Rural helped me learn solar installation and I got a great internship!\"", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=60" },
+  { name: "Anjali Verma", role: "Solar Technician", text: "\"Digital Green Skills helped me learn solar installation and I got a great internship!\"", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=60" },
   { name: "Rahul Meena", role: "Agriculture Student", text: "\"The courses are easy to understand and very useful for our future.\"", avatar: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&auto=format&fit=crop&q=60" },
-  { name: "Suresh Yadav", role: "Wind Energy Engineer", text: "\"I got placed in a top company through the job portal. Thank you GreenSkill Rural!\"", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=60" }
+  { name: "Suresh Yadav", role: "Wind Energy Engineer", text: "\"I got placed in a top company through the job portal. Thank you Digital Green Skills!\"", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=60" }
 ];
 
 
@@ -50,7 +50,7 @@ export default function Home() {
         <div className="max-w-[1400px] mx-auto flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <Leaf className="text-green-600" size={28} />
-            <span className="text-xl font-bold text-slate-900 tracking-tight">GreenSkill <span className="text-slate-600 font-medium">Rural</span></span>
+            <span className="text-xl font-bold text-slate-900 tracking-tight">Digital Green <span className="text-slate-600 font-medium">Skills</span></span>
           </Link>
           <div className="hidden lg:flex items-center gap-10">
             <div className="flex items-center gap-8">
@@ -108,10 +108,10 @@ export default function Home() {
               <Leaf size={14} /> Building a Sustainable Future
             </div>
             
-            <h1 className="text-5xl lg:text-[4rem] font-extrabold tracking-tight text-slate-900 leading-[1.1] mb-6">
-              Empowering Rural <br/> Communities through <br/>
+            <h1 className="text-4xl lg:text-[3.4rem] font-extrabold tracking-tight text-slate-900 leading-[1.15] mb-6">
+              Digital Green Skill Development & Job Matching for <br/>
               <span className="text-green-600 relative inline-block">
-                Digital Green Skills
+                Youth Facing Employment Challenges
                 <svg className="absolute w-full h-3 -bottom-1 left-0 text-green-500" viewBox="0 0 200 12" fill="none" preserveAspectRatio="none">
                   <path d="M2 10C50 2 150 2 198 10" stroke="currentColor" strokeWidth="4" strokeLinecap="round"/>
                 </svg>

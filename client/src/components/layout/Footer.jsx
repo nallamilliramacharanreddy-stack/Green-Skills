@@ -74,13 +74,13 @@ const Footer = ({ showCTA = true }) => {
                 <Leaf className="text-white" size={20} />
               </div>
               <div className="flex flex-col">
-                <span className="text-xl font-black tracking-tight text-white">GreenSkill <span className="text-emerald-400 font-semibold">Rural</span></span>
-                <span className="text-[9px] uppercase font-bold tracking-widest text-emerald-400/80">Digital Empowerment Ecosystem</span>
+                <span className="text-xl font-black tracking-tight text-white">Digital Green <span className="text-emerald-400 font-semibold">Skills</span></span>
+                <span className="text-[9px] uppercase font-bold tracking-widest text-emerald-400/80">Skill Development & Job Matching</span>
               </div>
             </Link>
 
             <p className="text-xs text-slate-300 leading-relaxed font-normal max-w-sm">
-              Empowering rural communities with certified green tech capabilities, AI guidance, and direct job opportunities.
+              Digital Green Skill Development and Job Matching for Youth Facing Employment Challenges.
             </p>
 
 

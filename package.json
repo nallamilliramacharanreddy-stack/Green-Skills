@@ -1,7 +1,7 @@
 {
   "name": "green-skills-platform",
   "version": "1.0.0",
-  "description": "Empowering Rural Communities through Digital Green Skill Development and Job Matching",
+  "description": "Digital Green Skill Development and Job Matching for Youth Facing Employment Challenges",
   "main": "check_db.js",
   "scripts": {
     "install:server": "npm install --prefix server",

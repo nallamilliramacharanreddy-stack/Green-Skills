@@ -55,7 +55,7 @@ const Navbar = () => {
         <div className="flex justify-between h-16 items-center">
           <Link to="/" className="flex items-center gap-2">
             <Leaf className="text-primary w-8 h-8" />
-            <span className="text-xl font-bold text-darkslate">GreenSkill <span className="text-primary">Rural</span></span>
+            <span className="text-xl font-bold text-darkslate">Digital Green <span className="text-primary">Skills</span></span>
           </Link>
           <div className="hidden md:flex items-center space-x-8">
             <Link to="/" className="text-darkslate hover:text-primary transition-colors font-medium">Home</Link>
