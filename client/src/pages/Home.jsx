@@ -9,15 +9,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-// --- MOCK DATA ---
-const WHY_CHOOSE = [
-  { icon: GraduationCap, title: "Expert-Led Courses", desc: "Industry experts teach you the most in-demand green skills." },
-  { icon: Smartphone, title: "Learn Anytime, Anywhere", desc: "Mobile-friendly platform designed for rural learners." },
-  { icon: PenTool, title: "Hands-on Practice", desc: "Real-world projects and quizzes to build practical knowledge." },
-  { icon: ShieldCheck, title: "Get Certified", desc: "Earn industry-recognized certificates and boost your profile." },
-  { icon: Briefcase, title: "Job Opportunities", desc: "Connect with verified employers and find the right job." },
-  { icon: Bot, title: "AI Mentor & Support", desc: "Get guidance from AI mentor and our support team anytime." }
-];
+
 
 const STEPS = [
   { icon: UserPlus, num: 1, title: "Register", desc: "Create your free account" },
@@ -198,22 +190,6 @@ export default function Home() {
         </div>
       </section>
 
-
-      {/* 4. WHY CHOOSE US */}
-      <section id="about-us" className="max-w-[1400px] mx-auto px-6 py-20">
-        <h2 className="text-4xl font-extrabold text-center text-slate-900 mb-16">Why Choose GreenSkill Rural?</h2>
-        <div className="grid grid-cols-2 lg:grid-cols-6 gap-6">
-          {WHY_CHOOSE.map((item, i) => (
-            <div key={i} className="bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col items-center text-center hover:-translate-y-2 transition-transform duration-300">
-              <div className="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center text-green-600 mb-6">
-                <item.icon size={24} />
-              </div>
-              <h3 className="text-sm font-extrabold text-slate-900 mb-3">{item.title}</h3>
-              <p className="text-xs text-slate-500 leading-relaxed font-medium">{item.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
 
       {/* 5. HOW IT WORKS */}
       <section className="max-w-[1400px] mx-auto px-6 py-20">
