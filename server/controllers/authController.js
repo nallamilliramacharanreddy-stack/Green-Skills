@@ -221,15 +221,7 @@ const login = async (req, res) => {
   try {
     const { email, password, role } = req.body;
 
-    const user = await User.findOne({ email })
-      .populate({
-        path: 'progress.currentCourses',
-        select: '-quiz -enrolledStudents -lessons.quiz -lessons.subtitles -lessons.audioTracks'
-      })
-      .populate({
-        path: 'progress.completedCourses',
-        select: '-quiz -enrolledStudents -lessons.quiz -lessons.subtitles -lessons.audioTracks'
-      });
+    const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }

@@ -9,6 +9,11 @@ export const API_BASE_URL = import.meta.env.VITE_API_URL ||
     : 'http://localhost:5001');
 export const API_URL = `${API_BASE_URL}/api`;
 
+// Pre-warm backend API server immediately on load to prevent cold-start delays
+if (typeof window !== 'undefined') {
+  fetch(API_BASE_URL, { cache: 'no-store' }).catch(() => {});
+}
+
 // Add a request interceptor to attach JWT token automatically
 axios.interceptors.request.use(
   (config) => {
