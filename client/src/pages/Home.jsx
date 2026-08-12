@@ -14,7 +14,7 @@ import { useAuth } from '../context/AuthContext';
 const STEPS = [
   { icon: UserPlus, num: 1, title: "Register", desc: "Create your free account" },
   { icon: BookOpen, num: 2, title: "Learn", desc: "Access courses and learning materials" },
-  { icon: Code, num: 3, title: "Practice", desc: "Take quizzes and complete projects" },
+  { icon: Code, num: 3, title: "Quiz", desc: "Take quizzes and complete projects" },
   { icon: FileBadge, num: 4, title: "Get Certified", desc: "Earn certificates and badges" },
   { icon: FileText, num: 5, title: "Build Resume", desc: "Create professional resume" },
   { icon: Briefcase, num: 6, title: "Apply Jobs", desc: "Find and apply to relevant jobs" },
