@@ -131,11 +131,7 @@ export default function Home() {
               </button>
             </div>
             
-            <div className="flex items-center gap-6 text-sm font-bold text-slate-700">
-              <span className="flex items-center gap-2"><Globe size={18} className="text-green-600" /> 100% Online</span>
-              <span className="flex items-center gap-2"><Users size={18} className="text-green-600" /> Expert Mentors</span>
-              <span className="flex items-center gap-2"><ShieldCheck size={18} className="text-green-600" /> Industry Recognized</span>
-            </div>
+
           </div>
 
           {/* Right Image & Floating Cards */}
@@ -167,28 +163,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Bottom Hero Stats Bar */}
-        <div className="relative z-20 mt-16 max-w-5xl mx-auto bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-slate-100 py-6 px-10 flex flex-wrap justify-between items-center gap-6">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center"><Users size={24}/></div>
-            <div><div className="text-xl font-extrabold text-slate-900">15,000+</div><div className="text-xs font-bold text-slate-500">Students Empowered</div></div>
-          </div>
-          <div className="w-px h-12 bg-slate-200 hidden md:block"></div>
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center"><BookOpen size={24}/></div>
-            <div><div className="text-xl font-extrabold text-slate-900">250+</div><div className="text-xs font-bold text-slate-500">Green Courses</div></div>
-          </div>
-          <div className="w-px h-12 bg-slate-200 hidden md:block"></div>
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center"><Briefcase size={24}/></div>
-            <div><div className="text-xl font-extrabold text-slate-900">800+</div><div className="text-xs font-bold text-slate-500">Jobs Created</div></div>
-          </div>
-          <div className="w-px h-12 bg-slate-200 hidden md:block"></div>
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center"><Star size={24} className="fill-green-600"/></div>
-            <div><div className="text-xl font-extrabold text-slate-900">95%</div><div className="text-xs font-bold text-slate-500">Learner Satisfaction</div></div>
-          </div>
-        </div>
+
       </section>
 
 
