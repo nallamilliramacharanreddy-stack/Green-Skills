@@ -49,12 +49,6 @@ const Footer = ({ showCTA = true }) => {
                   {user ? 'Go to Dashboard' : 'Start Learning Now'} 
                   <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                 </Link>
-                <Link 
-                  to="/courses" 
-                  className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-emerald-950/60 text-white rounded-xl font-semibold border border-emerald-400/40 hover:bg-emerald-900/80 transition-all text-xs backdrop-blur-sm"
-                >
-                  <BookOpen size={14} /> Explore Courses
-                </Link>
               </div>
             </div>
           </div>
