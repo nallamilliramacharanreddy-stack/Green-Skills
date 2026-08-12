@@ -85,34 +85,7 @@ const Footer = ({ showCTA = true }) => {
               Empowering rural communities with certified green tech capabilities, AI guidance, and direct job opportunities.
             </p>
 
-            {/* Impact Badges */}
-            <div className="flex flex-wrap items-center gap-2 pt-1">
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-950/80 border border-emerald-800/50 text-[11px] font-semibold text-emerald-300">
-                <ShieldCheck size={14} className="text-emerald-400" /> Govt & Industry Aligned
-              </div>
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-950/80 border border-emerald-800/50 text-[11px] font-semibold text-emerald-300">
-                <Award size={14} className="text-emerald-400" /> Verified Certificates
-              </div>
-            </div>
 
-            {/* Social Links */}
-            <div className="flex items-center gap-2 pt-1">
-              {[
-                { name: 'FB', href: '#' },
-                { name: 'TW', href: '#' },
-                { name: 'IG', href: '#' },
-                { name: 'IN', href: '#' },
-                { name: 'YT', href: '#' }
-              ].map((s, idx) => (
-                <a 
-                  key={idx} 
-                  href={s.href} 
-                  className="w-8 h-8 rounded-lg bg-emerald-950/70 border border-emerald-800/40 flex items-center justify-center text-[10px] font-extrabold text-slate-300 hover:text-white hover:bg-emerald-600 transition-all shadow-sm"
-                >
-                  {s.name}
-                </a>
-              ))}
-            </div>
           </div>
 
           {/* Col 1: Learning Ecosystem */}
@@ -225,20 +198,8 @@ const Footer = ({ showCTA = true }) => {
         </div>
 
         {/* Bottom Legal & Copyright Bar */}
-        <div className="pt-5 flex flex-col md:flex-row justify-between items-center gap-3 text-[11px] font-medium text-slate-400">
-          <div className="flex items-center gap-1.5">
-            <Globe size={13} className="text-emerald-400" />
-            <span>© 2026 GreenSkill Rural Platform. All rights reserved.</span>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-950 border border-emerald-800/40 text-[10px] font-bold text-emerald-400">
-              🌱 100% Carbon-Neutral Ecosystem
-            </span>
-            <span className="text-slate-400">
-              Empowering India with <Heart size={11} className="inline text-emerald-400 fill-emerald-400 mx-0.5" /> for Sustainable Future
-            </span>
-          </div>
+        <div className="pt-5 text-center text-[11px] font-medium text-slate-400">
+          © 2026 GreenSkill Rural Platform. All rights reserved.
         </div>
 
       </div>
