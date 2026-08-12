@@ -8,6 +8,7 @@ import {
   Star, ArrowRight, Globe, Users, Award
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import Footer from '../components/layout/Footer';
 
 
 
@@ -258,98 +259,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 8. BOTTOM CTA BANNER */}
-      <section className="max-w-[1400px] mx-auto px-6 pb-24">
-        <div className="relative w-full rounded-[2rem] overflow-hidden bg-green-600 flex items-center justify-center h-[280px]">
-          {/* Generated Banner Background */}
-          <img src="/bottom_cta_banner.png" alt="CTA Background" className="absolute inset-0 w-full h-full object-cover opacity-80 mix-blend-overlay" />
-          <div className="absolute inset-0 bg-gradient-to-r from-green-900/60 via-green-800/40 to-green-900/60"></div>
-          
-          <div className="relative z-10 text-center text-white flex flex-col items-center">
-            <h2 className="text-4xl font-extrabold mb-4">Ready to build a better future?</h2>
-            <p className="text-lg text-green-50 mb-8 font-medium">Join thousands of rural learners and start your green journey today.</p>
-            <Link to={user ? (user.role === 'admin' ? '/admin' : user.role === 'employer' ? '/employer' : '/dashboard') : '/signup'} className="inline-flex items-center gap-2 px-8 py-4 bg-white text-green-700 rounded-full font-bold shadow-xl hover:bg-slate-50 transition-colors">
-              {user ? 'Go to Dashboard' : 'Start Learning Now'} <ArrowRight size={18}/>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* 9. FOOTER */}
-      <footer id="contact" className="bg-[#0b2b1a] pt-16 pb-8 px-6 md:px-12 rounded-t-[3rem]">
-        <div className="max-w-[1400px] mx-auto grid grid-cols-2 md:grid-cols-6 gap-10 border-b border-green-900/50 pb-12 mb-8 text-white">
-          
-          <div className="col-span-2">
-            <Link to="/" className="flex items-center gap-2 mb-6">
-              <Leaf className="text-green-400" size={28} />
-              <span className="text-xl font-bold tracking-tight">GreenSkill <span className="font-medium text-slate-300">Rural</span></span>
-            </Link>
-            <p className="text-xs text-slate-400 mb-8 font-medium leading-relaxed pr-10">
-              Empowering rural communities with digital green skills for a sustainable future.
-            </p>
-            <div className="flex gap-4">
-              <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-green-500 transition-colors cursor-pointer text-[10px] font-bold text-white">FB</div>
-              <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-green-500 transition-colors cursor-pointer text-[10px] font-bold text-white">TW</div>
-              <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-green-500 transition-colors cursor-pointer text-[10px] font-bold text-white">IG</div>
-              <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-green-500 transition-colors cursor-pointer text-[10px] font-bold text-white">IN</div>
-              <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-green-500 transition-colors cursor-pointer text-[10px] font-bold text-white">YT</div>
-            </div>
-          </div>
-
-          <div>
-            <h4 className="font-extrabold mb-6 text-sm">Quick Links</h4>
-            <ul className="flex flex-col gap-4 text-xs font-medium text-slate-400">
-              <li><a href="#" className="hover:text-green-400 transition-colors">Home</a></li>
-              <li><a href="#" className="hover:text-green-400 transition-colors">About Us</a></li>
-              <li><Link to="/contact" className="hover:text-green-400 transition-colors">Contact</Link></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-extrabold mb-6 text-sm">For Learners</h4>
-            <ul className="flex flex-col gap-4 text-xs font-medium text-slate-400">
-              <li><a href="#" className="hover:text-green-400 transition-colors">My Journey</a></li>
-              <li><a href="#" className="hover:text-green-400 transition-colors">My Courses</a></li>
-              <li><a href="#" className="hover:text-green-400 transition-colors">Certificates</a></li>
-              <li><a href="#" className="hover:text-green-400 transition-colors">Leaderboard</a></li>
-              <li><a href="#" className="hover:text-green-400 transition-colors">AI Mentor</a></li>
-              <li><a href="#" className="hover:text-green-400 transition-colors">Help Center</a></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-extrabold mb-6 text-sm">For Employers</h4>
-            <ul className="flex flex-col gap-4 text-xs font-medium text-slate-400">
-              <li><a href="#" className="hover:text-green-400 transition-colors">Post a Job</a></li>
-              <li><a href="#" className="hover:text-green-400 transition-colors">Browse Talent</a></li>
-              <li><a href="#" className="hover:text-green-400 transition-colors">Our Partners</a></li>
-              <li><a href="#" className="hover:text-green-400 transition-colors">Pricing</a></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-extrabold mb-6 text-sm">Support</h4>
-            <ul className="flex flex-col gap-4 text-xs font-medium text-slate-400 mb-8">
-              <li><a href="#" className="hover:text-green-400 transition-colors">FAQs</a></li>
-              <li><a href="#" className="hover:text-green-400 transition-colors">Privacy Policy</a></li>
-              <li><a href="#" className="hover:text-green-400 transition-colors">Terms & Conditions</a></li>
-              <li><Link to="/contact" className="hover:text-green-400 transition-colors">Contact Support</Link></li>
-            </ul>
-            
-            <h4 className="font-extrabold mb-4 text-sm">Newsletter</h4>
-            <p className="text-[10px] text-slate-400 mb-4">Subscribe to get updates on new courses and opportunities.</p>
-            <div className="flex bg-white rounded-md overflow-hidden p-1">
-              <input type="email" placeholder="Enter your email" className="w-full text-slate-900 px-3 text-xs outline-none" />
-              <button className="bg-green-600 text-white px-4 py-2 rounded text-xs font-bold hover:bg-green-700 transition-colors">Subscribe</button>
-            </div>
-          </div>
-        </div>
-
-        <div className="max-w-[1400px] mx-auto flex flex-col md:flex-row justify-between items-center text-[10px] font-medium text-slate-500">
-          <p>© 2026 GreenSkill Rural. All rights reserved.</p>
-          <p>Made with <span className="text-green-500">♥</span> for a Sustainable Future</p>
-        </div>
-      </footer>
+      {/* FOOTER WITH INTEGRATED SEAMLESS CTA */}
+      <Footer />
       
       {/* Floating Chat Icon */}
       <div className="fixed bottom-6 right-6 w-14 h-14 bg-green-600 rounded-full flex items-center justify-center text-white shadow-xl cursor-pointer hover:bg-green-700 transition-colors z-50">
